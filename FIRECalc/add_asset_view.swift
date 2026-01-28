@@ -2,7 +2,7 @@
 //  AddAssetView.swift
 //  FIRECalc
 //
-//  Screen for adding new assets to portfolio - ENHANCED with auto-price loading
+//  Screen for adding new assets to portfolio with auto-price loading
 //
 
 import SwiftUI
@@ -10,6 +10,7 @@ import SwiftUI
 struct AddAssetView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var focusedField: Field?
     
     @State private var assetName: String = ""
     @State private var selectedAssetClass: AssetClass = .stocks
@@ -22,6 +23,11 @@ struct AddAssetView: View {
     @State private var isLoadingPrice: Bool = false
     @State private var autoLoadedPrice: Double?
     @State private var priceError: String?
+    @State private var lastLoadedTicker: String = ""
+    
+    enum Field {
+        case assetName, ticker, quantity, unitValue
+    }
     
     var body: some View {
         NavigationView {
@@ -29,6 +35,7 @@ struct AddAssetView: View {
                 // Basic Information
                 Section("Asset Details") {
                     TextField("Asset Name", text: $assetName)
+                        .focused($focusedField, equals: .assetName)
                     
                     Picker("Asset Class", selection: $selectedAssetClass) {
                         ForEach(AssetClass.allCases) { assetClass in
@@ -42,35 +49,33 @@ struct AddAssetView: View {
                     
                     if selectedAssetClass.supportsTicker {
                         VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                TextField("Ticker Symbol", text: $ticker)
-                                    .textInputAutocapitalization(.characters)
-                                    .autocorrectionDisabled()
-                                    .onChange(of: ticker) { oldValue, newValue in
-                                        // Clear previous price when ticker changes
-                                        if oldValue != newValue {
-                                            autoLoadedPrice = nil
-                                            priceError = nil
+                            TextField("Ticker Symbol", text: $ticker)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .focused($focusedField, equals: .ticker)
+                                .onChange(of: ticker) { oldValue, newValue in
+                                    // Clear previous price when ticker changes
+                                    if oldValue != newValue {
+                                        autoLoadedPrice = nil
+                                        priceError = nil
+                                        
+                                        // Auto-load price after a short delay
+                                        if !newValue.isEmpty && newValue.count >= 1 {
+                                            scheduleAutoLoad()
                                         }
                                     }
-                                
-                                if !ticker.isEmpty {
-                                    Button(action: loadPrice) {
-                                        if isLoadingPrice {
-                                            ProgressView()
-                                                .scaleEffect(0.8)
-                                        } else {
-                                            Image(systemName: "arrow.clockwise")
-                                        }
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                    .disabled(isLoadingPrice)
                                 }
-                            }
                             
                             // Price loading feedback
-                            if let price = autoLoadedPrice {
+                            if isLoadingPrice {
+                                HStack {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("Loading price...")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            } else if let price = autoLoadedPrice {
                                 HStack {
                                     Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(.green)
@@ -105,6 +110,7 @@ struct AddAssetView: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
+                            .focused($focusedField, equals: .quantity)
                     }
                     
                     HStack {
@@ -114,12 +120,14 @@ struct AddAssetView: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
+                            .focused($focusedField, equals: .unitValue)
                     }
                     
                     // Auto-fill button if price was loaded
                     if let price = autoLoadedPrice, unitValue.isEmpty {
                         Button("Use Loaded Price (\(price.toPreciseCurrency()))") {
                             unitValue = String(price)
+                            focusedField = nil
                         }
                         .font(.caption)
                         .foregroundColor(.blue)
@@ -220,6 +228,22 @@ struct AddAssetView: View {
                     .disabled(!isValid)
                     .fontWeight(.semibold)
                 }
+                
+                // Keyboard dismiss toolbar
+                ToolbarItem(placement: .keyboard) {
+                    HStack {
+                        Spacer()
+                        Button("Done") {
+                            focusedField = nil
+                        }
+                    }
+                }
+            }
+            .onAppear {
+                // Auto-focus on asset name when view appears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    focusedField = .assetName
+                }
             }
         }
     }
@@ -256,9 +280,22 @@ struct AddAssetView: View {
     
     // MARK: - Actions
     
+    private func scheduleAutoLoad() {
+        // Debounce: wait for user to stop typing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            if ticker.uppercased() != lastLoadedTicker && !ticker.isEmpty {
+                loadPrice()
+            }
+        }
+    }
+    
     private func loadPrice() {
         guard !ticker.isEmpty else { return }
         
+        let cleanTicker = ticker.uppercased().trimmingCharacters(in: .whitespaces)
+        guard cleanTicker != lastLoadedTicker else { return }
+        
+        lastLoadedTicker = cleanTicker
         isLoadingPrice = true
         priceError = nil
         autoLoadedPrice = nil
@@ -266,9 +303,9 @@ struct AddAssetView: View {
         Task {
             do {
                 let tempAsset = Asset(
-                    name: assetName.isEmpty ? ticker.uppercased() : assetName,
+                    name: assetName.isEmpty ? cleanTicker : assetName,
                     assetClass: selectedAssetClass,
-                    ticker: ticker.uppercased(),
+                    ticker: cleanTicker,
                     quantity: 1,
                     unitValue: 0
                 )
@@ -279,7 +316,7 @@ struct AddAssetView: View {
                     autoLoadedPrice = price
                     // Auto-populate name if empty
                     if assetName.isEmpty {
-                        assetName = ticker.uppercased()
+                        assetName = cleanTicker
                     }
                     isLoadingPrice = false
                 }
@@ -293,6 +330,8 @@ struct AddAssetView: View {
     }
     
     private func addAsset() {
+        focusedField = nil
+        
         let finalPrice = Double(unitValue) ?? autoLoadedPrice ?? 0
         
         let asset = Asset(

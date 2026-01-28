@@ -2,7 +2,7 @@
 //  PortfolioViewModel.swift
 //  FIRECalc
 //
-//  Manages portfolio state and operations
+//  Manages portfolio state and operations with retirement tracking
 //
 
 import Foundation
@@ -14,6 +14,11 @@ class PortfolioViewModel: ObservableObject {
     @Published var isUpdatingPrices: Bool = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
+    
+    // Retirement planning
+    @Published var targetRetirementDate: Date?
+    @Published var targetRetirementValue: Double = 1_000_000
+    @Published var annualFixedIncome: Double = 0 // Social Security, pensions, etc.
     
     private let persistence = PersistenceService.shared
     
@@ -28,7 +33,9 @@ class PortfolioViewModel: ObservableObject {
             self.portfolio = Portfolio(name: "My Portfolio")
         }
         
-        // No API key needed for Yahoo Finance!
+        // Load retirement settings
+        loadRetirementSettings()
+        
         print("📊 Using Yahoo Finance (no API key required)")
     }
     
@@ -103,6 +110,54 @@ class PortfolioViewModel: ObservableObject {
         clearMessagesAfterDelay()
     }
     
+    // MARK: - Retirement Planning
+    
+    func setRetirementDate(_ date: Date) {
+        targetRetirementDate = date
+        saveRetirementSettings()
+    }
+    
+    func setRetirementTarget(_ value: Double) {
+        targetRetirementValue = value
+        saveRetirementSettings()
+    }
+    
+    func setAnnualFixedIncome(_ income: Double) {
+        annualFixedIncome = income
+        saveRetirementSettings()
+    }
+    
+    var retirementProgress: Double {
+        guard targetRetirementValue > 0 else { return 0 }
+        return totalValue / targetRetirementValue
+    }
+    
+    var yearsToRetirement: Int? {
+        guard let targetDate = targetRetirementDate else { return nil }
+        return Calendar.current.dateComponents([.year], from: Date(), to: targetDate).year
+    }
+    
+    private func loadRetirementSettings() {
+        if let dateTimestamp = UserDefaults.standard.object(forKey: "retirement_date") as? TimeInterval {
+            targetRetirementDate = Date(timeIntervalSince1970: dateTimestamp)
+        }
+        
+        let savedValue = UserDefaults.standard.double(forKey: "retirement_target")
+        if savedValue > 0 {
+            targetRetirementValue = savedValue
+        }
+        
+        annualFixedIncome = UserDefaults.standard.double(forKey: "fixed_income")
+    }
+    
+    private func saveRetirementSettings() {
+        if let date = targetRetirementDate {
+            UserDefaults.standard.set(date.timeIntervalSince1970, forKey: "retirement_date")
+        }
+        UserDefaults.standard.set(targetRetirementValue, forKey: "retirement_target")
+        UserDefaults.standard.set(annualFixedIncome, forKey: "fixed_income")
+    }
+    
     // MARK: - Computed Properties
     
     var totalValue: Double {
@@ -117,6 +172,22 @@ class PortfolioViewModel: ObservableObject {
     
     var hasAssets: Bool {
         !portfolio.assets.isEmpty
+    }
+    
+    var bondPercentage: Double {
+        guard totalValue > 0 else { return 0 }
+        let bondValue = portfolio.assets
+            .filter { $0.assetClass == .bonds || $0.assetClass == .cash }
+            .reduce(0) { $0 + $1.totalValue }
+        return bondValue / totalValue
+    }
+    
+    var stockPercentage: Double {
+        guard totalValue > 0 else { return 0 }
+        let stockValue = portfolio.assets
+            .filter { $0.assetClass == .stocks }
+            .reduce(0) { $0 + $1.totalValue }
+        return stockValue / totalValue
     }
     
     // MARK: - Helpers

@@ -2,7 +2,7 @@
 //  DashboardView.swift
 //  FIRECalc
 //
-//  Main dashboard screen
+//  Main dashboard screen with pull-to-refresh
 //
 
 import SwiftUI
@@ -22,6 +22,11 @@ struct DashboardView: View {
                 VStack(spacing: 24) {
                     // Portfolio Overview Card
                     portfolioOverviewCard
+                    
+                    // Retirement Progress Card (if retirement date is set)
+                    if let retirementDate = portfolioVM.targetRetirementDate {
+                        retirementProgressCard(targetDate: retirementDate)
+                    }
                     
                     // Asset Allocation Chart (if has assets)
                     if portfolioVM.hasAssets {
@@ -44,6 +49,9 @@ struct DashboardView: View {
                     }
                 }
                 .padding()
+            }
+            .refreshable {
+                await portfolioVM.refreshPrices()
             }
             .navigationTitle("FIRECalc")
             .toolbar {
@@ -131,13 +139,58 @@ struct DashboardView: View {
                 Spacer()
                 
                 if portfolioVM.hasAssets {
-                    Button(action: { Task { await portfolioVM.refreshPrices() } }) {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    Text("Pull to refresh")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(AppConstants.UI.cornerRadius)
+        .shadow(radius: AppConstants.UI.shadowRadius)
+    }
+    
+    // MARK: - Retirement Progress Card
+    
+    private func retirementProgressCard(targetDate: Date) -> some View {
+        let yearsToRetirement = Calendar.current.dateComponents([.year], from: Date(), to: targetDate).year ?? 0
+        let progress = min(1.0, max(0.0, portfolioVM.retirementProgress))
+        
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "flag.checkered")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                
+                Text("Retirement Progress")
+                    .font(.headline)
+                
+                Spacer()
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("\(Int(progress * 100))%")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundColor(.orange)
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Target: \(portfolioVM.targetRetirementValue.toCurrency())")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text("\(yearsToRetirement) years to go")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                ProgressView(value: progress)
+                    .tint(.orange)
+                    .scaleEffect(x: 1, y: 2, anchor: .center)
             }
         }
         .padding()
@@ -222,6 +275,30 @@ struct DashboardView: View {
                 }
                 .padding()
                 .background(Color.purple.opacity(0.1))
+                .cornerRadius(AppConstants.UI.cornerRadius)
+            }
+            .buttonStyle(.plain)
+            
+            NavigationLink(destination: FIRECalculatorView()) {
+                HStack {
+                    Image(systemName: "flag.checkered")
+                        .font(.title2)
+                    
+                    VStack(alignment: .leading) {
+                        Text("FIRE Calculator")
+                            .font(.headline)
+                        Text("Calculate retirement date")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
                 .cornerRadius(AppConstants.UI.cornerRadius)
             }
             .buttonStyle(.plain)
