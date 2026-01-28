@@ -1,0 +1,254 @@
+//
+//  DefinedBenefitPlan.swift
+//  FIRECalc
+//
+//  Support for pensions and Social Security in retirement planning
+//
+
+import Foundation
+
+// MARK: - Defined Benefit Plan
+
+struct DefinedBenefitPlan: Identifiable, Codable {
+    let id: UUID
+    var name: String
+    var type: PlanType
+    var annualBenefit: Double
+    var startAge: Int
+    var inflationAdjusted: Bool
+    var survivorBenefit: Double? // Percentage (0.0 - 1.0)
+    var notes: String?
+    
+    init(
+        id: UUID = UUID(),
+        name: String,
+        type: PlanType,
+        annualBenefit: Double,
+        startAge: Int,
+        inflationAdjusted: Bool = false,
+        survivorBenefit: Double? = nil,
+        notes: String? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.type = type
+        self.annualBenefit = annualBenefit
+        self.startAge = startAge
+        self.inflationAdjusted = inflationAdjusted
+        self.survivorBenefit = survivorBenefit
+        self.notes = notes
+    }
+    
+    enum PlanType: String, Codable, CaseIterable, Identifiable {
+        case socialSecurity = "Social Security"
+        case pension = "Pension"
+        case annuity = "Annuity"
+        case other = "Other"
+        
+        var id: String { rawValue }
+        
+        var iconName: String {
+            switch self {
+            case .socialSecurity: return "building.columns"
+            case .pension: return "briefcase.fill"
+            case .annuity: return "dollarsign.circle"
+            case .other: return "doc.text"
+            }
+        }
+        
+        var defaultInflationAdjusted: Bool {
+            switch self {
+            case .socialSecurity: return true
+            case .pension: return false
+            case .annuity: return false
+            case .other: return false
+            }
+        }
+    }
+    
+    // MARK: - Benefit Calculation
+    
+    func benefit(at age: Int, inflationRate: Double, yearsElapsed: Int) -> Double {
+        guard age >= startAge else { return 0 }
+        
+        if inflationAdjusted {
+            // Compound inflation adjustment
+            let inflationMultiplier = pow(1 + inflationRate, Double(yearsElapsed))
+            return annualBenefit * inflationMultiplier
+        } else {
+            return annualBenefit
+        }
+    }
+    
+    func presentValue(currentAge: Int, discountRate: Double = 0.03, lifeExpectancy: Int = 90) -> Double {
+        var pv: Double = 0
+        
+        for age in currentAge...lifeExpectancy {
+            if age >= startAge {
+                let yearsFromNow = age - currentAge
+                let benefit = self.benefit(at: age, inflationRate: 0, yearsElapsed: 0)
+                let discountedBenefit = benefit / pow(1 + discountRate, Double(yearsFromNow))
+                pv += discountedBenefit
+            }
+        }
+        
+        return pv
+    }
+}
+
+// MARK: - Social Security Estimator
+
+struct SocialSecurityEstimator {
+    
+    /// Estimate Social Security benefit based on average indexed monthly earnings
+    /// This is a simplified version - actual SS calculation is complex
+    static func estimateBenefit(
+        averageAnnualIncome: Double,
+        birthYear: Int,
+        claimAge: Int = 67
+    ) -> Double {
+        
+        // 2024 bend points (these change annually)
+        let bendPoint1 = 1_174.0
+        let bendPoint2 = 7_078.0
+        
+        // Calculate Average Indexed Monthly Earnings (AIME)
+        let aime = min(averageAnnualIncome / 12, 14_000) // Cap at max taxable
+        
+        // Calculate Primary Insurance Amount (PIA) using bend points
+        var pia: Double = 0
+        
+        if aime <= bendPoint1 {
+            pia = aime * 0.90
+        } else if aime <= bendPoint2 {
+            pia = (bendPoint1 * 0.90) + ((aime - bendPoint1) * 0.32)
+        } else {
+            pia = (bendPoint1 * 0.90) + ((bendPoint2 - bendPoint1) * 0.32) + ((aime - bendPoint2) * 0.15)
+        }
+        
+        // Adjust for claiming age
+        let fullRetirementAge = fullRetirementAge(for: birthYear)
+        let adjustmentFactor = claimingAdjustment(claimAge: claimAge, fullRetirementAge: fullRetirementAge)
+        
+        let monthlyBenefit = pia * adjustmentFactor
+        return monthlyBenefit * 12 // Annual benefit
+    }
+    
+    /// Full Retirement Age based on birth year
+    static func fullRetirementAge(for birthYear: Int) -> Int {
+        if birthYear <= 1937 {
+            return 65
+        } else if birthYear <= 1942 {
+            return 66
+        } else if birthYear <= 1954 {
+            return 66
+        } else if birthYear <= 1959 {
+            return 66
+        } else {
+            return 67
+        }
+    }
+    
+    /// Adjustment factor for claiming before/after FRA
+    static func claimingAdjustment(claimAge: Int, fullRetirementAge: Int) -> Double {
+        if claimAge == fullRetirementAge {
+            return 1.0
+        } else if claimAge < fullRetirementAge {
+            // Reduction for early claiming (roughly 5-6% per year)
+            let yearsDifference = fullRetirementAge - claimAge
+            return max(0.70, 1.0 - Double(yearsDifference) * 0.067)
+        } else {
+            // Increase for delayed claiming (8% per year)
+            let yearsDifference = claimAge - fullRetirementAge
+            return min(1.32, 1.0 + Double(yearsDifference) * 0.08)
+        }
+    }
+}
+
+// MARK: - Enhanced Simulation Parameters with Defined Benefits
+
+extension SimulationParameters {
+    var totalDefinedBenefitIncome: Double {
+        (socialSecurityIncome ?? 0) + (pensionIncome ?? 0) + (otherIncome ?? 0)
+    }
+    
+    func definedBenefitIncomeAt(age: Int, inflationRate: Double, yearsElapsed: Int) -> Double {
+        // This is simplified - would need more sophisticated logic for different start ages
+        return totalDefinedBenefitIncome * pow(1 + inflationRate, Double(yearsElapsed))
+    }
+}
+
+// MARK: - Defined Benefit Manager
+
+class DefinedBenefitManager: ObservableObject {
+    @Published var plans: [DefinedBenefitPlan] = []
+    
+    func addPlan(_ plan: DefinedBenefitPlan) {
+        plans.append(plan)
+        savePlans()
+    }
+    
+    func updatePlan(_ plan: DefinedBenefitPlan) {
+        if let index = plans.firstIndex(where: { $0.id == plan.id }) {
+            plans[index] = plan
+            savePlans()
+        }
+    }
+    
+    func deletePlan(_ plan: DefinedBenefitPlan) {
+        plans.removeAll { $0.id == plan.id }
+        savePlans()
+    }
+    
+    func totalAnnualBenefit(at age: Int) -> Double {
+        plans
+            .filter { age >= $0.startAge }
+            .reduce(0) { $0 + $1.annualBenefit }
+    }
+    
+    func totalPresentValue(currentAge: Int, lifeExpectancy: Int = 90) -> Double {
+        plans.reduce(0) { $0 + $1.presentValue(currentAge: currentAge, lifeExpectancy: lifeExpectancy) }
+    }
+    
+    private func savePlans() {
+        // Save to UserDefaults or PersistenceService
+        if let encoded = try? JSONEncoder().encode(plans) {
+            UserDefaults.standard.set(encoded, forKey: "defined_benefit_plans")
+        }
+    }
+    
+    func loadPlans() {
+        if let data = UserDefaults.standard.data(forKey: "defined_benefit_plans"),
+           let decoded = try? JSONDecoder().decode([DefinedBenefitPlan].self, from: data) {
+            plans = decoded
+        }
+    }
+}
+
+// MARK: - Sample Plans
+
+extension DefinedBenefitPlan {
+    static let sampleSocialSecurity = DefinedBenefitPlan(
+        name: "Social Security",
+        type: .socialSecurity,
+        annualBenefit: 24_000,
+        startAge: 67,
+        inflationAdjusted: true,
+        notes: "Full retirement age benefit"
+    )
+    
+    static let samplePension = DefinedBenefitPlan(
+        name: "Company Pension",
+        type: .pension,
+        annualBenefit: 18_000,
+        startAge: 65,
+        inflationAdjusted: false,
+        survivorBenefit: 0.50,
+        notes: "50% survivor benefit"
+    )
+    
+    static let samples: [DefinedBenefitPlan] = [
+        sampleSocialSecurity,
+        samplePension
+    ]
+}
