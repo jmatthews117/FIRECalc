@@ -2,7 +2,7 @@
 //  AddAssetView.swift
 //  FIRECalc
 //
-//  Screen for adding new assets to portfolio
+//  Screen for adding new assets to portfolio - ENHANCED with auto-price loading
 //
 
 import SwiftUI
@@ -17,6 +17,11 @@ struct AddAssetView: View {
     @State private var quantity: String = "1"
     @State private var unitValue: String = ""
     @State private var showingAdvanced = false
+    
+    // Auto-price loading states
+    @State private var isLoadingPrice: Bool = false
+    @State private var autoLoadedPrice: Double?
+    @State private var priceError: String?
     
     var body: some View {
         NavigationView {
@@ -37,9 +42,51 @@ struct AddAssetView: View {
                     
                     if selectedAssetClass.supportsTicker {
                         VStack(alignment: .leading, spacing: 8) {
-                            TextField("Ticker Symbol (Optional)", text: $ticker)
-                                .textInputAutocapitalization(.characters)
-                                .autocorrectionDisabled()
+                            HStack {
+                                TextField("Ticker Symbol", text: $ticker)
+                                    .textInputAutocapitalization(.characters)
+                                    .autocorrectionDisabled()
+                                    .onChange(of: ticker) { oldValue, newValue in
+                                        // Clear previous price when ticker changes
+                                        if oldValue != newValue {
+                                            autoLoadedPrice = nil
+                                            priceError = nil
+                                        }
+                                    }
+                                
+                                if !ticker.isEmpty {
+                                    Button(action: loadPrice) {
+                                        if isLoadingPrice {
+                                            ProgressView()
+                                                .scaleEffect(0.8)
+                                        } else {
+                                            Image(systemName: "arrow.clockwise")
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .disabled(isLoadingPrice)
+                                }
+                            }
+                            
+                            // Price loading feedback
+                            if let price = autoLoadedPrice {
+                                HStack {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.green)
+                                    Text("Loaded: \(price.toPreciseCurrency())")
+                                        .font(.caption)
+                                        .foregroundColor(.green)
+                                }
+                            } else if let error = priceError {
+                                HStack {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.orange)
+                                    Text(error)
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                }
+                            }
                             
                             // Show helpful suggestions based on asset class
                             Text(tickerSuggestion)
@@ -67,6 +114,15 @@ struct AddAssetView: View {
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
+                    }
+                    
+                    // Auto-fill button if price was loaded
+                    if let price = autoLoadedPrice, unitValue.isEmpty {
+                        Button("Use Loaded Price (\(price.toPreciseCurrency()))") {
+                            unitValue = String(price)
+                        }
+                        .font(.caption)
+                        .foregroundColor(.blue)
                     }
                     
                     HStack {
@@ -123,9 +179,20 @@ struct AddAssetView: View {
                                 .font(.headline)
                                 .foregroundColor(assetName.isEmpty ? .secondary : .primary)
                             
-                            Text(selectedAssetClass.rawValue)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            HStack(spacing: 4) {
+                                Text(selectedAssetClass.rawValue)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                if !ticker.isEmpty {
+                                    Text("•")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Text(ticker.uppercased())
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            }
                         }
                         
                         Spacer()
@@ -161,7 +228,7 @@ struct AddAssetView: View {
     
     private var totalValue: Double {
         let qty = Double(quantity) ?? 0
-        let price = Double(unitValue) ?? 0
+        let price = Double(unitValue) ?? autoLoadedPrice ?? 0
         return qty * price
     }
     
@@ -189,13 +256,51 @@ struct AddAssetView: View {
     
     // MARK: - Actions
     
+    private func loadPrice() {
+        guard !ticker.isEmpty else { return }
+        
+        isLoadingPrice = true
+        priceError = nil
+        autoLoadedPrice = nil
+        
+        Task {
+            do {
+                let tempAsset = Asset(
+                    name: assetName.isEmpty ? ticker.uppercased() : assetName,
+                    assetClass: selectedAssetClass,
+                    ticker: ticker.uppercased(),
+                    quantity: 1,
+                    unitValue: 0
+                )
+                
+                let price = try await AlternativePriceService.shared.fetchPrice(for: tempAsset)
+                
+                await MainActor.run {
+                    autoLoadedPrice = price
+                    // Auto-populate name if empty
+                    if assetName.isEmpty {
+                        assetName = ticker.uppercased()
+                    }
+                    isLoadingPrice = false
+                }
+            } catch {
+                await MainActor.run {
+                    priceError = "Could not load price"
+                    isLoadingPrice = false
+                }
+            }
+        }
+    }
+    
     private func addAsset() {
+        let finalPrice = Double(unitValue) ?? autoLoadedPrice ?? 0
+        
         let asset = Asset(
             name: assetName,
             assetClass: selectedAssetClass,
             ticker: ticker.isEmpty ? nil : ticker.uppercased(),
             quantity: Double(quantity) ?? 1,
-            unitValue: Double(unitValue) ?? 0
+            unitValue: finalPrice
         )
         
         portfolioVM.addAsset(asset)

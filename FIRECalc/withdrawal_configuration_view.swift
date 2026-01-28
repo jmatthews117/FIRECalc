@@ -467,7 +467,7 @@ struct StrategyInfoSheet: View {
                             }
                             
                             ForEach(cons, id: \.self) { con in
-                                HStack(alignment: \.top, spacing: 8) {
+                                HStack(alignment: .top, spacing: 8) {
                                     Text("•")
                                     Text(con)
                                         .font(.caption)
