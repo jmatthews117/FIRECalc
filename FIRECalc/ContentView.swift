@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  FIRECalc
 //
-//  Main app entry point with tab bar navigation
+//  MODIFIED - Added Simulations tab to bottom navigation
 //
 
 import SwiftUI
@@ -23,6 +23,12 @@ struct ContentView: View {
             PortfolioTabView(portfolioVM: portfolioVM)
                 .tabItem {
                     Label("Portfolio", systemImage: "briefcase.fill")
+                }
+            
+            // MODIFIED: Added Simulations Tab
+            SimulationsTab(portfolioVM: portfolioVM, simulationVM: simulationVM)
+                .tabItem {
+                    Label("Simulations", systemImage: "waveform.path.ecg")
                 }
             
             // Tools Tab
@@ -52,23 +58,18 @@ struct DashboardTabView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Portfolio Overview Card
                     portfolioOverviewCard
                     
-                    // Retirement Progress Card (if retirement date is set)
                     if let retirementDate = portfolioVM.targetRetirementDate {
                         retirementProgressCard(targetDate: retirementDate)
                     }
                     
-                    // Asset Allocation Chart (if has assets)
                     if portfolioVM.hasAssets {
                         AllocationChartView(portfolio: portfolioVM.portfolio)
                     }
                     
-                    // Quick Actions
                     quickActionsCard
                     
-                    // Latest Simulation Results (if available)
                     if simulationVM.hasResult {
                         latestResultsCard
                     }
@@ -93,8 +94,6 @@ struct DashboardTabView: View {
             }
         }
     }
-    
-    // MARK: - Portfolio Overview Card
     
     private var portfolioOverviewCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -137,8 +136,6 @@ struct DashboardTabView: View {
         .cornerRadius(AppConstants.UI.cornerRadius)
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
-    
-    // MARK: - Retirement Progress Card
     
     private func retirementProgressCard(targetDate: Date) -> some View {
         let yearsToRetirement = Calendar.current.dateComponents([.year], from: Date(), to: targetDate).year ?? 0
@@ -186,8 +183,6 @@ struct DashboardTabView: View {
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
     
-    // MARK: - Quick Actions Card
-    
     private var quickActionsCard: some View {
         VStack(spacing: 12) {
             Button(action: { showingSimulationSetup = true }) {
@@ -200,7 +195,6 @@ struct DashboardTabView: View {
                             .font(.headline)
                         
                         if let result = simulationVM.currentResult {
-                            // Show last result preview
                             HStack(spacing: 6) {
                                 Text(String(format: "%.0f%%", result.successRate * 100))
                                     .font(.caption)
@@ -255,8 +249,6 @@ struct DashboardTabView: View {
             .buttonStyle(.plain)
         }
     }
-    
-    // MARK: - Latest Results Card
     
     private var latestResultsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -331,77 +323,119 @@ struct PortfolioTabView: View {
     
     var body: some View {
         NavigationView {
+            // MODIFIED: Use GroupedPortfolioView instead of simple list
+            GroupedPortfolioView(portfolioVM: portfolioVM)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
+                            Button(action: { showingQuickAdd = true }) {
+                                Label("Quick Add Ticker", systemImage: "bolt.fill")
+                            }
+                            
+                            Button(action: { showingAddAsset = true }) {
+                                Label("Add Custom Asset", systemImage: "plus.circle")
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
+                        }
+                    }
+                }
+                .sheet(isPresented: $showingAddAsset) {
+                    AddAssetView(portfolioVM: portfolioVM)
+                }
+                .sheet(isPresented: $showingQuickAdd) {
+                    QuickAddTickerView(portfolioVM: portfolioVM)
+                }
+        }
+    }
+}
+
+// MARK: - NEW: Simulations Tab
+
+struct SimulationsTab: View {
+    @ObservedObject var portfolioVM: PortfolioViewModel
+    @ObservedObject var simulationVM: SimulationViewModel
+    @State private var showingSetup = false
+    @State private var showingResults = false
+    @State private var showingManualReturns = false
+    
+    var body: some View {
+        NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
                     // Portfolio Summary
                     portfolioSummaryCard
                     
-                    // Asset Allocation
-                    if portfolioVM.hasAssets {
-                        AllocationChartView(portfolio: portfolioVM.portfolio)
+                    // Custom Returns Card
+                    customReturnsCard
+                    
+                    // Latest Results
+                    if let result = simulationVM.currentResult {
+                        latestResultCard(result: result)
                     }
                     
-                    // Assets List
-                    if portfolioVM.hasAssets {
-                        assetsListCard
-                    } else {
-                        emptyStateCard
-                    }
+                    // Run Simulation Button
+                    runSimulationButton
+                    
+                    // Simulation History
+                    simulationHistoryCard
                 }
                 .padding()
             }
-            .refreshable {
-                await portfolioVM.refreshPrices()
+            .navigationTitle("Simulations")
+            .sheet(isPresented: $showingSetup) {
+                SimulationSetupView(
+                    portfolioVM: portfolioVM,
+                    simulationVM: simulationVM,
+                    showingResults: $showingResults
+                )
             }
-            .navigationTitle("Portfolio")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: { showingQuickAdd = true }) {
-                            Label("Quick Add Ticker", systemImage: "bolt.fill")
-                        }
-                        
-                        Button(action: { showingAddAsset = true }) {
-                            Label("Add Custom Asset", systemImage: "plus.circle")
-                        }
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                    }
+            .sheet(isPresented: $showingResults) {
+                if let result = simulationVM.currentResult {
+                    SimulationResultsView(result: result)
                 }
             }
-            .sheet(isPresented: $showingAddAsset) {
-                AddAssetView(portfolioVM: portfolioVM)
-            }
-            .sheet(isPresented: $showingQuickAdd) {
-                QuickAddTickerView(portfolioVM: portfolioVM)
+            .sheet(isPresented: $showingManualReturns) {
+                ManualReturnsView(
+                    simulationVM: simulationVM,
+                    portfolioVM: portfolioVM
+                )
             }
         }
     }
     
     private var portfolioSummaryCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Total Value")
+            Text("Portfolio Value")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
             Text(portfolioVM.totalValue.toCurrency())
-                .font(.system(size: 40, weight: .bold, design: .rounded))
-                .foregroundColor(.primary)
+                .font(.system(size: 36, weight: .bold, design: .rounded))
             
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading) {
                     Text("Expected Return")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(portfolioVM.portfolio.weightedExpectedReturn.toPercent())
                         .font(.headline)
                         .foregroundColor(.green)
+                    if simulationVM.useCustomReturns {
+                        Text("Custom")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    } else {
+                        Text("Historical")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 4) {
+                VStack(alignment: .trailing) {
                     Text("Volatility")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -413,59 +447,143 @@ struct PortfolioTabView: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
+        .cornerRadius(12)
+        .shadow(radius: 4)
     }
     
-    private var assetsListCard: some View {
+    private var customReturnsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Your Assets")
+            HStack {
+                Image(systemName: "slider.horizontal.3")
+                    .foregroundColor(.blue)
+                Text("Return Assumptions")
+                    .font(.headline)
+                
+                Spacer()
+                
+                Button(simulationVM.useCustomReturns ? "Edit" : "Customize") {
+                    showingManualReturns = true
+                }
+                .font(.subheadline)
+                .foregroundColor(.blue)
+            }
+            
+            Text(simulationVM.useCustomReturns ? "Using custom return assumptions" : "Using historical bootstrap (1926-2024)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 4)
+    }
+    
+    private func latestResultCard(result: SimulationResult) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Latest Results")
+                    .font(.headline)
+                
+                Spacer()
+                
+                Button("View Full") {
+                    showingResults = true
+                }
+                .font(.subheadline)
+                .foregroundColor(.blue)
+            }
+            
+            HStack {
+                Text("Success Rate")
+                Spacer()
+                Text(String(format: "%.0f%%", result.successRate * 100))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(simulationVM.successRateColor)
+            }
+            
+            ProgressView(value: result.successRate)
+                .tint(simulationVM.successRateColor)
+            
+            Divider()
+            
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Median Balance")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(result.medianFinalBalance.toCurrency())
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing) {
+                    Text("Time Horizon")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(result.parameters.timeHorizonYears) years")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
+            }
+            
+            Text("Run on \(result.runDate.formatted())")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 4)
+    }
+    
+    private var runSimulationButton: some View {
+        Button(action: { showingSetup = true }) {
+            HStack {
+                Spacer()
+                if simulationVM.isSimulating {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(.white)
+                    Text("Running...")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                } else {
+                    Image(systemName: "play.fill")
+                    Text("Run New Simulation")
+                        .fontWeight(.semibold)
+                }
+                Spacer()
+            }
+            .padding()
+            .background(portfolioVM.hasAssets && !simulationVM.isSimulating ? Color.blue : Color.gray)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+        }
+        .disabled(!portfolioVM.hasAssets || simulationVM.isSimulating)
+    }
+    
+    private var simulationHistoryCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Simulation History")
                 .font(.headline)
             
-            ForEach(portfolioVM.portfolio.assets) { asset in
-                NavigationLink(destination: AssetDetailView(asset: asset, portfolioVM: portfolioVM)) {
-                    AssetRowView(asset: asset)
-                }
-                .buttonStyle(.plain)
+            if simulationVM.hasResult {
+                Text("View past simulations and compare results")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("No simulations yet. Run your first simulation to see results.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
-    }
-    
-    private var emptyStateCard: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "chart.pie")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
-            
-            Text("No Assets Yet")
-                .font(.title2)
-                .bold()
-            
-            Text("Add your first asset to start building your portfolio")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Button(action: { showingAddAsset = true }) {
-                Label("Add Your First Asset", systemImage: "plus.circle.fill")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .cornerRadius(AppConstants.UI.cornerRadius)
-            }
-            .padding(.horizontal)
-        }
-        .padding(.vertical, 40)
-        .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
+        .cornerRadius(12)
+        .shadow(radius: 4)
     }
 }
 

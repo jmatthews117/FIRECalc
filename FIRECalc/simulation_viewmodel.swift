@@ -1,8 +1,8 @@
 //
-//  SimulationViewModel.swift
+//  simulation_viewmodel.swift
 //  FIRECalc
 //
-//  Manages Monte Carlo simulations
+//  MODIFIED - Added custom returns support
 //
 
 import Foundation
@@ -16,10 +16,14 @@ class SimulationViewModel: ObservableObject {
     @Published var progress: Double = 0
     @Published var errorMessage: String?
     
+    // MODIFIED: Custom returns support
+    @Published var useCustomReturns: Bool = false
+    @Published var customReturns: [AssetClass: Double] = [:]
+    @Published var customVolatility: [AssetClass: Double] = [:]
+    
     private let persistence = PersistenceService.shared
     
     init() {
-        // Initialize with default parameters
         self.parameters = SimulationParameters(
             numberOfRuns: AppConstants.Simulation.defaultRuns,
             timeHorizonYears: AppConstants.Simulation.defaultTimeHorizon,
@@ -28,7 +32,6 @@ class SimulationViewModel: ObservableObject {
             initialPortfolioValue: 1_000_000
         )
         
-        // Load last simulation result if available
         if let history = try? persistence.loadSimulationHistory(),
            let lastResult = history.last {
             self.currentResult = lastResult
@@ -47,23 +50,15 @@ class SimulationViewModel: ObservableObject {
         progress = 0
         errorMessage = nil
         
-        // Update initial portfolio value from portfolio
-        parameters = SimulationParameters(
-            numberOfRuns: parameters.numberOfRuns,
-            timeHorizonYears: parameters.timeHorizonYears,
-            inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: parameters.useHistoricalBootstrap,
-            initialPortfolioValue: portfolio.totalValue,
-            monthlyContribution: parameters.monthlyContribution,
-            yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig,
-            taxRate: parameters.taxRate,
-            socialSecurityIncome: parameters.socialSecurityIncome,
-            pensionIncome: parameters.pensionIncome,
-            otherIncome: parameters.otherIncome,
-            customReturns: parameters.customReturns,
-            customVolatility: parameters.customVolatility
-        )
+        // MODIFIED: Apply custom returns if enabled
+        var simulationParams = parameters
+        simulationParams.initialPortfolioValue = portfolio.totalValue
+        
+        if useCustomReturns {
+            simulationParams.customReturns = customReturns
+            simulationParams.customVolatility = customVolatility
+            simulationParams.useHistoricalBootstrap = false
+        }
         
         do {
             let engine = MonteCarloEngine()
@@ -71,14 +66,13 @@ class SimulationViewModel: ObservableObject {
             
             let result = try await engine.runSimulation(
                 portfolio: portfolio,
-                parameters: parameters,
+                parameters: simulationParams,
                 historicalData: historicalData
             )
             
             currentResult = result
             progress = 1.0
             
-            // Save result to history
             try? persistence.saveSimulationResult(result)
             
         } catch {
@@ -89,31 +83,33 @@ class SimulationViewModel: ObservableObject {
     }
     
     func runQuickSimulation(portfolio: Portfolio) async {
-        // Temporarily reduce runs for quick preview
         let originalRuns = parameters.numberOfRuns
         parameters = SimulationParameters(
             numberOfRuns: AppConstants.Simulation.quickSimulationRuns,
             timeHorizonYears: parameters.timeHorizonYears,
             inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: parameters.useHistoricalBootstrap,
+            useHistoricalBootstrap: !useCustomReturns,
             initialPortfolioValue: portfolio.totalValue,
             monthlyContribution: parameters.monthlyContribution,
             yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig
+            withdrawalConfig: parameters.withdrawalConfig,
+            customReturns: useCustomReturns ? customReturns : nil,
+            customVolatility: useCustomReturns ? customVolatility : nil
         )
         
         await runSimulation(portfolio: portfolio)
         
-        // Restore original runs
         parameters = SimulationParameters(
             numberOfRuns: originalRuns,
             timeHorizonYears: parameters.timeHorizonYears,
             inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: parameters.useHistoricalBootstrap,
+            useHistoricalBootstrap: !useCustomReturns,
             initialPortfolioValue: portfolio.totalValue,
             monthlyContribution: parameters.monthlyContribution,
             yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig
+            withdrawalConfig: parameters.withdrawalConfig,
+            customReturns: useCustomReturns ? customReturns : nil,
+            customVolatility: useCustomReturns ? customVolatility : nil
         )
     }
     
@@ -126,11 +122,13 @@ class SimulationViewModel: ObservableObject {
             numberOfRuns: parameters.numberOfRuns,
             timeHorizonYears: parameters.timeHorizonYears,
             inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: parameters.useHistoricalBootstrap,
+            useHistoricalBootstrap: !useCustomReturns,
             initialPortfolioValue: parameters.initialPortfolioValue,
             monthlyContribution: parameters.monthlyContribution,
             yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: config
+            withdrawalConfig: config,
+            customReturns: useCustomReturns ? customReturns : nil,
+            customVolatility: useCustomReturns ? customVolatility : nil
         )
     }
     
@@ -139,11 +137,13 @@ class SimulationViewModel: ObservableObject {
             numberOfRuns: parameters.numberOfRuns,
             timeHorizonYears: years,
             inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: parameters.useHistoricalBootstrap,
+            useHistoricalBootstrap: !useCustomReturns,
             initialPortfolioValue: parameters.initialPortfolioValue,
             monthlyContribution: parameters.monthlyContribution,
             yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig
+            withdrawalConfig: parameters.withdrawalConfig,
+            customReturns: useCustomReturns ? customReturns : nil,
+            customVolatility: useCustomReturns ? customVolatility : nil
         )
     }
     
@@ -152,11 +152,13 @@ class SimulationViewModel: ObservableObject {
             numberOfRuns: parameters.numberOfRuns,
             timeHorizonYears: parameters.timeHorizonYears,
             inflationRate: rate,
-            useHistoricalBootstrap: parameters.useHistoricalBootstrap,
+            useHistoricalBootstrap: !useCustomReturns,
             initialPortfolioValue: parameters.initialPortfolioValue,
             monthlyContribution: parameters.monthlyContribution,
             yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig
+            withdrawalConfig: parameters.withdrawalConfig,
+            customReturns: useCustomReturns ? customReturns : nil,
+            customVolatility: useCustomReturns ? customVolatility : nil
         )
     }
     

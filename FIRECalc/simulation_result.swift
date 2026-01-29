@@ -1,8 +1,8 @@
 //
-//  SimulationResult.swift
+//  simulation_result.swift
 //  FIRECalc
 //
-//  Output from Monte Carlo simulation runs
+//  MODIFIED - Added allSimulationRuns to store all paths for spaghetti chart
 //
 
 import Foundation
@@ -13,14 +13,14 @@ struct SimulationResult: Codable, Identifiable {
     let parameters: SimulationParameters
     
     // Aggregate statistics
-    let successRate: Double  // % of runs where money lasted full horizon
+    let successRate: Double
     let medianFinalBalance: Double
     let meanFinalBalance: Double
     
     // Percentile outcomes
-    let percentile10: Double  // 10th percentile final balance
+    let percentile10: Double
     let percentile25: Double
-    let percentile50: Double  // Median
+    let percentile50: Double
     let percentile75: Double
     let percentile90: Double
     
@@ -28,16 +28,19 @@ struct SimulationResult: Codable, Identifiable {
     let yearlyBalances: [YearlyProjection]
     
     // Distribution of outcomes
-    let finalBalanceDistribution: [Double]  // All final balances for histogram
+    let finalBalanceDistribution: [Double]
+    
+    // NEW: All simulation runs for spaghetti chart
+    let allSimulationRuns: [SimulationRun]
     
     // Withdrawal statistics
-    let totalWithdrawn: Double  // Median total withdrawn
+    let totalWithdrawn: Double
     let averageAnnualWithdrawal: Double
     
     // Risk metrics
-    let probabilityOfRuin: Double  // % chance of running out of money
-    let yearsUntilRuin: Double?  // Average years until depletion (if applicable)
-    let maxDrawdown: Double  // Largest portfolio decline
+    let probabilityOfRuin: Double
+    let yearsUntilRuin: Double?
+    let maxDrawdown: Double
     
     init(
         id: UUID = UUID(),
@@ -53,6 +56,7 @@ struct SimulationResult: Codable, Identifiable {
         percentile90: Double,
         yearlyBalances: [YearlyProjection],
         finalBalanceDistribution: [Double],
+        allSimulationRuns: [SimulationRun],
         totalWithdrawn: Double,
         averageAnnualWithdrawal: Double,
         probabilityOfRuin: Double,
@@ -72,6 +76,7 @@ struct SimulationResult: Codable, Identifiable {
         self.percentile90 = percentile90
         self.yearlyBalances = yearlyBalances
         self.finalBalanceDistribution = finalBalanceDistribution
+        self.allSimulationRuns = allSimulationRuns
         self.totalWithdrawn = totalWithdrawn
         self.averageAnnualWithdrawal = averageAnnualWithdrawal
         self.probabilityOfRuin = probabilityOfRuin
@@ -91,21 +96,20 @@ struct YearlyProjection: Codable, Identifiable {
     var id: Int { year }
 }
 
-// Individual simulation run (for detailed analysis)
+// Individual simulation run
 struct SimulationRun: Codable {
     let runNumber: Int
     let yearlyBalances: [Double]
     let yearlyWithdrawals: [Double]
     let finalBalance: Double
-    let success: Bool  // Did money last the full horizon?
-    let yearsLasted: Int  // How many years did the money last?
+    let success: Bool
+    let yearsLasted: Int
 }
 
-// MARK: - Sample Result for Previews
+// MARK: - Sample Result
 
 extension SimulationResult {
     static let sample: SimulationResult = {
-        // Pre-compute yearly balances to avoid compiler timeout
         let yearlyBalances: [YearlyProjection] = (0...30).map { year in
             let yearDouble = Double(year)
             return YearlyProjection(
@@ -117,8 +121,23 @@ extension SimulationResult {
             )
         }
         
-        // Pre-compute distribution
         let distribution: [Double] = (0..<100).map { _ in Double.random(in: 0...3_000_000) }
+        
+        // Generate sample simulation runs
+        var sampleRuns: [SimulationRun] = []
+        for i in 0..<100 {
+            let balances = (0...30).map { year in
+                1_000_000 * pow(1.0 + Double.random(in: -0.20...0.30), Double(year)) - Double(year) * 40_000
+            }
+            sampleRuns.append(SimulationRun(
+                runNumber: i,
+                yearlyBalances: balances,
+                yearlyWithdrawals: Array(repeating: 40_000, count: 30),
+                finalBalance: balances.last ?? 0,
+                success: (balances.last ?? 0) > 0,
+                yearsLasted: 30
+            ))
+        }
         
         return SimulationResult(
             parameters: .moderate,
@@ -132,6 +151,7 @@ extension SimulationResult {
             percentile90: 2_500_000,
             yearlyBalances: yearlyBalances,
             finalBalanceDistribution: distribution,
+            allSimulationRuns: sampleRuns,
             totalWithdrawn: 1_200_000,
             averageAnnualWithdrawal: 40_000,
             probabilityOfRuin: 0.11,

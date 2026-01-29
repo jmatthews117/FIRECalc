@@ -1,8 +1,8 @@
 //
-//  MonteCarloEngine.swift
+//  monte_carlo_engine.swift
 //  FIRECalc
 //
-//  Core Monte Carlo simulation engine for retirement projections
+//  MODIFIED - Now passes allSimulationRuns to SimulationResult
 //
 
 import Foundation
@@ -69,7 +69,6 @@ actor MonteCarloEngine {
         let totalYears = parameters.yearsUntilRetirement + parameters.timeHorizonYears
         let withdrawalCalc = WithdrawalCalculator()
         
-        // Track initial withdrawal for inflation adjustments
         var baselineWithdrawal: Double = 0
         
         for year in 1...totalYears {
@@ -87,12 +86,10 @@ actor MonteCarloEngine {
             balance *= (1 + annualReturn)
             
             if isAccumulation {
-                // Accumulation phase - add contributions
                 let annualContribution = parameters.monthlyContribution * 12
                 balance += annualContribution
                 yearlyWithdrawals.append(0)
             } else {
-                // Withdrawal phase
                 let yearsIntoRetirement = year - parameters.yearsUntilRetirement
                 
                 let withdrawal = withdrawalCalc.calculateWithdrawal(
@@ -108,7 +105,6 @@ actor MonteCarloEngine {
                     baselineWithdrawal = withdrawal
                 }
                 
-                // Add other income sources
                 let totalIncome = (parameters.socialSecurityIncome ?? 0) +
                                  (parameters.pensionIncome ?? 0) +
                                  (parameters.otherIncome ?? 0)
@@ -118,10 +114,8 @@ actor MonteCarloEngine {
                 balance -= netWithdrawal
                 yearlyWithdrawals.append(netWithdrawal)
                 
-                // Check if depleted
                 if balance <= 0 {
                     balance = 0
-                    // Continue simulation but with zero balance
                 }
             }
             
@@ -248,6 +242,7 @@ actor MonteCarloEngine {
             percentile90: p90,
             yearlyBalances: yearlyProjections,
             finalBalanceDistribution: finalBalances,
+            allSimulationRuns: runs,  // MODIFIED: Pass all runs for spaghetti chart
             totalWithdrawn: medianTotalWithdrawn,
             averageAnnualWithdrawal: avgAnnualWithdrawal,
             probabilityOfRuin: probabilityOfRuin,

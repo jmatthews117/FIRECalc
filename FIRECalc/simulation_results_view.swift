@@ -1,8 +1,8 @@
 //
-//  SimulationResultsView.swift
+//  simulation_results_view.swift
 //  FIRECalc
 //
-//  Display Monte Carlo simulation results with charts
+//  MODIFIED - Added spaghetti chart and 10th-90th percentile bands
 //
 
 import SwiftUI
@@ -11,6 +11,14 @@ import Charts
 struct SimulationResultsView: View {
     let result: SimulationResult
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedChartType: ChartType = .spaghetti
+    @State private var showAllPaths: Bool = false
+    
+    enum ChartType: String, CaseIterable {
+        case spaghetti = "Spaghetti"
+        case percentiles = "Percentiles"
+        case distribution = "Distribution"
+    }
     
     var body: some View {
         NavigationView {
@@ -22,11 +30,24 @@ struct SimulationResultsView: View {
                     // Key Metrics
                     keyMetricsGrid
                     
-                    // Projection Chart
-                    projectionChart
+                    // Chart Type Picker
+                    Picker("Chart Type", selection: $selectedChartType) {
+                        ForEach(ChartType.allCases, id: \.self) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
                     
-                    // Distribution Chart
-                    distributionChart
+                    // Charts
+                    switch selectedChartType {
+                    case .spaghetti:
+                        spaghettiChart
+                    case .percentiles:
+                        percentilesChart
+                    case .distribution:
+                        distributionChart
+                    }
                     
                     // Detailed Statistics
                     detailedStats
@@ -37,9 +58,7 @@ struct SimulationResultsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -73,7 +92,7 @@ struct SimulationResultsView: View {
         }
         .padding()
         .background(successRateColor.opacity(0.1))
-        .cornerRadius(AppConstants.UI.cornerRadius)
+        .cornerRadius(12)
     }
     
     // MARK: - Key Metrics Grid
@@ -114,32 +133,127 @@ struct SimulationResultsView: View {
         }
     }
     
-    // MARK: - Projection Chart
+    // MARK: - Spaghetti Chart
     
-    private var projectionChart: some View {
+    private var spaghettiChart: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Balance Projection")
+            HStack {
+                Text("All Simulation Paths")
+                    .font(.headline)
+                
+                Spacer()
+                
+                Toggle("Show All", isOn: $showAllPaths)
+                    .toggleStyle(.button)
+                    .controlSize(.small)
+            }
+            
+            Text(showAllPaths ? "Showing all \(result.allSimulationRuns.count) paths" : "Showing 100 sample paths")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Chart {
+                // Draw all individual paths
+                let pathsToShow = showAllPaths ? result.allSimulationRuns : Array(result.allSimulationRuns.prefix(100))
+                
+                ForEach(pathsToShow, id: \.runNumber) { run in
+                    ForEach(Array(run.yearlyBalances.enumerated()), id: \.offset) { index, balance in
+                        if index < run.yearlyBalances.count - 1 {
+                            LineMark(
+                                x: .value("Year", index),
+                                y: .value("Balance", balance)
+                            )
+                            .foregroundStyle(.blue.opacity(showAllPaths ? 0.05 : 0.15))
+                            .lineStyle(StrokeStyle(lineWidth: showAllPaths ? 0.5 : 1))
+                            .interpolationMethod(.linear)
+                        }
+                    }
+                }
+                
+                // Median line (highlighted)
+                ForEach(result.yearlyBalances) { projection in
+                    LineMark(
+                        x: .value("Year", projection.year),
+                        y: .value("Balance", projection.medianBalance)
+                    )
+                    .foregroundStyle(.red)
+                    .lineStyle(StrokeStyle(lineWidth: 3))
+                }
+            }
+            .frame(height: 300)
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisValueLabel {
+                        if let balance = value.as(Double.self) {
+                            Text(formatChartValue(balance))
+                        }
+                    }
+                }
+            }
+            
+            HStack(spacing: 16) {
+                Label("Individual Paths", systemImage: "line.diagonal")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                
+                Label("Median", systemImage: "line.diagonal")
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+            .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 4)
+    }
+    
+    // MARK: - Percentiles Chart
+    
+    private var percentilesChart: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("10th-90th Percentile Range")
                 .font(.headline)
             
             Chart {
-                // 10th percentile area
+                // 10th-90th percentile band
                 ForEach(result.yearlyBalances) { projection in
                     AreaMark(
                         x: .value("Year", projection.year),
-                        yStart: .value("Low", projection.percentile10Balance),
-                        yEnd: .value("High", projection.percentile90Balance)
+                        yStart: .value("10th", projection.percentile10Balance),
+                        yEnd: .value("90th", projection.percentile90Balance)
                     )
                     .foregroundStyle(.blue.opacity(0.2))
+                }
+                
+                // 10th percentile line
+                ForEach(result.yearlyBalances) { projection in
+                    LineMark(
+                        x: .value("Year", projection.year),
+                        y: .value("10th", projection.percentile10Balance)
+                    )
+                    .foregroundStyle(.orange)
+                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 3]))
                 }
                 
                 // Median line
                 ForEach(result.yearlyBalances) { projection in
                     LineMark(
                         x: .value("Year", projection.year),
-                        y: .value("Balance", projection.medianBalance)
+                        y: .value("Median", projection.medianBalance)
                     )
                     .foregroundStyle(.blue)
                     .lineStyle(StrokeStyle(lineWidth: 3))
+                }
+                
+                // 90th percentile line
+                ForEach(result.yearlyBalances) { projection in
+                    LineMark(
+                        x: .value("Year", projection.year),
+                        y: .value("90th", projection.percentile90Balance)
+                    )
+                    .foregroundStyle(.green)
+                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 3]))
                 }
             }
             .frame(height: 250)
@@ -154,20 +268,24 @@ struct SimulationResultsView: View {
             }
             
             HStack(spacing: 16) {
-                Label("Median", systemImage: "line.diagonal")
+                Label("10th Percentile", systemImage: "square.fill")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                
+                Label("Median", systemImage: "square.fill")
                     .font(.caption)
                     .foregroundColor(.blue)
                 
-                Label("10th-90th Percentile", systemImage: "square.fill")
+                Label("90th Percentile", systemImage: "square.fill")
                     .font(.caption)
-                    .foregroundColor(.blue.opacity(0.5))
+                    .foregroundColor(.green)
             }
             .padding(.top, 4)
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
+        .cornerRadius(12)
+        .shadow(radius: 4)
     }
     
     // MARK: - Distribution Chart
@@ -224,8 +342,8 @@ struct SimulationResultsView: View {
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
+        .cornerRadius(12)
+        .shadow(radius: 4)
     }
     
     // MARK: - Detailed Stats
@@ -245,31 +363,32 @@ struct SimulationResultsView: View {
             
             Divider()
             
+            StatRow(label: "10th Percentile", value: result.percentile10.toCurrency())
             StatRow(label: "25th Percentile", value: result.percentile25.toCurrency())
             StatRow(label: "75th Percentile", value: result.percentile75.toCurrency())
+            StatRow(label: "90th Percentile", value: result.percentile90.toCurrency())
             
             Divider()
             
             StatRow(label: "Withdrawal Strategy", value: result.parameters.withdrawalConfig.strategy.rawValue)
             StatRow(label: "Withdrawal Rate", value: result.parameters.withdrawalConfig.withdrawalRate.toPercent())
-            StatRow(label: "Inflation Rate", value: result.parameters.inflationRate.toPercent())
             StatRow(label: "Simulation Runs", value: "\(result.parameters.numberOfRuns)")
         }
         .padding()
         .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
+        .cornerRadius(12)
+        .shadow(radius: 4)
     }
     
-    // MARK: - Helper Views & Functions
+    // MARK: - Helper Properties & Functions
     
     private var successRateColor: Color {
         if result.successRate >= 0.9 {
-            return AppConstants.Colors.success
+            return .green
         } else if result.successRate >= 0.75 {
-            return AppConstants.Colors.warning
+            return .orange
         } else {
-            return AppConstants.Colors.danger
+            return .red
         }
     }
     
@@ -352,8 +471,8 @@ struct MetricCard: View {
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
+        .cornerRadius(12)
+        .shadow(radius: 4)
     }
 }
 
