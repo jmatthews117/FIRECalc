@@ -1,4 +1,3 @@
-//
 //  HistoricalReturnsView.swift
 //  FIRECalc
 //
@@ -357,7 +356,7 @@ struct HistoricalReturnsView: View {
         }
     }
     
-    private func createHistogramBuckets(returns: [Double]) -> [HistogramBucket] {
+    private func createHistogramBuckets(returns: [Double]) -> [HistReturnsHistogramBucket] {
         guard !returns.isEmpty else { return [] }
         
         let bucketCount = 10
@@ -366,7 +365,7 @@ struct HistoricalReturnsView: View {
         let range = maxReturn - minReturn
         let bucketSize = range / Double(bucketCount)
         
-        var buckets: [HistogramBucket] = []
+        var buckets: [HistReturnsHistogramBucket] = []
         
         for i in 0..<bucketCount {
             let lowerBound = minReturn + Double(i) * bucketSize
@@ -375,7 +374,7 @@ struct HistoricalReturnsView: View {
             let count = returns.filter { $0 >= lowerBound && $0 < upperBound }.count
             
             let label = String(format: "%.0f%%", lowerBound * 100)
-            buckets.append(HistogramBucket(label: label, count: count))
+            buckets.append(HistReturnsHistogramBucket(label: label, count: count))
         }
         
         return buckets
@@ -452,6 +451,14 @@ struct Streak {
     let startIndex: Int
     let length: Int
     let avgReturn: Double
+}
+
+// MARK: - Separate HistogramBucket to avoid conflicts
+
+struct HistReturnsHistogramBucket: Identifiable {
+    let id = UUID()
+    let label: String
+    let count: Int
 }
 
 #Preview {

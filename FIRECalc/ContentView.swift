@@ -316,18 +316,24 @@ struct DashboardTabView: View {
 
 // MARK: - Portfolio Tab
 
+// MARK: - Portfolio Tab (Updated with Bulk Upload)
+
 struct PortfolioTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @State private var showingAddAsset = false
     @State private var showingQuickAdd = false
+    @State private var showingBulkUpload = false
     
     var body: some View {
         NavigationView {
-            // MODIFIED: Use GroupedPortfolioView instead of simple list
             GroupedPortfolioView(portfolioVM: portfolioVM)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
+                            Button(action: { showingBulkUpload = true }) {
+                                Label("Bulk Upload (Spreadsheet)", systemImage: "tablecells")
+                            }
+                            
                             Button(action: { showingQuickAdd = true }) {
                                 Label("Quick Add Ticker", systemImage: "bolt.fill")
                             }
@@ -346,6 +352,9 @@ struct PortfolioTabView: View {
                 }
                 .sheet(isPresented: $showingQuickAdd) {
                     QuickAddTickerView(portfolioVM: portfolioVM)
+                }
+                .sheet(isPresented: $showingBulkUpload) {
+                    BulkAssetUploadView(portfolioVM: portfolioVM)
                 }
         }
     }

@@ -1,8 +1,7 @@
-//
 //  simulation_results_view.swift
 //  FIRECalc
 //
-//  MODIFIED - Added spaghetti chart and 10th-90th percentile bands
+//  Simulation results with ending balance histogram
 //
 
 import SwiftUI
@@ -11,14 +10,6 @@ import Charts
 struct SimulationResultsView: View {
     let result: SimulationResult
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedChartType: ChartType = .spaghetti
-    @State private var showAllPaths: Bool = false
-    
-    enum ChartType: String, CaseIterable {
-        case spaghetti = "Spaghetti"
-        case percentiles = "Percentiles"
-        case distribution = "Distribution"
-    }
     
     var body: some View {
         NavigationView {
@@ -27,27 +18,14 @@ struct SimulationResultsView: View {
                     // Success Rate Card
                     successRateCard
                     
+                    // How It Works
+                    howItWorksCard
+                    
                     // Key Metrics
                     keyMetricsGrid
                     
-                    // Chart Type Picker
-                    Picker("Chart Type", selection: $selectedChartType) {
-                        ForEach(ChartType.allCases, id: \.self) { type in
-                            Text(type.rawValue).tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    
-                    // Charts
-                    switch selectedChartType {
-                    case .spaghetti:
-                        spaghettiChart
-                    case .percentiles:
-                        percentilesChart
-                    case .distribution:
-                        distributionChart
-                    }
+                    // Ending Balance Distribution
+                    endingBalanceHistogram
                     
                     // Detailed Statistics
                     detailedStats
@@ -95,6 +73,55 @@ struct SimulationResultsView: View {
         .cornerRadius(12)
     }
     
+    // MARK: - How It Works Card
+    
+    private var howItWorksCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "lightbulb.fill")
+                    .foregroundColor(.yellow)
+                Text("How This Simulation Works")
+                    .font(.headline)
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                ExplanationRow(
+                    icon: "repeat",
+                    text: "Ran \(result.parameters.numberOfRuns.formatted()) different scenarios"
+                )
+                
+                ExplanationRow(
+                    icon: "calendar",
+                    text: "Each scenario covers \(result.parameters.timeHorizonYears) years of retirement"
+                )
+                
+                ExplanationRow(
+                    icon: "chart.bar.fill",
+                    text: "Used historical market data (1926-2024) to model realistic returns"
+                )
+                
+                ExplanationRow(
+                    icon: "arrow.down.circle",
+                    text: "Applied \(result.parameters.withdrawalConfig.strategy.rawValue) withdrawal strategy"
+                )
+                
+                ExplanationRow(
+                    icon: "percent",
+                    text: "Started with \(result.parameters.withdrawalConfig.withdrawalRate.toPercent()) withdrawal rate"
+                )
+            }
+            
+            Text("Each scenario randomly draws actual historical returns to simulate how your portfolio might perform through market ups and downs.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 4)
+    }
+    
     // MARK: - Key Metrics Grid
     
     private var keyMetricsGrid: some View {
@@ -124,176 +151,25 @@ struct SimulationResultsView: View {
             )
             
             MetricCard(
-                title: "Max Drawdown",
-                value: String(format: "%.0f%%", result.maxDrawdown * 100),
-                subtitle: "Worst decline",
-                icon: "chart.line.downtrend.xyaxis",
+                title: "Failure Rate",
+                value: String(format: "%.0f%%", result.probabilityOfRuin * 100),
+                subtitle: "Ran out of money",
+                icon: "exclamationmark.triangle",
                 color: .red
             )
         }
     }
     
-    // MARK: - Spaghetti Chart
+    // MARK: - Ending Balance Histogram
     
-    private var spaghettiChart: some View {
+    private var endingBalanceHistogram: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("All Simulation Paths")
-                    .font(.headline)
-                
-                Spacer()
-                
-                Toggle("Show All", isOn: $showAllPaths)
-                    .toggleStyle(.button)
-                    .controlSize(.small)
-            }
+            Text("Ending Balance Distribution")
+                .font(.headline)
             
-            Text(showAllPaths ? "Showing all \(result.allSimulationRuns.count) paths" : "Showing 100 sample paths")
+            Text("Shows the final portfolio value after \(result.parameters.timeHorizonYears) years across all \(result.parameters.numberOfRuns.formatted()) scenarios")
                 .font(.caption)
                 .foregroundColor(.secondary)
-            
-            Chart {
-                // Draw all individual paths
-                let pathsToShow = showAllPaths ? result.allSimulationRuns : Array(result.allSimulationRuns.prefix(100))
-                
-                ForEach(pathsToShow, id: \.runNumber) { run in
-                    ForEach(Array(run.yearlyBalances.enumerated()), id: \.offset) { index, balance in
-                        if index < run.yearlyBalances.count - 1 {
-                            LineMark(
-                                x: .value("Year", index),
-                                y: .value("Balance", balance)
-                            )
-                            .foregroundStyle(.blue.opacity(showAllPaths ? 0.05 : 0.15))
-                            .lineStyle(StrokeStyle(lineWidth: showAllPaths ? 0.5 : 1))
-                            .interpolationMethod(.linear)
-                        }
-                    }
-                }
-                
-                // Median line (highlighted)
-                ForEach(result.yearlyBalances) { projection in
-                    LineMark(
-                        x: .value("Year", projection.year),
-                        y: .value("Balance", projection.medianBalance)
-                    )
-                    .foregroundStyle(.red)
-                    .lineStyle(StrokeStyle(lineWidth: 3))
-                }
-            }
-            .frame(height: 300)
-            .chartYAxis {
-                AxisMarks(position: .leading) { value in
-                    AxisValueLabel {
-                        if let balance = value.as(Double.self) {
-                            Text(formatChartValue(balance))
-                        }
-                    }
-                }
-            }
-            
-            HStack(spacing: 16) {
-                Label("Individual Paths", systemImage: "line.diagonal")
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                
-                Label("Median", systemImage: "line.diagonal")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            .padding(.top, 4)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 4)
-    }
-    
-    // MARK: - Percentiles Chart
-    
-    private var percentilesChart: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("10th-90th Percentile Range")
-                .font(.headline)
-            
-            Chart {
-                // 10th-90th percentile band
-                ForEach(result.yearlyBalances) { projection in
-                    AreaMark(
-                        x: .value("Year", projection.year),
-                        yStart: .value("10th", projection.percentile10Balance),
-                        yEnd: .value("90th", projection.percentile90Balance)
-                    )
-                    .foregroundStyle(.blue.opacity(0.2))
-                }
-                
-                // 10th percentile line
-                ForEach(result.yearlyBalances) { projection in
-                    LineMark(
-                        x: .value("Year", projection.year),
-                        y: .value("10th", projection.percentile10Balance)
-                    )
-                    .foregroundStyle(.orange)
-                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 3]))
-                }
-                
-                // Median line
-                ForEach(result.yearlyBalances) { projection in
-                    LineMark(
-                        x: .value("Year", projection.year),
-                        y: .value("Median", projection.medianBalance)
-                    )
-                    .foregroundStyle(.blue)
-                    .lineStyle(StrokeStyle(lineWidth: 3))
-                }
-                
-                // 90th percentile line
-                ForEach(result.yearlyBalances) { projection in
-                    LineMark(
-                        x: .value("Year", projection.year),
-                        y: .value("90th", projection.percentile90Balance)
-                    )
-                    .foregroundStyle(.green)
-                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 3]))
-                }
-            }
-            .frame(height: 250)
-            .chartYAxis {
-                AxisMarks(position: .leading) { value in
-                    AxisValueLabel {
-                        if let balance = value.as(Double.self) {
-                            Text(formatChartValue(balance))
-                        }
-                    }
-                }
-            }
-            
-            HStack(spacing: 16) {
-                Label("10th Percentile", systemImage: "square.fill")
-                    .font(.caption)
-                    .foregroundColor(.orange)
-                
-                Label("Median", systemImage: "square.fill")
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                
-                Label("90th Percentile", systemImage: "square.fill")
-                    .font(.caption)
-                    .foregroundColor(.green)
-            }
-            .padding(.top, 4)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 4)
-    }
-    
-    // MARK: - Distribution Chart
-    
-    private var distributionChart: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Final Balance Distribution")
-                .font(.headline)
             
             let buckets = createHistogramBuckets()
             
@@ -302,17 +178,49 @@ struct SimulationResultsView: View {
                     x: .value("Balance", bucket.label),
                     y: .value("Count", bucket.count)
                 )
-                .foregroundStyle(.blue.gradient)
+                .foregroundStyle(bucket.isPositive ? Color.green.gradient : Color.red.gradient)
             }
-            .frame(height: 200)
+            .frame(height: 250)
+            .chartXAxis {
+                AxisMarks { value in
+                    AxisValueLabel {
+                        if let label = value.as(String.self) {
+                            Text(label)
+                                .font(.caption2)
+                                .rotationEffect(.degrees(-45))
+                        }
+                    }
+                }
+            }
+            
+            HStack(spacing: 20) {
+                HStack(spacing: 4) {
+                    Rectangle()
+                        .fill(Color.green)
+                        .frame(width: 20, height: 12)
+                    Text("Money Remaining")
+                        .font(.caption)
+                }
+                
+                HStack(spacing: 4) {
+                    Rectangle()
+                        .fill(Color.red)
+                        .frame(width: 20, height: 12)
+                    Text("Ran Out")
+                        .font(.caption)
+                }
+            }
+            .padding(.top, 4)
+            
+            Divider()
             
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("10th %ile")
+                    Text("10th Percentile")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(result.percentile10.toCurrency())
-                        .font(.caption)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                 }
                 
@@ -323,18 +231,18 @@ struct SimulationResultsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(result.percentile50.toCurrency())
-                        .font(.caption)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("90th %ile")
+                    Text("90th Percentile")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Text(result.percentile90.toCurrency())
-                        .font(.caption)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                 }
             }
@@ -404,42 +312,67 @@ struct SimulationResultsView: View {
         }
     }
     
-    private func formatChartValue(_ value: Double) -> String {
-        if value >= 1_000_000 {
-            return String(format: "$%.1fM", value / 1_000_000)
-        } else if value >= 1000 {
-            return String(format: "$%.0fK", value / 1000)
-        } else {
-            return String(format: "$%.0f", value)
-        }
-    }
-    
     private func createHistogramBuckets() -> [HistogramBucket] {
         let sortedBalances = result.finalBalanceDistribution.sorted()
-        let bucketCount = 10
-        let bucketSize = sortedBalances.count / bucketCount
+        let bucketCount = 15
+        
+        guard !sortedBalances.isEmpty else { return [] }
+        
+        let minBalance = sortedBalances.first ?? 0
+        let maxBalance = sortedBalances.last ?? 0
+        let range = maxBalance - minBalance
+        let bucketSize = range / Double(bucketCount)
         
         var buckets: [HistogramBucket] = []
         
         for i in 0..<bucketCount {
-            let start = i * bucketSize
-            let end = min((i + 1) * bucketSize, sortedBalances.count)
-            let bucketBalances = Array(sortedBalances[start..<end])
+            let lowerBound = minBalance + Double(i) * bucketSize
+            let upperBound = lowerBound + bucketSize
             
-            if !bucketBalances.isEmpty {
-                let avgBalance = bucketBalances.reduce(0, +) / Double(bucketBalances.count)
+            let count = sortedBalances.filter { $0 >= lowerBound && $0 < upperBound }.count
+            
+            if count > 0 {
+                let avgBalance = lowerBound + bucketSize / 2
                 buckets.append(HistogramBucket(
                     label: formatChartValue(avgBalance),
-                    count: bucketBalances.count
+                    count: count,
+                    isPositive: avgBalance > 0
                 ))
             }
         }
         
         return buckets
     }
+    
+    private func formatChartValue(_ value: Double) -> String {
+        if value >= 1_000_000 {
+            return String(format: "$%.1fM", value / 1_000_000)
+        } else if value >= 1000 {
+            return String(format: "$%.0fK", value / 1000)
+        } else if value <= -1000 {
+            return String(format: "-$%.0fK", abs(value) / 1000)
+        } else {
+            return String(format: "$%.0f", value)
+        }
+    }
 }
 
 // MARK: - Supporting Views
+
+struct ExplanationRow: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .foregroundColor(.blue)
+                .frame(width: 20)
+            Text(text)
+                .font(.subheadline)
+        }
+    }
+}
 
 struct MetricCard: View {
     let title: String
@@ -496,6 +429,7 @@ struct HistogramBucket: Identifiable {
     let id = UUID()
     let label: String
     let count: Int
+    let isPositive: Bool
 }
 
 #Preview {

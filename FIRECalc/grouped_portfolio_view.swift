@@ -1,8 +1,7 @@
-//
 //  grouped_portfolio_view.swift
 //  FIRECalc
 //
-//  NEW FILE - Portfolio view grouped by asset type with interactive pie chart
+//  Portfolio view grouped by asset type with interactive pie chart
 //
 
 import SwiftUI
@@ -12,6 +11,9 @@ struct GroupedPortfolioView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @State private var selectedAssetClass: AssetClass?
     @State private var showingBondCalculator = false
+    @State private var showingAddAsset = false
+    @State private var showingQuickAdd = false
+    @State private var showingBulkUpload = false
     
     var body: some View {
         ScrollView {
@@ -33,8 +35,27 @@ struct GroupedPortfolioView: View {
         }
         .navigationTitle("Portfolio")
         .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button(action: { showingBulkUpload = true }) {
+                        Label("Bulk Upload (Spreadsheet)", systemImage: "tablecells")
+                    }
+                    
+                    Button(action: { showingQuickAdd = true }) {
+                        Label("Quick Add Ticker", systemImage: "bolt.fill")
+                    }
+                    
+                    Button(action: { showingAddAsset = true }) {
+                        Label("Add Custom Asset", systemImage: "plus.circle")
+                    }
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                }
+            }
+            
             if selectedAssetClass != nil {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Show All") {
                         withAnimation {
                             selectedAssetClass = nil
@@ -45,6 +66,15 @@ struct GroupedPortfolioView: View {
         }
         .sheet(isPresented: $showingBondCalculator) {
             BondPricingCalculatorView()
+        }
+        .sheet(isPresented: $showingAddAsset) {
+            AddAssetView(portfolioVM: portfolioVM)
+        }
+        .sheet(isPresented: $showingQuickAdd) {
+            QuickAddTickerView(portfolioVM: portfolioVM)
+        }
+        .sheet(isPresented: $showingBulkUpload) {
+            BulkAssetUploadView(portfolioVM: portfolioVM)
         }
     }
     
@@ -59,6 +89,24 @@ struct GroupedPortfolioView: View {
             Text(portfolioVM.totalValue.toCurrency())
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
+            
+            // Retirement Progress
+            if portfolioVM.targetRetirementValue > 0 {
+                HStack {
+                    Text("Retirement Progress:")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text(String(format: "%.1f%%", (portfolioVM.totalValue / portfolioVM.targetRetirementValue) * 100))
+                        .font(.headline)
+                        .foregroundColor(.orange)
+                }
+                .padding(.top, 4)
+            }
+            
+            Divider()
             
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -105,11 +153,50 @@ struct GroupedPortfolioView: View {
                 .opacity(selectedAssetClass == nil || selectedAssetClass == item.assetClass ? 1.0 : 0.3)
             }
             .frame(height: 250)
-            .chartLegend(position: .bottom, spacing: 8)
             .chartAngleSelection(value: $selectedAngle)
             .onChange(of: selectedAngle) { _, newValue in
                 if let angle = newValue {
-                    selectAssetClass(at: angle)
+                    handleChartTap(at: angle)
+                }
+            }
+            
+            // Interactive Legend
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(allocationData) { item in
+                        Button(action: {
+                            toggleAssetClass(item.assetClass)
+                        }) {
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(colorForAssetClass(item.assetClass))
+                                    .frame(width: 12, height: 12)
+                                
+                                Text(item.assetClass.rawValue)
+                                    .font(.caption)
+                                    .foregroundColor(selectedAssetClass == nil || selectedAssetClass == item.assetClass ? .primary : .secondary)
+                                
+                                Text(item.percentage.toPercent())
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(selectedAssetClass == item.assetClass ?
+                                          colorForAssetClass(item.assetClass).opacity(0.2) :
+                                          Color.clear)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(selectedAssetClass == item.assetClass ?
+                                           colorForAssetClass(item.assetClass) :
+                                           Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
             
@@ -117,13 +204,13 @@ struct GroupedPortfolioView: View {
                 HStack {
                     Image(systemName: selected.iconName)
                         .foregroundColor(.blue)
-                    Text("Showing \(selected.rawValue) • Tap chart again to show all")
+                    Text("Showing \(selected.rawValue) only • Tap chart or legend to show all")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 .padding(.top, 8)
             } else {
-                Text("Tap any segment to filter by asset type")
+                Text("Tap any segment or legend item to filter by asset type")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.top, 8)
@@ -149,7 +236,7 @@ struct GroupedPortfolioView: View {
             }
     }
     
-    private func selectAssetClass(at angle: Double) {
+    private func handleChartTap(at angle: Double) {
         var cumulativeAngle: Double = 0
         let total = portfolioVM.totalValue
         
@@ -158,17 +245,36 @@ struct GroupedPortfolioView: View {
             let segmentAngle = percentage * 360
             
             if angle >= cumulativeAngle && angle < cumulativeAngle + segmentAngle {
-                withAnimation {
-                    if selectedAssetClass == assetClass {
-                        selectedAssetClass = nil
-                    } else {
-                        selectedAssetClass = assetClass
-                    }
-                }
+                toggleAssetClass(assetClass)
                 return
             }
             
             cumulativeAngle += segmentAngle
+        }
+    }
+    
+    private func toggleAssetClass(_ assetClass: AssetClass) {
+        withAnimation {
+            if selectedAssetClass == assetClass {
+                // Tapping the same class clears the selection
+                selectedAssetClass = nil
+            } else {
+                // Tapping a different class selects it
+                selectedAssetClass = assetClass
+            }
+        }
+    }
+    
+    private func colorForAssetClass(_ assetClass: AssetClass) -> Color {
+        switch assetClass {
+        case .stocks: return .blue
+        case .bonds: return .green
+        case .reits: return .purple
+        case .realEstate: return .orange
+        case .preciousMetals: return .yellow.opacity(0.8)
+        case .crypto: return .pink
+        case .cash: return .gray
+        case .other: return .brown
         }
     }
     
@@ -190,17 +296,19 @@ struct GroupedPortfolioView: View {
         let percentage = portfolioVM.totalValue > 0 ? totalValue / portfolioVM.totalValue : 0
         
         return VStack(alignment: .leading, spacing: 12) {
+            // Colored Header
             HStack {
                 Image(systemName: assetClass.iconName)
                     .font(.title2)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(assetClass.rawValue)
                         .font(.headline)
+                        .foregroundColor(.white)
                     Text("\(assetsInClass.count) asset\(assetsInClass.count == 1 ? "" : "s")")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.white.opacity(0.8))
                 }
                 
                 Spacer()
@@ -208,12 +316,17 @@ struct GroupedPortfolioView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(totalValue.toCurrency())
                         .font(.headline)
+                        .foregroundColor(.white)
                     Text(percentage.toPercent())
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.white.opacity(0.8))
                 }
             }
+            .padding()
+            .background(colorForAssetClass(assetClass))
+            .cornerRadius(12)
             
+            // Bond Calculator Button
             if assetClass == .bonds {
                 Button(action: { showingBondCalculator = true }) {
                     HStack {
@@ -223,18 +336,25 @@ struct GroupedPortfolioView: View {
                     }
                     .foregroundColor(.blue)
                 }
+                .padding(.horizontal)
             }
             
-            Divider()
-            
-            ForEach(assetsInClass) { asset in
-                AssetRowView(asset: asset)
+            // Assets in this class
+            VStack(spacing: 0) {
+                ForEach(assetsInClass) { asset in
+                    AssetRowView2(asset: asset)
+                    
+                    if asset.id != assetsInClass.last?.id {
+                        Divider()
+                            .padding(.leading, 50)
+                    }
+                }
             }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(radius: 4)
+        .padding(.vertical, 4)
     }
 }
 
@@ -243,6 +363,52 @@ struct AllocationChartData: Identifiable {
     let assetClass: AssetClass
     let value: Double
     let percentage: Double
+}
+
+// MARK: - Asset Row View
+
+struct AssetRowView2: View {
+    let asset: Asset
+    
+    var body: some View {
+        HStack {
+            Image(systemName: asset.assetClass.iconName)
+                .font(.title3)
+                .foregroundColor(.blue)
+                .frame(width: 30)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(asset.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                if let ticker = asset.ticker {
+                    Text(ticker)
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(asset.totalValue.toCurrency())
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                if let change = asset.priceChange {
+                    HStack(spacing: 2) {
+                        Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                            .font(.caption2)
+                        Text(change.toPercent())
+                            .font(.caption)
+                    }
+                    .foregroundColor(change >= 0 ? .green : .red)
+                }
+            }
+        }
+        .padding(.vertical, 8)
+    }
 }
 
 #Preview {
