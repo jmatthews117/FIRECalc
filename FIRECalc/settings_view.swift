@@ -15,7 +15,6 @@ struct SettingsView: View {
     @State private var defaultTimeHorizon: Double = 30
     @State private var defaultInflation: Double = 0.02
     @State private var useHistoricalBootstrap: Bool = true
-    @State private var autoRefreshPrices: Bool = false
     
     // Retirement planning
     @State private var retirementDate: Date = Date().addingTimeInterval(60 * 60 * 24 * 365 * 20) // 20 years from now
@@ -92,31 +91,6 @@ struct SettingsView: View {
                     Text("Set your retirement goals to see progress on the dashboard")
                 }
                 
-                // Live Price Info
-                Section {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            
-                            Text("Yahoo Finance Integrated")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
-                        
-                        Text("Live stock prices from Yahoo Finance")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text("No API key required! Get real-time prices for all stocks, ETFs, crypto, and more.")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                    }
-                } header: {
-                    Text("Live Price Updates")
-                }
-                
                 // Simulation Defaults
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
@@ -150,8 +124,6 @@ struct SettingsView: View {
                     }
                     
                     Toggle("Use Historical Bootstrap", isOn: $useHistoricalBootstrap)
-                    
-                    Toggle("Auto-Refresh Prices", isOn: $autoRefreshPrices)
                 } header: {
                     Text("Simulation Defaults")
                 } footer: {
@@ -200,15 +172,6 @@ struct SettingsView: View {
                         Text("\(AppConstants.appVersion) (\(AppConstants.buildNumber))")
                             .foregroundColor(.secondary)
                     }
-                    
-                    Link(destination: URL(string: "https://finance.yahoo.com")!) {
-                        HStack {
-                            Text("Yahoo Finance")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                        }
-                    }
                 } header: {
                     Text("About")
                 }
@@ -248,7 +211,6 @@ struct SettingsView: View {
         defaultTimeHorizon = Double(settings.defaultTimeHorizon)
         defaultInflation = settings.defaultInflationRate
         useHistoricalBootstrap = settings.useHistoricalBootstrap
-        autoRefreshPrices = settings.autoRefreshPrices
         
         // Load retirement settings
         if let dateTimestamp = UserDefaults.standard.object(forKey: "retirement_date") as? TimeInterval {
@@ -273,7 +235,7 @@ struct SettingsView: View {
             defaultTimeHorizon: Int(defaultTimeHorizon),
             defaultInflation: defaultInflation,
             useBootstrap: useHistoricalBootstrap,
-            autoRefresh: autoRefreshPrices
+            autoRefresh: nil
         )
         
         // Save retirement settings
@@ -303,7 +265,6 @@ struct SettingsView: View {
         defaultTimeHorizon = 30
         defaultInflation = 0.02
         useHistoricalBootstrap = true
-        autoRefreshPrices = false
         hasRetirementDate = false
         retirementTarget = "1000000"
         annualFixedIncome = "0"

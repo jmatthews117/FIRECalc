@@ -11,9 +11,8 @@ struct GroupedPortfolioView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @State private var selectedAssetClass: AssetClass?
     @State private var showingBondCalculator = false
-    @State private var showingAddAsset = false
-    @State private var showingQuickAdd = false
-    @State private var showingBulkUpload = false
+    @State private var selectedAsset: Asset?
+    @State private var showingAssetDetail = false
     
     var body: some View {
         ScrollView {
@@ -35,25 +34,6 @@ struct GroupedPortfolioView: View {
         }
         .navigationTitle("Portfolio")
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button(action: { showingBulkUpload = true }) {
-                        Label("Bulk Upload (Spreadsheet)", systemImage: "tablecells")
-                    }
-                    
-                    Button(action: { showingQuickAdd = true }) {
-                        Label("Quick Add Ticker", systemImage: "bolt.fill")
-                    }
-                    
-                    Button(action: { showingAddAsset = true }) {
-                        Label("Add Custom Asset", systemImage: "plus.circle")
-                    }
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                }
-            }
-            
             if selectedAssetClass != nil {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Show All") {
@@ -67,14 +47,10 @@ struct GroupedPortfolioView: View {
         .sheet(isPresented: $showingBondCalculator) {
             BondPricingCalculatorView()
         }
-        .sheet(isPresented: $showingAddAsset) {
-            AddAssetView(portfolioVM: portfolioVM)
-        }
-        .sheet(isPresented: $showingQuickAdd) {
-            QuickAddTickerView(portfolioVM: portfolioVM)
-        }
-        .sheet(isPresented: $showingBulkUpload) {
-            BulkAssetUploadView(portfolioVM: portfolioVM)
+        .sheet(isPresented: $showingAssetDetail) {
+            if let asset = selectedAsset {
+                AssetDetailView(asset: asset, portfolioVM: portfolioVM)
+            }
         }
     }
     
@@ -149,7 +125,7 @@ struct GroupedPortfolioView: View {
                     innerRadius: .ratio(0.5),
                     angularInset: 1.5
                 )
-                .foregroundStyle(by: .value("Class", item.assetClass.rawValue))
+                .foregroundStyle(colorForAssetClass(item.assetClass))
                 .opacity(selectedAssetClass == nil || selectedAssetClass == item.assetClass ? 1.0 : 0.3)
             }
             .frame(height: 250)
@@ -160,7 +136,7 @@ struct GroupedPortfolioView: View {
                 }
             }
             
-            // Interactive Legend
+            // Interactive Legend (unified with pie chart colors)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(allocationData) { item in
@@ -203,8 +179,8 @@ struct GroupedPortfolioView: View {
             if let selected = selectedAssetClass {
                 HStack {
                     Image(systemName: selected.iconName)
-                        .foregroundColor(.blue)
-                    Text("Showing \(selected.rawValue) only • Tap chart or legend to show all")
+                        .foregroundColor(colorForAssetClass(selected))
+                    Text("Showing \(selected.rawValue) only • Tap to show all")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -256,10 +232,8 @@ struct GroupedPortfolioView: View {
     private func toggleAssetClass(_ assetClass: AssetClass) {
         withAnimation {
             if selectedAssetClass == assetClass {
-                // Tapping the same class clears the selection
                 selectedAssetClass = nil
             } else {
-                // Tapping a different class selects it
                 selectedAssetClass = assetClass
             }
         }
@@ -296,7 +270,7 @@ struct GroupedPortfolioView: View {
         let percentage = portfolioVM.totalValue > 0 ? totalValue / portfolioVM.totalValue : 0
         
         return VStack(alignment: .leading, spacing: 12) {
-            // Colored Header
+            // Colored Header (unified with pie chart colors)
             HStack {
                 Image(systemName: assetClass.iconName)
                     .font(.title2)
@@ -342,7 +316,13 @@ struct GroupedPortfolioView: View {
             // Assets in this class
             VStack(spacing: 0) {
                 ForEach(assetsInClass) { asset in
-                    AssetRowView2(asset: asset)
+                    Button(action: {
+                        selectedAsset = asset
+                        showingAssetDetail = true
+                    }) {
+                        AssetRowView2(asset: asset)
+                    }
+                    .buttonStyle(.plain)
                     
                     if asset.id != assetsInClass.last?.id {
                         Divider()
@@ -408,6 +388,7 @@ struct AssetRowView2: View {
             }
         }
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
     }
 }
 

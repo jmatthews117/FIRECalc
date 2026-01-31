@@ -1,7 +1,7 @@
 //  bulk_asset_upload_view.swift
 //  FIRECalc
 //
-//  Spreadsheet-style bulk asset upload
+//  Intuitive multi-asset upload interface
 //
 
 import SwiftUI
@@ -10,9 +10,10 @@ struct BulkAssetUploadView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @Environment(\.dismiss) private var dismiss
     
-    @State private var assetRows: [AssetRow] = [AssetRow()]
+    @State private var assets: [DraftAsset] = [DraftAsset()]
     @State private var showingError: Bool = false
     @State private var errorMessage: String = ""
+    @State private var isLoadingPrices: Bool = false
     
     var body: some View {
         NavigationView {
@@ -20,27 +21,28 @@ struct BulkAssetUploadView: View {
                 // Instructions
                 instructionsHeader
                 
-                // Spreadsheet Header
-                spreadsheetHeader
-                
-                // Scrollable rows
+                // Asset Cards
                 ScrollView {
-                    VStack(spacing: 1) {
-                        ForEach($assetRows) { $row in
-                            BulkUploadRowView(row: $row, onDelete: {
-                                deleteRow(row)
-                            })
+                    VStack(spacing: 16) {
+                        ForEach($assets) { $asset in
+                            AssetEntryCard(
+                                asset: $asset,
+                                onDelete: {
+                                    deleteAsset(asset)
+                                },
+                                onLoadPrice: {
+                                    loadPrice(for: asset)
+                                }
+                            )
                         }
                     }
+                    .padding()
                 }
                 
-                // Add Row Button
-                addRowButton
-                
-                // Action Buttons
-                actionButtons
+                // Bottom Actions
+                bottomActions
             }
-            .navigationTitle("Bulk Add Assets")
+            .navigationTitle("Add Multiple Assets")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -60,11 +62,12 @@ struct BulkAssetUploadView: View {
             HStack {
                 Image(systemName: "info.circle.fill")
                     .foregroundColor(.blue)
-                Text("Fill in the spreadsheet below to add multiple assets at once")
+                Text("Add multiple assets quickly")
                     .font(.subheadline)
+                    .fontWeight(.medium)
             }
             
-            Text("Tip: Leave Ticker blank for assets without tickers (real estate, etc.)")
+            Text("Fill out each card below, then tap 'Add All Assets' when finished")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -72,122 +75,138 @@ struct BulkAssetUploadView: View {
         .background(Color.blue.opacity(0.1))
     }
     
-    private var spreadsheetHeader: some View {
-        HStack(spacing: 1) {
-            Text("Name")
-                .headerStyle(width: 120)
-            
-            Text("Type")
-                .headerStyle(width: 100)
-            
-            Text("Ticker")
-                .headerStyle(width: 80)
-            
-            Text("Qty")
-                .headerStyle(width: 70)
-            
-            Text("Price")
-                .headerStyle(width: 80)
-            
-            Text("")
-                .headerStyle(width: 40)
-        }
-        .background(Color(.systemGray5))
-    }
-    
-    private var addRowButton: some View {
-        Button(action: addRow) {
-            HStack {
-                Image(systemName: "plus.circle.fill")
-                Text("Add Row")
+    private var bottomActions: some View {
+        VStack(spacing: 12) {
+            Button(action: addNewAssetCard) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Add Another Asset")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(12)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.blue.opacity(0.1))
-        }
-    }
-    
-    private var actionButtons: some View {
-        HStack(spacing: 12) {
-            Button("Clear All") {
-                assetRows = [AssetRow()]
-            }
-            .buttonStyle(.bordered)
             
-            Spacer()
-            
-            Button("Add \(validRowCount) Assets") {
-                addAssets()
+            HStack(spacing: 12) {
+                Button("Clear All") {
+                    assets = [DraftAsset()]
+                }
+                .buttonStyle(.bordered)
+                
+                Spacer()
+                
+                Button("Add \(validAssetCount) Asset\(validAssetCount == 1 ? "" : "s")") {
+                    addAllAssets()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(validAssetCount == 0)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(validRowCount == 0)
         }
         .padding()
         .background(Color(.systemGray6))
     }
     
-    private var validRowCount: Int {
-        assetRows.filter { $0.isValid }.count
+    private var validAssetCount: Int {
+        assets.filter { $0.isValid }.count
     }
     
-    private func addRow() {
-        assetRows.append(AssetRow())
-    }
-    
-    private func deleteRow(_ row: AssetRow) {
-        if assetRows.count > 1 {
-            assetRows.removeAll { $0.id == row.id }
+    private func addNewAssetCard() {
+        withAnimation {
+            assets.append(DraftAsset())
         }
     }
     
-    private func addAssets() {
-        let validRows = assetRows.filter { $0.isValid }
+    private func deleteAsset(_ asset: DraftAsset) {
+        if assets.count > 1 {
+            withAnimation {
+                assets.removeAll { $0.id == asset.id }
+            }
+        } else {
+            assets = [DraftAsset()]
+        }
+    }
+    
+    private func loadPrice(for asset: DraftAsset) {
+        guard !asset.ticker.isEmpty else { return }
         
-        guard !validRows.isEmpty else {
+        Task {
+            do {
+                let tempAsset = Asset(
+                    name: asset.name.isEmpty ? asset.ticker : asset.name,
+                    assetClass: asset.assetClass,
+                    ticker: asset.ticker,
+                    quantity: 1,
+                    unitValue: 0
+                )
+                
+                let price = try await AlternativePriceService.shared.fetchPrice(for: tempAsset)
+                
+                await MainActor.run {
+                    if let index = assets.firstIndex(where: { $0.id == asset.id }) {
+                        assets[index].price = String(price)
+                        assets[index].loadedPrice = price
+                        if assets[index].name.isEmpty {
+                            assets[index].name = asset.ticker
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Could not load price for \(asset.ticker)"
+                    showingError = true
+                }
+            }
+        }
+    }
+    
+    private func addAllAssets() {
+        let validAssets = assets.filter { $0.isValid }
+        
+        guard !validAssets.isEmpty else {
             errorMessage = "No valid assets to add"
             showingError = true
             return
         }
         
-        var addedCount = 0
-        
-        for row in validRows {
+        for draft in validAssets {
             let asset = Asset(
-                name: row.name,
-                assetClass: row.assetClass,
-                ticker: row.ticker.isEmpty ? nil : row.ticker.uppercased(),
-                quantity: Double(row.quantity) ?? 1,
-                unitValue: Double(row.price) ?? 0
+                name: draft.name,
+                assetClass: draft.assetClass,
+                ticker: draft.ticker.isEmpty ? nil : draft.ticker.uppercased(),
+                quantity: Double(draft.quantity) ?? 1,
+                unitValue: Double(draft.price) ?? 0
             )
             
             portfolioVM.addAsset(asset)
-            addedCount += 1
         }
         
         dismiss()
     }
 }
 
-// MARK: - Asset Row Model
+// MARK: - Draft Asset Model
 
-struct AssetRow: Identifiable {
+struct DraftAsset: Identifiable {
     let id = UUID()
     var name: String = ""
     var assetClass: AssetClass = .stocks
     var ticker: String = ""
     var quantity: String = "1"
     var price: String = ""
+    var loadedPrice: Double?
     
     var isValid: Bool {
         !name.isEmpty && !price.isEmpty && Double(price) != nil && Double(quantity) != nil
     }
 }
 
-// MARK: - Bulk Upload Row View
+// MARK: - Asset Entry Card
 
-struct BulkUploadRowView: View {
-    @Binding var row: AssetRow
+struct AssetEntryCard: View {
+    @Binding var asset: DraftAsset
     let onDelete: () -> Void
+    let onLoadPrice: () -> Void
     @FocusState private var focusedField: Field?
     
     enum Field {
@@ -195,92 +214,153 @@ struct BulkUploadRowView: View {
     }
     
     var body: some View {
-        HStack(spacing: 1) {
-            TextField("Asset name", text: $row.name)
-                .cellStyle(width: 120)
-                .focused($focusedField, equals: .name)
+        VStack(spacing: 16) {
+            // Header with delete button
+            HStack {
+                Image(systemName: asset.assetClass.iconName)
+                    .foregroundColor(.blue)
+                    .font(.title3)
+                
+                Text(asset.name.isEmpty ? "New Asset" : asset.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                }
+            }
             
-            Menu {
-                ForEach(AssetClass.allCases) { assetClass in
-                    Button(action: { row.assetClass = assetClass }) {
+            Divider()
+            
+            // Asset Name
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Asset Name")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("e.g., Apple Stock", text: $asset.name)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .name)
+            }
+            
+            // Asset Type
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Asset Type")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Picker("Asset Type", selection: $asset.assetClass) {
+                    ForEach(AssetClass.allCases) { assetClass in
                         HStack {
                             Image(systemName: assetClass.iconName)
                             Text(assetClass.rawValue)
                         }
+                        .tag(assetClass)
                     }
                 }
-            } label: {
-                HStack {
-                    Text(shortClassName(row.assetClass))
-                        .lineLimit(1)
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.caption2)
+                .pickerStyle(.menu)
+            }
+            
+            // Ticker (optional)
+            if asset.assetClass.supportsTicker {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Ticker Symbol (Optional)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        if !asset.ticker.isEmpty {
+                            Button(action: onLoadPrice) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.clockwise")
+                                    Text("Load Price")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                    
+                    TextField("e.g., AAPL", text: $asset.ticker)
+                        .textFieldStyle(.roundedBorder)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .focused($focusedField, equals: .ticker)
+                    
+                    if let loaded = asset.loadedPrice {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Loaded: \(loaded.toPreciseCurrency())")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                    }
                 }
-                .cellStyle(width: 100)
             }
             
-            TextField("Optional", text: $row.ticker)
-                .textInputAutocapitalization(.characters)
-                .autocorrectionDisabled()
-                .cellStyle(width: 80)
-                .focused($focusedField, equals: .ticker)
+            // Quantity and Price
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Quantity")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("1", text: $asset.quantity)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .quantity)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Price per Unit")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("$0", text: $asset.price)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .price)
+                }
+            }
             
-            TextField("1", text: $row.quantity)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .cellStyle(width: 70)
-                .focused($focusedField, equals: .quantity)
+            // Total Value Preview
+            if let qty = Double(asset.quantity), let price = Double(asset.price) {
+                HStack {
+                    Text("Total Value:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text((qty * price).toCurrency())
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                }
+                .padding(.top, 4)
+            }
             
-            TextField("$0", text: $row.price)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .cellStyle(width: 80)
-                .focused($focusedField, equals: .price)
-            
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .foregroundColor(.red)
-                    .frame(width: 40)
+            // Validation indicator
+            if !asset.isValid && (!asset.name.isEmpty || !asset.price.isEmpty) {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                    Text("Please fill all required fields")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
             }
         }
-        .background(row.isValid ? Color.clear : Color.yellow.opacity(0.1))
-    }
-    
-    private func shortClassName(_ assetClass: AssetClass) -> String {
-        switch assetClass {
-        case .stocks: return "Stocks"
-        case .bonds: return "Bonds"
-        case .reits: return "REITs"
-        case .realEstate: return "Real Est"
-        case .preciousMetals: return "Metals"
-        case .crypto: return "Crypto"
-        case .cash: return "Cash"
-        case .other: return "Other"
-        }
-    }
-}
-
-// MARK: - View Modifiers
-
-extension View {
-    func headerStyle(width: CGFloat) -> some View {
-        self
-            .font(.caption)
-            .fontWeight(.semibold)
-            .foregroundColor(.secondary)
-            .frame(width: width, alignment: .leading)
-            .padding(.vertical, 8)
-            .padding(.horizontal, 4)
-    }
-    
-    func cellStyle(width: CGFloat) -> some View {
-        self
-            .font(.subheadline)
-            .frame(width: width, alignment: .leading)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 4)
-            .background(Color(.systemBackground))
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(asset.isValid ? Color(.systemBackground) : Color.yellow.opacity(0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(asset.isValid ? Color.gray.opacity(0.2) : Color.orange, lineWidth: 1)
+        )
+        .shadow(radius: 2)
     }
 }
 

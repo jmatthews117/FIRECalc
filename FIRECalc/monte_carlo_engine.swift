@@ -1,8 +1,7 @@
-//
 //  monte_carlo_engine.swift
 //  FIRECalc
 //
-//  MODIFIED - Now passes allSimulationRuns to SimulationResult
+//  FIXED - Real returns, proper sequence risk, better correlation
 //
 
 import Foundation
@@ -74,37 +73,44 @@ actor MonteCarloEngine {
         for year in 1...totalYears {
             let isAccumulation = year <= parameters.yearsUntilRetirement
             
-            // Generate annual return
-            let annualReturn = generateReturn(
+            // FIXED: Generate REAL (inflation-adjusted) annual return
+            let nominalReturn = generateReturn(
                 portfolio: portfolio,
                 parameters: parameters,
                 historicalData: historicalData,
                 year: year
             )
             
+            // Convert to real return by subtracting inflation
+            let realReturn = nominalReturn - parameters.inflationRate
+            
             // Apply return to balance
-            balance *= (1 + annualReturn)
+            balance *= (1 + realReturn)
             
             if isAccumulation {
+                // During accumulation, add contributions (already in real terms)
                 let annualContribution = parameters.monthlyContribution * 12
                 balance += annualContribution
                 yearlyWithdrawals.append(0)
             } else {
+                // During retirement, calculate withdrawal
                 let yearsIntoRetirement = year - parameters.yearsUntilRetirement
                 
+                // Calculate withdrawal in REAL terms (inflation already removed from returns)
                 let withdrawal = withdrawalCalc.calculateWithdrawal(
                     currentBalance: balance,
                     year: yearsIntoRetirement,
                     baselineWithdrawal: baselineWithdrawal,
                     initialBalance: parameters.initialPortfolioValue,
                     config: parameters.withdrawalConfig,
-                    inflationRate: parameters.inflationRate
+                    inflationRate: 0  // Already using real returns
                 )
                 
                 if yearsIntoRetirement == 1 {
                     baselineWithdrawal = withdrawal
                 }
                 
+                // Add any defined benefit income (also in real terms)
                 let totalIncome = (parameters.socialSecurityIncome ?? 0) +
                                  (parameters.pensionIncome ?? 0) +
                                  (parameters.otherIncome ?? 0)
@@ -160,6 +166,15 @@ actor MonteCarloEngine {
         historicalData: HistoricalData
     ) -> Double {
         
+        // FIXED: Pick a single random year and use ALL asset class returns from that year
+        // This preserves the historical correlation structure
+        
+        let stockReturns = historicalData.returns(for: .stocks)
+        guard !stockReturns.isEmpty else { return 0 }
+        
+        // Pick a random historical year
+        let randomYearIndex = Int.random(in: 0..<stockReturns.count)
+        
         var portfolioReturn: Double = 0
         let totalValue = portfolio.totalValue
         
@@ -167,7 +182,19 @@ actor MonteCarloEngine {
         
         for asset in portfolio.assets {
             let weight = asset.totalValue / totalValue
-            let assetReturn = historicalData.randomReturn(for: asset.assetClass)
+            
+            // Get the return for this asset class from the SAME historical year
+            let assetReturns = historicalData.returns(for: asset.assetClass)
+            
+            let assetReturn: Double
+            if randomYearIndex < assetReturns.count {
+                // Use the actual return from this historical year
+                assetReturn = assetReturns[randomYearIndex]
+            } else {
+                // If this asset class has fewer years of data, use its mean
+                assetReturn = historicalData.summary(for: asset.assetClass)?.mean ?? asset.assetClass.defaultReturn
+            }
+            
             portfolioReturn += weight * assetReturn
         }
         
@@ -179,15 +206,30 @@ actor MonteCarloEngine {
         parameters: SimulationParameters
     ) -> Double {
         
+        // IMPROVED: Simple correlation assumption
+        // Use a common market factor + asset-specific factor
+        
         let expectedReturn = portfolio.weightedExpectedReturn
         let volatility = portfolio.weightedVolatility
         
-        // Box-Muller transform for normal distribution
-        let u1 = Double.random(in: 0...1)
-        let u2 = Double.random(in: 0...1)
-        let z = sqrt(-2 * log(u1)) * cos(2 * .pi * u2)
+        // Market factor (affects all assets)
+        let marketShock = generateNormalRandom()
         
-        return expectedReturn + z * volatility
+        // Asset-specific factor (idiosyncratic risk)
+        let specificShock = generateNormalRandom()
+        
+        // Assume 60% correlation with market, 40% asset-specific
+        let correlationWeight = 0.6
+        let combinedShock = (correlationWeight * marketShock + (1 - correlationWeight) * specificShock)
+        
+        return expectedReturn + combinedShock * volatility
+    }
+    
+    private func generateNormalRandom() -> Double {
+        // Box-Muller transform for normal distribution
+        let u1 = Double.random(in: 0.0001...0.9999)
+        let u2 = Double.random(in: 0.0001...0.9999)
+        return sqrt(-2 * log(u1)) * cos(2 * .pi * u2)
     }
     
     // MARK: - Results Analysis
@@ -242,7 +284,7 @@ actor MonteCarloEngine {
             percentile90: p90,
             yearlyBalances: yearlyProjections,
             finalBalanceDistribution: finalBalances,
-            allSimulationRuns: runs,  // MODIFIED: Pass all runs for spaghetti chart
+            allSimulationRuns: runs,
             totalWithdrawn: medianTotalWithdrawn,
             averageAnnualWithdrawal: avgAnnualWithdrawal,
             probabilityOfRuin: probabilityOfRuin,
@@ -288,7 +330,7 @@ actor MonteCarloEngine {
                     peak = balance
                 }
                 
-                let drawdown = (peak - balance) / peak
+                let drawdown = peak > 0 ? (peak - balance) / peak : 0
                 maxDrawdown = max(maxDrawdown, drawdown)
             }
         }

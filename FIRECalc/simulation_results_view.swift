@@ -1,7 +1,7 @@
 //  simulation_results_view.swift
 //  FIRECalc
 //
-//  Simulation results with ending balance histogram
+//  FIXED - Proper histogram scaling and bucketing
 //
 
 import SwiftUI
@@ -111,7 +111,7 @@ struct SimulationResultsView: View {
                 )
             }
             
-            Text("Each scenario randomly draws actual historical returns to simulate how your portfolio might perform through market ups and downs.")
+            Text("Each scenario uses real historical returns (adjusted for inflation) and preserves correlations between asset classes to simulate realistic market conditions.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.top, 4)
@@ -160,7 +160,7 @@ struct SimulationResultsView: View {
         }
     }
     
-    // MARK: - Ending Balance Histogram
+    // MARK: - Ending Balance Histogram (FIXED)
     
     private var endingBalanceHistogram: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -171,23 +171,34 @@ struct SimulationResultsView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            let buckets = createHistogramBuckets()
+            let buckets = createImprovedHistogramBuckets()
             
             Chart(buckets) { bucket in
                 BarMark(
-                    x: .value("Balance", bucket.label),
+                    x: .value("Balance", bucket.midpoint),
                     y: .value("Count", bucket.count)
                 )
                 .foregroundStyle(bucket.isPositive ? Color.green.gradient : Color.red.gradient)
             }
             .frame(height: 250)
             .chartXAxis {
-                AxisMarks { value in
+                AxisMarks(position: .bottom, values: .automatic) { value in
+                    AxisGridLine()
                     AxisValueLabel {
-                        if let label = value.as(String.self) {
-                            Text(label)
+                        if let balance = value.as(Double.self) {
+                            Text(formatChartValue(balance))
                                 .font(.caption2)
-                                .rotationEffect(.degrees(-45))
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { value in
+                    AxisGridLine()
+                    AxisValueLabel {
+                        if let count = value.as(Int.self) {
+                            Text("\(count)")
+                                .font(.caption2)
                         }
                     }
                 }
@@ -312,31 +323,50 @@ struct SimulationResultsView: View {
         }
     }
     
-    private func createHistogramBuckets() -> [HistogramBucket] {
+    // FIXED: Improved histogram bucketing algorithm
+    private func createImprovedHistogramBuckets() -> [ImprovedHistogramBucket] {
         let sortedBalances = result.finalBalanceDistribution.sorted()
-        let bucketCount = 15
         
         guard !sortedBalances.isEmpty else { return [] }
         
         let minBalance = sortedBalances.first ?? 0
         let maxBalance = sortedBalances.last ?? 0
+        
+        // Use 20 buckets for better resolution
+        let bucketCount = 20
+        
+        // Calculate range and bucket size
         let range = maxBalance - minBalance
         let bucketSize = range / Double(bucketCount)
         
-        var buckets: [HistogramBucket] = []
+        var buckets: [ImprovedHistogramBucket] = []
+        
+        // Ensure bucket size is reasonable (at least $1)
+        let effectiveBucketSize = max(bucketSize, 1.0)
         
         for i in 0..<bucketCount {
-            let lowerBound = minBalance + Double(i) * bucketSize
-            let upperBound = lowerBound + bucketSize
+            let lowerBound = minBalance + Double(i) * effectiveBucketSize
+            let upperBound = lowerBound + effectiveBucketSize
             
-            let count = sortedBalances.filter { $0 >= lowerBound && $0 < upperBound }.count
+            // Count values in this bucket (inclusive lower, exclusive upper for all but last)
+            let count = sortedBalances.filter { balance in
+                if i == bucketCount - 1 {
+                    // Last bucket includes upper bound
+                    return balance >= lowerBound && balance <= upperBound
+                } else {
+                    return balance >= lowerBound && balance < upperBound
+                }
+            }.count
             
+            // Only include buckets with data
             if count > 0 {
-                let avgBalance = lowerBound + bucketSize / 2
-                buckets.append(HistogramBucket(
-                    label: formatChartValue(avgBalance),
+                let midpoint = lowerBound + effectiveBucketSize / 2
+                buckets.append(ImprovedHistogramBucket(
+                    lowerBound: lowerBound,
+                    upperBound: upperBound,
+                    midpoint: midpoint,
                     count: count,
-                    isPositive: avgBalance > 0
+                    isPositive: midpoint > 0
                 ))
             }
         }
@@ -349,10 +379,14 @@ struct SimulationResultsView: View {
             return String(format: "$%.1fM", value / 1_000_000)
         } else if value >= 1000 {
             return String(format: "$%.0fK", value / 1000)
+        } else if value >= 0 {
+            return String(format: "$%.0f", value)
+        } else if value <= -1_000_000 {
+            return String(format: "-$%.1fM", abs(value) / 1_000_000)
         } else if value <= -1000 {
             return String(format: "-$%.0fK", abs(value) / 1000)
         } else {
-            return String(format: "$%.0f", value)
+            return String(format: "-$%.0f", abs(value))
         }
     }
 }
@@ -425,9 +459,12 @@ struct StatRow: View {
     }
 }
 
-struct HistogramBucket: Identifiable {
+// FIXED: Improved histogram bucket structure
+struct ImprovedHistogramBucket: Identifiable {
     let id = UUID()
-    let label: String
+    let lowerBound: Double
+    let upperBound: Double
+    let midpoint: Double
     let count: Int
     let isPositive: Bool
 }

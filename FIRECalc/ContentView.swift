@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  FIRECalc
 //
-//  MODIFIED - Added Simulations tab to bottom navigation
+//  Main app structure with edit/delete asset capabilities
 //
 
 import SwiftUI
@@ -25,7 +25,7 @@ struct ContentView: View {
                     Label("Portfolio", systemImage: "briefcase.fill")
                 }
             
-            // MODIFIED: Added Simulations Tab
+            // Simulations Tab
             SimulationsTab(portfolioVM: portfolioVM, simulationVM: simulationVM)
                 .tabItem {
                     Label("Simulations", systemImage: "waveform.path.ecg")
@@ -316,8 +316,6 @@ struct DashboardTabView: View {
 
 // MARK: - Portfolio Tab
 
-// MARK: - Portfolio Tab (Updated with Bulk Upload)
-
 struct PortfolioTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @State private var showingAddAsset = false
@@ -331,7 +329,7 @@ struct PortfolioTabView: View {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
                             Button(action: { showingBulkUpload = true }) {
-                                Label("Bulk Upload (Spreadsheet)", systemImage: "tablecells")
+                                Label("Multiple Assets", systemImage: "square.stack.3d.up")
                             }
                             
                             Button(action: { showingQuickAdd = true }) {
@@ -360,7 +358,7 @@ struct PortfolioTabView: View {
     }
 }
 
-// MARK: - NEW: Simulations Tab
+// MARK: - Simulations Tab
 
 struct SimulationsTab: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
@@ -691,12 +689,14 @@ struct SettingsTabView: View {
     }
 }
 
-// MARK: - Asset Detail View
+// MARK: - Asset Detail View with Edit
 
 struct AssetDetailView: View {
     let asset: Asset
     @ObservedObject var portfolioVM: PortfolioViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showingEditSheet = false
+    @State private var showingDeleteConfirmation = false
     
     var body: some View {
         List {
@@ -813,7 +813,17 @@ struct AssetDetailView: View {
             }
             
             Section {
-                Button(role: .destructive, action: deleteAsset) {
+                Button(action: { showingEditSheet = true }) {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "pencil")
+                        Text("Edit Asset")
+                        Spacer()
+                    }
+                    .foregroundColor(.blue)
+                }
+                
+                Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
                     HStack {
                         Spacer()
                         Text("Delete Asset")
@@ -824,10 +834,113 @@ struct AssetDetailView: View {
         }
         .navigationTitle("Asset Details")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingEditSheet) {
+            EditAssetView(asset: asset, portfolioVM: portfolioVM)
+        }
+        .confirmationDialog("Delete Asset", isPresented: $showingDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                deleteAsset()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete \(asset.name)?")
+        }
     }
     
     private func deleteAsset() {
         portfolioVM.deleteAsset(asset)
+        dismiss()
+    }
+}
+
+// MARK: - Edit Asset View
+
+struct EditAssetView: View {
+    let asset: Asset
+    @ObservedObject var portfolioVM: PortfolioViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var name: String
+    @State private var assetClass: AssetClass
+    @State private var ticker: String
+    @State private var quantity: String
+    @State private var unitValue: String
+    
+    init(asset: Asset, portfolioVM: PortfolioViewModel) {
+        self.asset = asset
+        self.portfolioVM = portfolioVM
+        self._name = State(initialValue: asset.name)
+        self._assetClass = State(initialValue: asset.assetClass)
+        self._ticker = State(initialValue: asset.ticker ?? "")
+        self._quantity = State(initialValue: String(asset.quantity))
+        self._unitValue = State(initialValue: String(asset.unitValue))
+    }
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("Asset Details") {
+                    TextField("Name", text: $name)
+                    
+                    Picker("Asset Class", selection: $assetClass) {
+                        ForEach(AssetClass.allCases) { ac in
+                            Text(ac.rawValue).tag(ac)
+                        }
+                    }
+                    
+                    if assetClass.supportsTicker {
+                        TextField("Ticker (Optional)", text: $ticker)
+                            .textInputAutocapitalization(.characters)
+                    }
+                }
+                
+                Section("Value") {
+                    TextField("Quantity", text: $quantity)
+                        .keyboardType(.decimalPad)
+                    
+                    TextField("Price per Unit", text: $unitValue)
+                        .keyboardType(.decimalPad)
+                    
+                    if let qty = Double(quantity), let price = Double(unitValue) {
+                        HStack {
+                            Text("Total Value")
+                            Spacer()
+                            Text((qty * price).toCurrency())
+                                .fontWeight(.semibold)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Edit Asset")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveChanges()
+                    }
+                    .disabled(!isValid)
+                }
+            }
+        }
+    }
+    
+    private var isValid: Bool {
+        !name.isEmpty && Double(quantity) != nil && Double(unitValue) != nil
+    }
+    
+    private func saveChanges() {
+        var updatedAsset = asset
+        updatedAsset.name = name
+        updatedAsset.assetClass = assetClass
+        updatedAsset.ticker = ticker.isEmpty ? nil : ticker
+        updatedAsset.quantity = Double(quantity) ?? asset.quantity
+        updatedAsset.unitValue = Double(unitValue) ?? asset.unitValue
+        
+        portfolioVM.updateAsset(updatedAsset)
         dismiss()
     }
 }
