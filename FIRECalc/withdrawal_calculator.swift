@@ -2,7 +2,7 @@
 //  WithdrawalCalculator.swift
 //  FIRECalc
 //
-//  Implements various retirement withdrawal strategies
+//  CORRECTED - Proper inflation adjustment for withdrawals
 //
 
 import Foundation
@@ -15,7 +15,8 @@ struct WithdrawalCalculator {
         baselineWithdrawal: Double,
         initialBalance: Double,
         config: WithdrawalConfiguration,
-        inflationRate: Double
+        inflationRate: Double,
+        cumulativeInflation: Double = 1.0
     ) -> Double {
         
         switch config.strategy {
@@ -25,7 +26,7 @@ struct WithdrawalCalculator {
                 initialBalance: initialBalance,
                 year: year,
                 config: config,
-                inflationRate: inflationRate
+                cumulativeInflation: cumulativeInflation
             )
             
         case .dynamicPercentage:
@@ -40,7 +41,7 @@ struct WithdrawalCalculator {
                 baselineWithdrawal: baselineWithdrawal,
                 year: year,
                 config: config,
-                inflationRate: inflationRate
+                cumulativeInflation: cumulativeInflation
             )
             
         case .rmd:
@@ -54,17 +55,16 @@ struct WithdrawalCalculator {
             return fixedDollarAmount(
                 year: year,
                 config: config,
-                inflationRate: inflationRate
+                cumulativeInflation: cumulativeInflation
             )
             
         case .custom:
-            // Default to fixed percentage for custom (users can extend)
             return fixedPercentageRule(
                 baselineWithdrawal: baselineWithdrawal,
                 initialBalance: initialBalance,
                 year: year,
                 config: config,
-                inflationRate: inflationRate
+                cumulativeInflation: cumulativeInflation
             )
         }
     }
@@ -72,12 +72,13 @@ struct WithdrawalCalculator {
     // MARK: - Strategy Implementations
     
     /// 4% Rule: Withdraw fixed percentage of initial portfolio, adjusted for inflation
+    /// CORRECTED: Now uses cumulative inflation instead of compounding parameter
     private func fixedPercentageRule(
         baselineWithdrawal: Double,
         initialBalance: Double,
         year: Int,
         config: WithdrawalConfiguration,
-        inflationRate: Double
+        cumulativeInflation: Double
     ) -> Double {
         
         if year == 1 {
@@ -85,9 +86,8 @@ struct WithdrawalCalculator {
         }
         
         if config.adjustForInflation {
-            // Adjust baseline for cumulative inflation
-            let inflationMultiplier = pow(1 + inflationRate, Double(year - 1))
-            return baselineWithdrawal * inflationMultiplier
+            // Apply cumulative inflation to baseline
+            return baselineWithdrawal * cumulativeInflation
         } else {
             return baselineWithdrawal
         }
@@ -121,12 +121,11 @@ struct WithdrawalCalculator {
         baselineWithdrawal: Double,
         year: Int,
         config: WithdrawalConfiguration,
-        inflationRate: Double
+        cumulativeInflation: Double
     ) -> Double {
         
         // Start with inflation-adjusted baseline
-        let inflationMultiplier = pow(1 + inflationRate, Double(year - 1))
-        var withdrawal = baselineWithdrawal * inflationMultiplier
+        var withdrawal = baselineWithdrawal * cumulativeInflation
         
         // Calculate current withdrawal rate
         let currentRate = withdrawal / currentBalance
@@ -169,7 +168,7 @@ struct WithdrawalCalculator {
     private func fixedDollarAmount(
         year: Int,
         config: WithdrawalConfiguration,
-        inflationRate: Double
+        cumulativeInflation: Double
     ) -> Double {
         
         guard let amount = config.annualAmount else {
@@ -177,8 +176,7 @@ struct WithdrawalCalculator {
         }
         
         if config.adjustForInflation {
-            let inflationMultiplier = pow(1 + inflationRate, Double(year - 1))
-            return amount * inflationMultiplier
+            return amount * cumulativeInflation
         } else {
             return amount
         }
@@ -255,15 +253,19 @@ extension WithdrawalCalculator {
         var balance = initialBalance
         var withdrawals: [Double] = []
         var baselineWithdrawal: Double = 0
+        var cumulativeInflation: Double = 1.0
         
         for year in 1...years {
+            cumulativeInflation *= (1 + inflationRate)
+            
             let withdrawal = calculateWithdrawal(
                 currentBalance: balance,
                 year: year,
                 baselineWithdrawal: baselineWithdrawal,
                 initialBalance: initialBalance,
                 config: config,
-                inflationRate: inflationRate
+                inflationRate: inflationRate,
+                cumulativeInflation: cumulativeInflation
             )
             
             if year == 1 {

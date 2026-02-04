@@ -17,9 +17,10 @@ struct SettingsView: View {
     @State private var useHistoricalBootstrap: Bool = true
     
     // Retirement planning
-    @State private var retirementDate: Date = Date().addingTimeInterval(60 * 60 * 24 * 365 * 20) // 20 years from now
+    @State private var retirementDate: Date = Date().addingTimeInterval(60 * 60 * 24 * 365 * 20)
     @State private var hasRetirementDate: Bool = false
-    @State private var retirementTarget: String = "1000000"
+    @State private var expectedAnnualSpend: String = "40000"
+    @State private var withdrawalPercentage: Double = 0.04
     @State private var annualFixedIncome: String = "0"
     
     @State private var showingResetConfirmation = false
@@ -53,18 +54,43 @@ struct SettingsView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Retirement Target")
+                        Text("Expected Annual Spending")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
-                        TextField("Target Amount", text: $retirementTarget)
-                            .keyboardType(.decimalPad)
+                        TextField("Annual spending in retirement", text: $expectedAnnualSpend)
+                            .keyboardType(.numberPad)
+                            .onChange(of: expectedAnnualSpend) { _, newValue in
+                                expectedAnnualSpend = formatNumberInput(newValue)
+                            }
                         
-                        if let value = Double(retirementTarget) {
-                            Text("Goal: \(value.toCurrency())")
+                        if let value = parseFormattedNumber(expectedAnnualSpend) {
+                            Text("Goal: \(formatCurrency(value)) per year")
                                 .font(.caption)
                                 .foregroundColor(.blue)
                         }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Safe Withdrawal Rate")
+                            Spacer()
+                            Text(String(format: "%.1f%%", withdrawalPercentage * 100))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Slider(value: $withdrawalPercentage, in: 0.025...0.06, step: 0.005)
+                        
+                        if let spend = parseFormattedNumber(expectedAnnualSpend) {
+                            let targetPortfolio = spend / withdrawalPercentage
+                            Text("Retirement Goal: \(formatCurrency(targetPortfolio))")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                        
+                        Text("The 4% rule suggests you can safely withdraw 4% of your portfolio annually")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
@@ -73,10 +99,13 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                         
                         TextField("Social Security, Pensions, etc.", text: $annualFixedIncome)
-                            .keyboardType(.decimalPad)
+                            .keyboardType(.numberPad)
+                            .onChange(of: annualFixedIncome) { _, newValue in
+                                annualFixedIncome = formatNumberInput(newValue)
+                            }
                         
-                        if let value = Double(annualFixedIncome), value > 0 {
-                            Text("\(value.toCurrency()) per year")
+                        if let value = parseFormattedNumber(annualFixedIncome), value > 0 {
+                            Text("\(formatCurrency(value)) per year")
                                 .font(.caption)
                                 .foregroundColor(.green)
                         }
@@ -88,7 +117,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Retirement Planning")
                 } footer: {
-                    Text("Set your retirement goals to see progress on the dashboard")
+                    Text("Your retirement goal is automatically calculated as: Expected Annual Spending ÷ Safe Withdrawal Rate")
                 }
                 
                 // Simulation Defaults
@@ -97,7 +126,7 @@ struct SettingsView: View {
                         HStack {
                             Text("Default Simulation Runs")
                             Spacer()
-                            Text("\(Int(defaultRuns))")
+                            Text(formatNumber(Int(defaultRuns)))
                                 .foregroundColor(.secondary)
                         }
                         Slider(value: $defaultRuns, in: 1000...50000, step: 1000)
@@ -203,7 +232,41 @@ struct SettingsView: View {
         }
     }
     
-    // MARK: - Functions
+    // MARK: - Number Formatting Functions
+    
+    private func formatNumberInput(_ input: String) -> String {
+        // Remove all non-digit characters
+        let digitsOnly = input.filter { $0.isNumber }
+        
+        // Convert to number and format with commas
+        if let number = Int(digitsOnly) {
+            return formatNumber(number)
+        }
+        return digitsOnly
+    }
+    
+    private func formatNumber(_ number: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        formatter.groupingSize = 3
+        return formatter.string(from: NSNumber(value: number)) ?? String(number)
+    }
+    
+    private func parseFormattedNumber(_ formatted: String) -> Double? {
+        let digitsOnly = formatted.filter { $0.isNumber }
+        return Double(digitsOnly)
+    }
+    
+    private func formatCurrency(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: value)) ?? "$0"
+    }
+    
+    // MARK: - Settings Functions
     
     private func loadSettings() {
         let settings = persistence.loadSettings()
@@ -218,14 +281,19 @@ struct SettingsView: View {
             hasRetirementDate = true
         }
         
-        let savedTarget = UserDefaults.standard.double(forKey: "retirement_target")
-        if savedTarget > 0 {
-            retirementTarget = String(savedTarget)
+        let savedSpend = UserDefaults.standard.double(forKey: "expected_annual_spend")
+        if savedSpend > 0 {
+            expectedAnnualSpend = formatNumber(Int(savedSpend))
+        }
+        
+        let savedWithdrawalPct = UserDefaults.standard.double(forKey: "withdrawal_percentage")
+        if savedWithdrawalPct > 0 {
+            withdrawalPercentage = savedWithdrawalPct
         }
         
         let savedIncome = UserDefaults.standard.double(forKey: "fixed_income")
         if savedIncome > 0 {
-            annualFixedIncome = String(savedIncome)
+            annualFixedIncome = formatNumber(Int(savedIncome))
         }
     }
     
@@ -245,11 +313,17 @@ struct SettingsView: View {
             UserDefaults.standard.removeObject(forKey: "retirement_date")
         }
         
-        if let target = Double(retirementTarget) {
+        if let spend = parseFormattedNumber(expectedAnnualSpend) {
+            UserDefaults.standard.set(spend, forKey: "expected_annual_spend")
+            
+            // Calculate and save retirement target
+            let target = spend / withdrawalPercentage
             UserDefaults.standard.set(target, forKey: "retirement_target")
         }
         
-        if let income = Double(annualFixedIncome) {
+        UserDefaults.standard.set(withdrawalPercentage, forKey: "withdrawal_percentage")
+        
+        if let income = parseFormattedNumber(annualFixedIncome) {
             UserDefaults.standard.set(income, forKey: "fixed_income")
         }
     }
@@ -266,7 +340,8 @@ struct SettingsView: View {
         defaultInflation = 0.02
         useHistoricalBootstrap = true
         hasRetirementDate = false
-        retirementTarget = "1000000"
+        expectedAnnualSpend = "40000"
+        withdrawalPercentage = 0.04
         annualFixedIncome = "0"
     }
 }

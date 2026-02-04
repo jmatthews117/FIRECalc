@@ -1,7 +1,7 @@
 //  monte_carlo_engine.swift
 //  FIRECalc
 //
-//  FIXED - Real returns, proper sequence risk, better correlation
+//  FIXED - Proper withdrawal calculations and realistic failure detection
 //
 
 import Foundation
@@ -69,71 +69,114 @@ actor MonteCarloEngine {
         let withdrawalCalc = WithdrawalCalculator()
         
         var baselineWithdrawal: Double = 0
+        var yearsLasted = 0
+        var failed = false
         
         for year in 1...totalYears {
             let isAccumulation = year <= parameters.yearsUntilRetirement
             
-            // FIXED: Generate REAL (inflation-adjusted) annual return
-            let nominalReturn = generateReturn(
-                portfolio: portfolio,
-                parameters: parameters,
-                historicalData: historicalData,
-                year: year
-            )
-            
-            // Convert to real return by subtracting inflation
-            let realReturn = nominalReturn - parameters.inflationRate
-            
-            // Apply return to balance
-            balance *= (1 + realReturn)
-            
             if isAccumulation {
-                // During accumulation, add contributions (already in real terms)
+                // ACCUMULATION PHASE
+                let nominalReturn = generateReturn(
+                    portfolio: portfolio,
+                    parameters: parameters,
+                    historicalData: historicalData,
+                    year: year
+                )
+                
+                // Apply return
+                balance *= (1 + nominalReturn)
+                
+                // Add contributions
                 let annualContribution = parameters.monthlyContribution * 12
                 balance += annualContribution
+                
                 yearlyWithdrawals.append(0)
+                yearlyBalances.append(balance)
+                
             } else {
-                // During retirement, calculate withdrawal
+                // RETIREMENT/WITHDRAWAL PHASE
                 let yearsIntoRetirement = year - parameters.yearsUntilRetirement
                 
-                // Calculate withdrawal in REAL terms (inflation already removed from returns)
+                // Calculate withdrawal BEFORE applying returns
                 let withdrawal = withdrawalCalc.calculateWithdrawal(
                     currentBalance: balance,
                     year: yearsIntoRetirement,
                     baselineWithdrawal: baselineWithdrawal,
                     initialBalance: parameters.initialPortfolioValue,
                     config: parameters.withdrawalConfig,
-                    inflationRate: 0  // Already using real returns
+                    inflationRate: parameters.inflationRate
                 )
                 
                 if yearsIntoRetirement == 1 {
                     baselineWithdrawal = withdrawal
                 }
                 
-                // Add any defined benefit income (also in real terms)
+                // Add any defined benefit income
                 let totalIncome = (parameters.socialSecurityIncome ?? 0) +
                                  (parameters.pensionIncome ?? 0) +
                                  (parameters.otherIncome ?? 0)
                 
                 let netWithdrawal = max(0, withdrawal - totalIncome)
                 
+                // CRITICAL FIX: Check if withdrawal exceeds balance
+                if netWithdrawal > balance {
+                    // Portfolio depleted - record failure
+                    balance = 0
+                    yearlyWithdrawals.append(balance)  // Can only withdraw what's left
+                    yearlyBalances.append(0)
+                    yearsLasted = yearsIntoRetirement - 1
+                    failed = true
+                    
+                    // Fill remaining years with zeros
+                    for _ in year..<totalYears {
+                        yearlyWithdrawals.append(0)
+                        yearlyBalances.append(0)
+                    }
+                    break
+                }
+                
+                // Withdraw money
                 balance -= netWithdrawal
                 yearlyWithdrawals.append(netWithdrawal)
                 
+                // Generate return
+                let nominalReturn = generateReturn(
+                    portfolio: portfolio,
+                    parameters: parameters,
+                    historicalData: historicalData,
+                    year: year
+                )
+                
+                // Apply investment return on REMAINING balance
+                balance *= (1 + nominalReturn)
+                
+                // Check for depletion after returns
                 if balance <= 0 {
                     balance = 0
+                    yearlyBalances.append(0)
+                    yearsLasted = yearsIntoRetirement
+                    failed = true
+                    
+                    // Fill remaining years with zeros
+                    for _ in (year + 1)...totalYears {
+                        yearlyWithdrawals.append(0)
+                        yearlyBalances.append(0)
+                    }
+                    break
                 }
+                
+                yearlyBalances.append(balance)
+                yearsLasted = yearsIntoRetirement
             }
-            
-            yearlyBalances.append(balance)
         }
         
-        let retirementYears = parameters.timeHorizonYears
-        let yearsLasted = yearlyBalances.dropFirst(parameters.yearsUntilRetirement + 1)
-            .prefix(retirementYears)
-            .firstIndex { $0 <= 0 } ?? retirementYears
+        // If we made it through all years without failing
+        if !failed {
+            yearsLasted = parameters.timeHorizonYears
+        }
         
-        let success = yearsLasted >= retirementYears
+        let success = yearsLasted >= parameters.timeHorizonYears && balance > 0
         
         return SimulationRun(
             runNumber: runNumber,
@@ -166,9 +209,6 @@ actor MonteCarloEngine {
         historicalData: HistoricalData
     ) -> Double {
         
-        // FIXED: Pick a single random year and use ALL asset class returns from that year
-        // This preserves the historical correlation structure
-        
         let stockReturns = historicalData.returns(for: .stocks)
         guard !stockReturns.isEmpty else { return 0 }
         
@@ -183,15 +223,12 @@ actor MonteCarloEngine {
         for asset in portfolio.assets {
             let weight = asset.totalValue / totalValue
             
-            // Get the return for this asset class from the SAME historical year
             let assetReturns = historicalData.returns(for: asset.assetClass)
             
             let assetReturn: Double
             if randomYearIndex < assetReturns.count {
-                // Use the actual return from this historical year
                 assetReturn = assetReturns[randomYearIndex]
             } else {
-                // If this asset class has fewer years of data, use its mean
                 assetReturn = historicalData.summary(for: asset.assetClass)?.mean ?? asset.assetClass.defaultReturn
             }
             
@@ -206,19 +243,12 @@ actor MonteCarloEngine {
         parameters: SimulationParameters
     ) -> Double {
         
-        // IMPROVED: Simple correlation assumption
-        // Use a common market factor + asset-specific factor
-        
         let expectedReturn = portfolio.weightedExpectedReturn
         let volatility = portfolio.weightedVolatility
         
-        // Market factor (affects all assets)
         let marketShock = generateNormalRandom()
-        
-        // Asset-specific factor (idiosyncratic risk)
         let specificShock = generateNormalRandom()
         
-        // Assume 60% correlation with market, 40% asset-specific
         let correlationWeight = 0.6
         let combinedShock = (correlationWeight * marketShock + (1 - correlationWeight) * specificShock)
         
@@ -226,7 +256,6 @@ actor MonteCarloEngine {
     }
     
     private func generateNormalRandom() -> Double {
-        // Box-Muller transform for normal distribution
         let u1 = Double.random(in: 0.0001...0.9999)
         let u2 = Double.random(in: 0.0001...0.9999)
         return sqrt(-2 * log(u1)) * cos(2 * .pi * u2)

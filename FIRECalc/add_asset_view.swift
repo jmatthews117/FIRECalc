@@ -2,7 +2,7 @@
 //  AddAssetView.swift
 //  FIRECalc
 //
-//  Screen for adding new assets to portfolio with auto-price loading
+//  Simplified asset entry with auto-loading ticker names and smart field display
 //
 
 import SwiftUI
@@ -17,6 +17,7 @@ struct AddAssetView: View {
     @State private var ticker: String = ""
     @State private var quantity: String = "1"
     @State private var unitValue: String = ""
+    @State private var bondYield: String = ""
     @State private var showingAdvanced = false
     
     // Auto-price loading states
@@ -26,18 +27,15 @@ struct AddAssetView: View {
     @State private var lastLoadedTicker: String = ""
     
     enum Field {
-        case assetName, ticker, quantity, unitValue
+        case ticker, quantity, unitValue, bondYield
     }
     
     var body: some View {
         NavigationView {
             Form {
-                // Basic Information
-                Section("Asset Details") {
-                    TextField("Asset Name", text: $assetName)
-                        .focused($focusedField, equals: .assetName)
-                    
-                    Picker("Asset Class", selection: $selectedAssetClass) {
+                // Asset Type Selection
+                Section("Asset Type") {
+                    Picker("Type", selection: $selectedAssetClass) {
                         ForEach(AssetClass.allCases) { assetClass in
                             HStack {
                                 Image(systemName: assetClass.iconName)
@@ -46,20 +44,33 @@ struct AddAssetView: View {
                             .tag(assetClass)
                         }
                     }
-                    
-                    if selectedAssetClass.supportsTicker {
+                    .pickerStyle(.menu)
+                    .onChange(of: selectedAssetClass) { _, _ in
+                        // Reset fields when asset class changes
+                        ticker = ""
+                        quantity = "1"
+                        unitValue = ""
+                        bondYield = ""
+                        assetName = ""
+                        autoLoadedPrice = nil
+                        priceError = nil
+                    }
+                }
+                
+                // Ticker Input (for stocks, bonds, REITs, crypto, precious metals)
+                if selectedAssetClass.supportsTicker || selectedAssetClass == .bonds || selectedAssetClass == .preciousMetals {
+                    Section("Ticker Symbol") {
                         VStack(alignment: .leading, spacing: 8) {
-                            TextField("Ticker Symbol", text: $ticker)
+                            TextField("e.g., AAPL, SPY, GLD", text: $ticker)
                                 .textInputAutocapitalization(.characters)
                                 .autocorrectionDisabled()
                                 .focused($focusedField, equals: .ticker)
                                 .onChange(of: ticker) { oldValue, newValue in
-                                    // Clear previous price when ticker changes
                                     if oldValue != newValue {
                                         autoLoadedPrice = nil
                                         priceError = nil
+                                        assetName = ""
                                         
-                                        // Auto-load price after a short delay
                                         if !newValue.isEmpty && newValue.count >= 1 {
                                             scheduleAutoLoad()
                                         }
@@ -71,7 +82,7 @@ struct AddAssetView: View {
                                 HStack {
                                     ProgressView()
                                         .scaleEffect(0.8)
-                                    Text("Loading price...")
+                                    Text("Loading...")
                                         .font(.caption)
                                         .foregroundColor(.blue)
                                 }
@@ -79,7 +90,7 @@ struct AddAssetView: View {
                                 HStack {
                                     Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(.green)
-                                    Text("Loaded: \(price.toPreciseCurrency())")
+                                    Text("\(assetName.isEmpty ? ticker.uppercased() : assetName) • \(price.toPreciseCurrency())")
                                         .font(.caption)
                                         .foregroundColor(.green)
                                 }
@@ -93,84 +104,95 @@ struct AddAssetView: View {
                                 }
                             }
                             
-                            // Show helpful suggestions based on asset class
                             Text(tickerSuggestion)
                                 .font(.caption)
                                 .foregroundColor(.blue)
                         }
                     }
-                }
-                
-                // Value Information
-                Section("Value") {
-                    HStack {
-                        Text("Quantity")
-                        Spacer()
-                        TextField("0", text: $quantity)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 100)
-                            .focused($focusedField, equals: .quantity)
-                    }
                     
-                    HStack {
-                        Text("Price per Unit")
-                        Spacer()
-                        TextField("$0", text: $unitValue)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 100)
-                            .focused($focusedField, equals: .unitValue)
-                    }
-                    
-                    // Auto-fill button if price was loaded
-                    if let price = autoLoadedPrice, unitValue.isEmpty {
-                        Button("Use Loaded Price (\(price.toPreciseCurrency()))") {
-                            unitValue = String(price)
-                            focusedField = nil
+                    // Bond Yield (only for bonds)
+                    if selectedAssetClass == .bonds {
+                        Section("Bond Details") {
+                            HStack {
+                                Text("Yield %")
+                                Spacer()
+                                TextField("e.g., 4.5", text: $bondYield)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 80)
+                                    .focused($focusedField, equals: .bondYield)
+                            }
+                            
+                            if let yieldVal = Double(bondYield), yieldVal > 0 {
+                                Text("Annual yield: \(yieldVal)%")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                    }
-                    
-                    HStack {
-                        Text("Total Value")
-                            .fontWeight(.semibold)
-                        Spacer()
-                        Text(totalValue.toCurrency())
-                            .fontWeight(.bold)
-                            .foregroundColor(.blue)
                     }
                 }
                 
-                // Advanced Options
-                Section {
-                    Button(action: { showingAdvanced.toggle() }) {
+                // Value Section - Different for different asset types
+                if needsQuantityAndPrice {
+                    // Stocks, REITs, Crypto - Quantity + Price
+                    Section("Quantity & Price") {
                         HStack {
-                            Text("Advanced Options")
+                            Text("Quantity")
                             Spacer()
-                            Image(systemName: showingAdvanced ? "chevron.up" : "chevron.down")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    if showingAdvanced {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Custom Expected Return")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("Default: \(selectedAssetClass.defaultReturn.toPercent())")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            TextField("0", text: $quantity)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 100)
+                                .focused($focusedField, equals: .quantity)
                         }
                         
+                        HStack {
+                            Text("Price per Unit")
+                            Spacer()
+                            TextField("$0", text: $unitValue)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 100)
+                                .focused($focusedField, equals: .unitValue)
+                        }
+                        
+                        if let price = autoLoadedPrice, unitValue.isEmpty {
+                            Button("Use Loaded Price (\(price.toPreciseCurrency()))") {
+                                unitValue = String(price)
+                                focusedField = nil
+                            }
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        }
+                        
+                        if let total = totalValue {
+                            HStack {
+                                Text("Total Value")
+                                    .fontWeight(.semibold)
+                                Spacer()
+                                Text(total.toCurrency())
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                } else {
+                    // Real Estate, Cash, Other - Value only
+                    Section("Value") {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Custom Volatility")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("Default: \(selectedAssetClass.defaultVolatility.toPercent())")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            TextField("Total Value", text: $unitValue)
+                                .keyboardType(.decimalPad)
+                                .focused($focusedField, equals: .unitValue)
+                            
+                            if !selectedAssetClass.supportsTicker && assetName.isEmpty {
+                                TextField("Asset Name (optional)", text: $assetName)
+                            }
+                            
+                            if let value = Double(unitValue) {
+                                Text("Value: \(value.toCurrency())")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
                 }
@@ -183,9 +205,9 @@ struct AddAssetView: View {
                             .foregroundColor(.blue)
                         
                         VStack(alignment: .leading) {
-                            Text(assetName.isEmpty ? "Asset Name" : assetName)
+                            Text(displayName)
                                 .font(.headline)
-                                .foregroundColor(assetName.isEmpty ? .secondary : .primary)
+                                .foregroundColor(displayName.isEmpty ? .secondary : .primary)
                             
                             HStack(spacing: 4) {
                                 Text(selectedAssetClass.rawValue)
@@ -205,9 +227,11 @@ struct AddAssetView: View {
                         
                         Spacer()
                         
-                        Text(totalValue.toCurrency())
-                            .font(.headline)
-                            .foregroundColor(.blue)
+                        if let total = totalValue {
+                            Text(total.toCurrency())
+                                .font(.headline)
+                                .foregroundColor(.blue)
+                        }
                     }
                     .padding(.vertical, 4)
                 }
@@ -229,7 +253,6 @@ struct AddAssetView: View {
                     .fontWeight(.semibold)
                 }
                 
-                // Keyboard dismiss toolbar
                 ToolbarItem(placement: .keyboard) {
                     HStack {
                         Spacer()
@@ -240,9 +263,8 @@ struct AddAssetView: View {
                 }
             }
             .onAppear {
-                // Auto-focus on asset name when view appears
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    focusedField = .assetName
+                    focusedField = .ticker
                 }
             }
         }
@@ -250,15 +272,44 @@ struct AddAssetView: View {
     
     // MARK: - Computed Properties
     
-    private var totalValue: Double {
-        let qty = Double(quantity) ?? 0
-        let price = Double(unitValue) ?? autoLoadedPrice ?? 0
-        return qty * price
+    private var needsQuantityAndPrice: Bool {
+        selectedAssetClass == .stocks ||
+        selectedAssetClass == .bonds ||
+        selectedAssetClass == .reits ||
+        selectedAssetClass == .crypto ||
+        selectedAssetClass == .preciousMetals
+    }
+    
+    private var displayName: String {
+        if !assetName.isEmpty {
+            return assetName
+        } else if !ticker.isEmpty {
+            return ticker.uppercased()
+        } else if selectedAssetClass == .realEstate {
+            return "Real Estate Property"
+        } else if selectedAssetClass == .cash {
+            return "Cash Holdings"
+        } else if selectedAssetClass == .other {
+            return "Other Asset"
+        }
+        return "New Asset"
+    }
+    
+    private var totalValue: Double? {
+        if needsQuantityAndPrice {
+            let qty = Double(quantity) ?? 0
+            let price = Double(unitValue) ?? autoLoadedPrice ?? 0
+            return qty > 0 && price > 0 ? qty * price : nil
+        } else {
+            return Double(unitValue)
+        }
     }
     
     private var isValid: Bool {
-        !assetName.isEmpty &&
-        totalValue > 0
+        if let total = totalValue, total > 0 {
+            return true
+        }
+        return false
     }
     
     private var tickerSuggestion: String {
@@ -281,7 +332,6 @@ struct AddAssetView: View {
     // MARK: - Actions
     
     private func scheduleAutoLoad() {
-        // Debounce: wait for user to stop typing
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             if ticker.uppercased() != lastLoadedTicker && !ticker.isEmpty {
                 loadPrice()
@@ -303,7 +353,7 @@ struct AddAssetView: View {
         Task {
             do {
                 let tempAsset = Asset(
-                    name: assetName.isEmpty ? cleanTicker : assetName,
+                    name: cleanTicker,
                     assetClass: selectedAssetClass,
                     ticker: cleanTicker,
                     quantity: 1,
@@ -314,10 +364,7 @@ struct AddAssetView: View {
                 
                 await MainActor.run {
                     autoLoadedPrice = price
-                    // Auto-populate name if empty
-                    if assetName.isEmpty {
-                        assetName = cleanTicker
-                    }
+                    assetName = cleanTicker
                     isLoadingPrice = false
                 }
             } catch {
@@ -332,13 +379,25 @@ struct AddAssetView: View {
     private func addAsset() {
         focusedField = nil
         
-        let finalPrice = Double(unitValue) ?? autoLoadedPrice ?? 0
+        let finalName = assetName.isEmpty ? ticker.uppercased() : assetName
+        let finalTicker = ticker.isEmpty ? nil : ticker.uppercased()
+        
+        let finalPrice: Double
+        let finalQuantity: Double
+        
+        if needsQuantityAndPrice {
+            finalPrice = Double(unitValue) ?? autoLoadedPrice ?? 0
+            finalQuantity = Double(quantity) ?? 1
+        } else {
+            finalPrice = Double(unitValue) ?? 0
+            finalQuantity = 1
+        }
         
         let asset = Asset(
-            name: assetName,
+            name: finalName,
             assetClass: selectedAssetClass,
-            ticker: ticker.isEmpty ? nil : ticker.uppercased(),
-            quantity: Double(quantity) ?? 1,
+            ticker: finalTicker,
+            quantity: finalQuantity,
             unitValue: finalPrice
         )
         

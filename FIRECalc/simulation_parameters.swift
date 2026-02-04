@@ -32,6 +32,9 @@ struct SimulationParameters: Codable {
     var customReturns: [AssetClass: Double]?
     var customVolatility: [AssetClass: Double]?
     
+    // Inflation handling strategy
+    var inflationStrategy: InflationStrategy
+    
     init(
         numberOfRuns: Int = 10000,
         timeHorizonYears: Int = 30,
@@ -46,7 +49,8 @@ struct SimulationParameters: Codable {
         pensionIncome: Double? = nil,
         otherIncome: Double? = nil,
         customReturns: [AssetClass: Double]? = nil,
-        customVolatility: [AssetClass: Double]? = nil
+        customVolatility: [AssetClass: Double]? = nil,
+        inflationStrategy: InflationStrategy = .historicalCorrelated
     ) {
         self.numberOfRuns = numberOfRuns
         self.timeHorizonYears = timeHorizonYears
@@ -62,6 +66,7 @@ struct SimulationParameters: Codable {
         self.otherIncome = otherIncome
         self.customReturns = customReturns
         self.customVolatility = customVolatility
+        self.inflationStrategy = inflationStrategy
     }
     
     // MARK: - Validation
@@ -116,7 +121,8 @@ extension SimulationParameters {
         withdrawalConfig: WithdrawalConfiguration(
             strategy: .fixedPercentage,
             withdrawalRate: 0.035
-        )
+        ),
+        inflationStrategy: .historicalCorrelated
     )
     
     static let moderate = SimulationParameters(
@@ -128,7 +134,8 @@ extension SimulationParameters {
         withdrawalConfig: WithdrawalConfiguration(
             strategy: .fixedPercentage,
             withdrawalRate: 0.04
-        )
+        ),
+        inflationStrategy: .historicalCorrelated
     )
     
     static let aggressive = SimulationParameters(
@@ -140,6 +147,7 @@ extension SimulationParameters {
         withdrawalConfig: WithdrawalConfiguration(
             strategy: .dynamicPercentage,
             withdrawalRate: 0.05
-        )
+        ),
+        inflationStrategy: .historicalCorrelated
     )
 }

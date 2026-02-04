@@ -17,8 +17,9 @@ class PortfolioViewModel: ObservableObject {
     
     // Retirement planning
     @Published var targetRetirementDate: Date?
-    @Published var targetRetirementValue: Double = 1_000_000
-    @Published var annualFixedIncome: Double = 0 // Social Security, pensions, etc.
+    @Published var expectedAnnualSpend: Double = 40000
+    @Published var withdrawalPercentage: Double = 0.04
+    @Published var annualFixedIncome: Double = 0
     
     private let persistence = PersistenceService.shared
     
@@ -112,13 +113,12 @@ class PortfolioViewModel: ObservableObject {
     
     // MARK: - Retirement Planning
     
-    func setRetirementDate(_ date: Date) {
-        targetRetirementDate = date
-        saveRetirementSettings()
+    var targetRetirementValue: Double {
+        expectedAnnualSpend / withdrawalPercentage
     }
     
-    func setRetirementTarget(_ value: Double) {
-        targetRetirementValue = value
+    func setRetirementDate(_ date: Date) {
+        targetRetirementDate = date
         saveRetirementSettings()
     }
     
@@ -128,8 +128,9 @@ class PortfolioViewModel: ObservableObject {
     }
     
     var retirementProgress: Double {
-        guard targetRetirementValue > 0 else { return 0 }
-        return totalValue / targetRetirementValue
+        let target = targetRetirementValue
+        guard target > 0 else { return 0 }
+        return totalValue / target
     }
     
     var yearsToRetirement: Int? {
@@ -142,9 +143,16 @@ class PortfolioViewModel: ObservableObject {
             targetRetirementDate = Date(timeIntervalSince1970: dateTimestamp)
         }
         
-        let savedValue = UserDefaults.standard.double(forKey: "retirement_target")
-        if savedValue > 0 {
-            targetRetirementValue = savedValue
+        let savedSpend = UserDefaults.standard.double(forKey: "expected_annual_spend")
+        if savedSpend > 0 {
+            expectedAnnualSpend = savedSpend
+        }
+        
+        let savedWithdrawalPct = UserDefaults.standard.double(forKey: "withdrawal_percentage")
+        if savedWithdrawalPct > 0 {
+            withdrawalPercentage = savedWithdrawalPct
+        } else {
+            withdrawalPercentage = 0.04
         }
         
         annualFixedIncome = UserDefaults.standard.double(forKey: "fixed_income")
@@ -154,7 +162,6 @@ class PortfolioViewModel: ObservableObject {
         if let date = targetRetirementDate {
             UserDefaults.standard.set(date.timeIntervalSince1970, forKey: "retirement_date")
         }
-        UserDefaults.standard.set(targetRetirementValue, forKey: "retirement_target")
         UserDefaults.standard.set(annualFixedIncome, forKey: "fixed_income")
     }
     
