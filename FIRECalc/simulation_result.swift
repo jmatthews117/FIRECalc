@@ -27,8 +27,14 @@ struct SimulationResult: Codable, Identifiable {
     // Year-by-year projections (median values)
     let yearlyBalances: [YearlyProjection]
     
+    // Optional: Real-dollar projections (if engine computed them)
+    let yearlyRealBalances: [YearlyProjection]?
+    
     // Distribution of outcomes
     let finalBalanceDistribution: [Double]
+    
+    // Optional: Real-dollar distribution of outcomes
+    let finalRealBalanceDistribution: [Double]?
     
     // NEW: All simulation runs for spaghetti chart
     let allSimulationRuns: [SimulationRun]
@@ -55,7 +61,9 @@ struct SimulationResult: Codable, Identifiable {
         percentile75: Double,
         percentile90: Double,
         yearlyBalances: [YearlyProjection],
+        yearlyRealBalances: [YearlyProjection]? = nil,
         finalBalanceDistribution: [Double],
+        finalRealBalanceDistribution: [Double]? = nil,
         allSimulationRuns: [SimulationRun],
         totalWithdrawn: Double,
         averageAnnualWithdrawal: Double,
@@ -75,7 +83,9 @@ struct SimulationResult: Codable, Identifiable {
         self.percentile75 = percentile75
         self.percentile90 = percentile90
         self.yearlyBalances = yearlyBalances
+        self.yearlyRealBalances = yearlyRealBalances
         self.finalBalanceDistribution = finalBalanceDistribution
+        self.finalRealBalanceDistribution = finalRealBalanceDistribution
         self.allSimulationRuns = allSimulationRuns
         self.totalWithdrawn = totalWithdrawn
         self.averageAnnualWithdrawal = averageAnnualWithdrawal
@@ -150,7 +160,9 @@ extension SimulationResult {
             percentile75: 1_800_000,
             percentile90: 2_500_000,
             yearlyBalances: yearlyBalances,
+            yearlyRealBalances: nil,
             finalBalanceDistribution: distribution,
+            finalRealBalanceDistribution: nil,
             allSimulationRuns: sampleRuns,
             totalWithdrawn: 1_200_000,
             averageAnnualWithdrawal: 40_000,

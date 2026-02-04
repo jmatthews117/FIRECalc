@@ -28,6 +28,10 @@ struct SimulationParameters: Codable {
     var pensionIncome: Double?  // Annual pension
     var otherIncome: Double?  // Other fixed income
     
+    // Reproducibility and bootstrap options
+    var rngSeed: UInt64?  // Optional RNG seed for reproducible runs
+    var bootstrapBlockLength: Int?  // Optional block length for historical bootstrap (>= 2 enables block sampling)
+    
     // Market assumptions (if not using bootstrap)
     var customReturns: [AssetClass: Double]?
     var customVolatility: [AssetClass: Double]?
@@ -48,6 +52,8 @@ struct SimulationParameters: Codable {
         socialSecurityIncome: Double? = nil,
         pensionIncome: Double? = nil,
         otherIncome: Double? = nil,
+        rngSeed: UInt64? = nil,
+        bootstrapBlockLength: Int? = nil,
         customReturns: [AssetClass: Double]? = nil,
         customVolatility: [AssetClass: Double]? = nil,
         inflationStrategy: InflationStrategy = .historicalCorrelated
@@ -64,6 +70,8 @@ struct SimulationParameters: Codable {
         self.socialSecurityIncome = socialSecurityIncome
         self.pensionIncome = pensionIncome
         self.otherIncome = otherIncome
+        self.rngSeed = rngSeed
+        self.bootstrapBlockLength = bootstrapBlockLength
         self.customReturns = customReturns
         self.customVolatility = customVolatility
         self.inflationStrategy = inflationStrategy
