@@ -78,17 +78,92 @@ class HistoricalDataService {
     
     /// Load historical data from JSON file
     func loadHistoricalData() throws -> HistoricalData {
-        if let cached = cachedData {
-            return cached
-        }
+        if let cached = cachedData { return cached }
         
-        guard let url = Bundle.main.url(forResource: "HistoricalReturns", withExtension: "json") else {
+        // Load new nominal returns by year dataset
+        guard let url = Bundle.main.url(forResource: "returns_by_year", withExtension: "json") else {
             throw DataError.fileNotFound
         }
-        
         let data = try Data(contentsOf: url)
+        
+        // Define row model matching JSON keys exactly
+        struct YearlyNominalRow: Decodable {
+            let Year: Int
+            let `S&P 500 (includes dividends)`: String
+            let `US Small cap (bottom decile)`: String
+            let `3-month T.Bill`: String
+            let `US T. Bond (10-year)`: String
+            let `Baa Corporate Bond`: String
+            let `Real Estate`: String
+            let `Gold*`: String
+        }
+        
         let decoder = JSONDecoder()
-        let historicalData = try decoder.decode(HistoricalData.self, from: data)
+        let rows = try decoder.decode([YearlyNominalRow].self, from: data)
+        
+        // Build per-asset arrays
+        var stocks: [Double] = []
+        var smallCap: [Double] = []
+        var tbill: [Double] = []
+        var tbond10y: [Double] = []
+        var baaCorp: [Double] = []
+        var realEstate: [Double] = []
+        var gold: [Double] = []
+        
+        for row in rows {
+            if let v = parsePercent(row.`S&P 500 (includes dividends)`) { stocks.append(v) }
+            if let v = parsePercent(row.`US Small cap (bottom decile)`) { smallCap.append(v) }
+            if let v = parsePercent(row.`3-month T.Bill`) { tbill.append(v) }
+            if let v = parsePercent(row.`US T. Bond (10-year)`) { tbond10y.append(v) }
+            if let v = parsePercent(row.`Baa Corporate Bond`) { baaCorp.append(v) }
+            if let v = parsePercent(row.`Real Estate`) { realEstate.append(v) }
+            if let v = parsePercent(row.`Gold*`) { gold.append(v) }
+        }
+        
+        let years = rows.map { $0.Year }
+        let startYear = years.min() ?? 0
+        let endYear = years.max() ?? 0
+        
+        // Map to app asset classes
+        var assetDict: [String: AssetClassData] = [:]
+        
+        assetDict[AssetClass.stocks.rawValue.lowercased()] = AssetClassData(
+            name: AssetClass.stocks.rawValue,
+            historicalReturns: stocks,
+            summary: stats(for: stocks),
+            notes: "From returns_by_year.json (nominal)"
+        )
+        assetDict[AssetClass.bonds.rawValue.lowercased()] = AssetClassData(
+            name: AssetClass.bonds.rawValue,
+            historicalReturns: tbond10y,
+            summary: stats(for: tbond10y),
+            notes: "10Y Treasury"
+        )
+        assetDict[AssetClass.cash.rawValue.lowercased()] = AssetClassData(
+            name: AssetClass.cash.rawValue,
+            historicalReturns: tbill,
+            summary: stats(for: tbill),
+            notes: "3-month T-Bill"
+        )
+        assetDict[AssetClass.realEstate.rawValue.lowercased()] = AssetClassData(
+            name: AssetClass.realEstate.rawValue,
+            historicalReturns: realEstate,
+            summary: stats(for: realEstate),
+            notes: nil
+        )
+        // Optionally include Baa Corporate as corporate bonds if such asset class exists; otherwise ignore
+        
+        let historicalData = HistoricalData(
+            metadata: HistoricalMetadata(
+                description: "Nominal returns by year (parsed from returns_by_year.json)",
+                dataSource: "User-provided dataset",
+                startYear: startYear,
+                endYear: endYear,
+                notes: "Percent values parsed to decimal fractions"
+            ),
+            assetClasses: assetDict,
+            correlations: nil
+        )
         
         cachedData = historicalData
         return historicalData
@@ -154,6 +229,29 @@ class HistoricalDataService {
         let mean = values.reduce(0, +) / Double(values.count)
         let variance = values.map { pow($0 - mean, 2) }.reduce(0, +) / Double(values.count)
         return sqrt(variance)
+    }
+    
+    private func parsePercent(_ s: String) -> Double? {
+        let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "%", with: "")
+        return Double(trimmed).map { $0 / 100.0 }
+    }
+    
+    private func stats(for values: [Double]) -> ReturnSummary {
+        guard !values.isEmpty else {
+            return ReturnSummary(mean: 0, median: 0, standardDeviation: 0, min: 0, max: 0)
+        }
+        let mean = values.reduce(0, +) / Double(values.count)
+        let sorted = values.sorted()
+        let median: Double
+        if sorted.count % 2 == 0 {
+            let mid = sorted.count / 2
+            median = (sorted[mid - 1] + sorted[mid]) / 2
+        } else {
+            median = sorted[sorted.count / 2]
+        }
+        let variance = values.map { pow($0 - mean, 2) }.reduce(0, +) / Double(values.count)
+        let std = sqrt(variance)
+        return ReturnSummary(mean: mean, median: median, standardDeviation: std, min: sorted.first ?? 0, max: sorted.last ?? 0)
     }
 }
 
@@ -234,3 +332,4 @@ extension HistoricalDataService {
         return returns
     }
 }
+
