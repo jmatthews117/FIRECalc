@@ -27,6 +27,9 @@ struct SimulationResultsView: View {
                     // Ending Balance Distribution
                     endingBalanceHistogram
                     
+                    // Spaghetti Chart of All Paths
+                    spaghettiChartSection
+                    
                     // Detailed Statistics
                     detailedStats
                 }
@@ -265,6 +268,34 @@ struct SimulationResultsView: View {
         .shadow(radius: 4)
     }
     
+    private var spaghettiChartSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("All Simulated Paths")
+                .font(.headline)
+            
+            Text("Each line shows one scenario's portfolio balance over time")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            let series: [SpaghettiChartView.PathSeries] = result.allSimulationRuns.enumerated().map { (idx, run) in
+                SpaghettiChartView.PathSeries(id: idx, values: run.yearlyBalances)
+            }
+            
+            SpaghettiChartView(
+                series: series,
+                lineOpacity: 0.08,
+                maxPathsToDraw: 600,
+                yLabel: "Balance",
+                xLabel: "Years"
+            )
+            .frame(height: 260)
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 4)
+    }
+    
     // MARK: - Detailed Stats
     
     private var detailedStats: some View {
@@ -472,3 +503,4 @@ struct ImprovedHistogramBucket: Identifiable {
 #Preview {
     SimulationResultsView(result: .sample)
 }
+
