@@ -351,30 +351,30 @@ struct WithdrawalConfigurationView: View {
             return portfolioValue * withdrawalRate
         }
     }
-    
+
     private var projectedWithdrawals: [(year: Int, amount: Double)] {
         let calculator = WithdrawalCalculator()
         var projections: [(Int, Double)] = []
         
-        let inflationRate = 0.025 // Assume 2.5% for projection
-        let assumedReturn = 0.05 // Assume 5% for projection
+        // Work in REAL terms - assumed return is already real (inflation-adjusted)
+        let assumedRealReturn = 0.02 // Assume 2% real return for projection (conservative)
         var balance = portfolioValue
         var baselineWithdrawal = firstYearWithdrawal
         
         for year in 1...30 {
+            // Call the NEW calculateWithdrawal signature (no inflationRate parameter)
             let withdrawal = calculator.calculateWithdrawal(
                 currentBalance: balance,
                 year: year,
                 baselineWithdrawal: baselineWithdrawal,
                 initialBalance: portfolioValue,
-                config: config,
-                inflationRate: inflationRate
+                config: config
             )
             
             projections.append((year, withdrawal))
             
-            // Update balance for next year
-            balance = balance * (1 + assumedReturn) - withdrawal
+            // Update balance for next year using REAL return
+            balance = balance * (1 + assumedRealReturn) - withdrawal
             balance = max(0, balance)
         }
         

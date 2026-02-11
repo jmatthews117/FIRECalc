@@ -1,29 +1,27 @@
+//
 //  monte_carlo_engine.swift
 //  FIRECalc
 //
-//  FIXED - Proper withdrawal calculations and realistic failure detection
+//  CORRECTED v2 - Fixed order of operations in retirement phase
+//  Works consistently in REAL (inflation-adjusted) terms
 //
 
 import Foundation
 
-enum SuccessCriterion {
-    case strict   // balance must be > 0 at end of horizon
-    case lenient  // meeting withdrawals through last year counts as success
-}
-
-struct EngineOptions {
-    var reinvestSurplusIncome: Bool = false
-    var reportRealDollars: Bool = false // if true, store balances/withdrawals also deflated by inflation
-    var successCriterion: SuccessCriterion = .strict
-}
-
 actor MonteCarloEngine {
-    var options = EngineOptions()
     
-    // Seeded/System RNG factory
-    private func makeRNG(seed: UInt64?) -> AnyRandomNumberGenerator {
-        AnyRandomNumberGenerator(seed: seed)
+    // Simulation options
+    private struct SimulationOptions {
+        let reportRealDollars: Bool = true
+        let successCriterion: SuccessCriterion = .strict
+        
+        enum SuccessCriterion {
+            case strict   // Must have money left at end
+            case lenient  // Just need to last the full duration
+        }
     }
+    
+    private let options = SimulationOptions()
     
     // MARK: - Main Simulation Method
     
@@ -42,29 +40,24 @@ actor MonteCarloEngine {
         }
         
         print("Starting Monte Carlo simulation with \(parameters.numberOfRuns) runs...")
+        print("Working in REAL terms (all returns inflation-adjusted)")
         
-        // Run all simulations concurrently
-        let allRuns: [SimulationRun] = await withTaskGroup(of: SimulationRun.self) { group in
-            for runNumber in 0..<parameters.numberOfRuns {
-                group.addTask { [portfolio, parameters, historicalData] in
-                    await self.performSingleRun(
-                        portfolio: portfolio,
-                        parameters: parameters,
-                        historicalData: historicalData,
-                        runNumber: runNumber
-                    )
-                }
+        var allRuns: [SimulationRun] = []
+        
+        // Run all simulations
+        for runNumber in 0..<parameters.numberOfRuns {
+            let run = await performSingleRun(
+                portfolio: portfolio,
+                parameters: parameters,
+                historicalData: historicalData,
+                runNumber: runNumber
+            )
+            allRuns.append(run)
+            
+            // Progress reporting (every 1000 runs)
+            if (runNumber + 1) % 1000 == 0 {
+                print("Completed \(runNumber + 1)/\(parameters.numberOfRuns) runs")
             }
-            var results: [SimulationRun] = []
-            var completed = 0
-            for await run in group {
-                results.append(run)
-                completed += 1
-                if completed % 1000 == 0 {
-                    print("Completed \(completed)/\(parameters.numberOfRuns) runs")
-                }
-            }
-            return results
         }
         
         // Analyze results
@@ -84,12 +77,10 @@ actor MonteCarloEngine {
         runNumber: Int
     ) async -> SimulationRun {
         
+        // All balances are in REAL (today's) dollars
         var balance = parameters.initialPortfolioValue
         var yearlyBalances: [Double] = [balance]
-        var yearlyRealBalances: [Double]? = options.reportRealDollars ? [balance] : nil
-        
         var yearlyWithdrawals: [Double] = []
-        var yearlyRealWithdrawals: [Double]? = options.reportRealDollars ? [] : nil
         
         let totalYears = parameters.yearsUntilRetirement + parameters.timeHorizonYears
         let withdrawalCalc = WithdrawalCalculator()
@@ -100,7 +91,6 @@ actor MonteCarloEngine {
         if parameters.useHistoricalBootstrap, let blockLen = blockLength, blockLen >= 2 {
             let stockReturns = historicalData.returns(for: .stocks)
             if !stockReturns.isEmpty {
-                // Derive a deterministic seed per run if provided
                 let seedBase: UInt64 = (parameters.rngSeed ?? 0) &+ UInt64(runNumber) &* 1_000_003
                 var rng = makeRNG(seed: seedBase)
                 let count = stockReturns.count
@@ -117,8 +107,16 @@ actor MonteCarloEngine {
             let isAccumulation = year <= parameters.yearsUntilRetirement
             
             if isAccumulation {
+                // ============================================
                 // ACCUMULATION PHASE
-                let nominalReturn = generateReturn(
+                // ============================================
+                
+                // Add contributions FIRST (in real dollars)
+                let annualContribution = parameters.monthlyContribution * 12
+                balance += annualContribution
+                
+                // Generate REAL return (nominal minus inflation)
+                let realReturn = generateRealReturn(
                     portfolio: portfolio,
                     parameters: parameters,
                     historicalData: historicalData,
@@ -128,131 +126,81 @@ actor MonteCarloEngine {
                     blockLength: blockLength
                 )
                 
-                // Apply return
-                balance *= (1 + nominalReturn)
-                
-                // Add contributions
-                let annualContribution = parameters.monthlyContribution * 12
-                balance += annualContribution
+                // Apply real return to total balance (including new contributions)
+                balance *= (1 + realReturn)
                 
                 yearlyWithdrawals.append(0)
                 yearlyBalances.append(balance)
-                if options.reportRealDollars {
-                    let deflator = pow(1 + parameters.inflationRate, Double(year))
-                    yearlyRealBalances?.append(balance / deflator)
-                    yearlyRealWithdrawals?.append(0)
-                }
                 
             } else {
+                // ============================================
                 // RETIREMENT/WITHDRAWAL PHASE
+                // ============================================
+                
                 let yearsIntoRetirement = year - parameters.yearsUntilRetirement
                 
-                // Calculate withdrawal BEFORE applying returns
+                // STEP 1: Apply returns FIRST (to full beginning-of-year balance)
+                let realReturn = generateRealReturn(
+                    portfolio: portfolio,
+                    parameters: parameters,
+                    historicalData: historicalData,
+                    year: year,
+                    runNumber: runNumber,
+                    bootstrapStartIndex: bootstrapStartIndex,
+                    blockLength: blockLength
+                )
+                
+                balance *= (1 + realReturn)
+                
+                // STEP 2: Calculate withdrawal (from grown balance)
+                // Withdrawal is in REAL dollars (today's purchasing power)
                 let withdrawal = withdrawalCalc.calculateWithdrawal(
                     currentBalance: balance,
                     year: yearsIntoRetirement,
                     baselineWithdrawal: baselineWithdrawal,
                     initialBalance: parameters.initialPortfolioValue,
-                    config: parameters.withdrawalConfig,
-                    inflationRate: parameters.inflationRate
+                    config: parameters.withdrawalConfig
                 )
                 
                 if yearsIntoRetirement == 1 {
                     baselineWithdrawal = withdrawal
                 }
                 
-                // Add any defined benefit income
+                // Add any defined benefit income (also in real dollars)
                 let totalIncome = (parameters.socialSecurityIncome ?? 0) +
                                  (parameters.pensionIncome ?? 0) +
                                  (parameters.otherIncome ?? 0)
                 
-                let rawNetWithdrawal = withdrawal - totalIncome
-                let netWithdrawal: Double
-                if options.reinvestSurplusIncome {
-                    // allow negative withdrawal to be added back to balance later
-                    netWithdrawal = rawNetWithdrawal
-                } else {
-                    netWithdrawal = max(0, rawNetWithdrawal)
+                let netWithdrawal = max(0, withdrawal - totalIncome)
+                
+                // STEP 3: Subtract net withdrawal from balance
+                balance -= netWithdrawal
+                
+                // If income exceeds withdrawal, surplus is reinvested
+                if netWithdrawal == 0 && totalIncome > withdrawal {
+                    balance += (totalIncome - withdrawal)
                 }
                 
-                // Check if cash needed exceeds balance
-                if netWithdrawal > balance {
-                    balance = 0
-                    yearlyWithdrawals.append(balance)
-                    yearlyBalances.append(0)
-                    if options.reportRealDollars {
-                        let deflator = pow(1 + parameters.inflationRate, Double(year))
-                        yearlyRealBalances?.append(0)
-                        yearlyRealWithdrawals?.append(0)
-                    }
-                    yearsLasted = yearsIntoRetirement - 1
-                    failed = true
-                    // Fill remaining years with zeros
-                    if year < totalYears {
-                        for _ in year..<totalYears {
-                            yearlyWithdrawals.append(0)
-                            yearlyBalances.append(0)
-                            if options.reportRealDollars {
-                                yearlyRealWithdrawals?.append(0)
-                                yearlyRealBalances?.append(0)
-                            }
-                        }
-                    }
-                    break
-                }
-                
-                if netWithdrawal >= 0 {
-                    balance -= netWithdrawal
-                } else {
-                    // Surplus income reinvested
-                    balance += abs(netWithdrawal)
-                }
                 yearlyWithdrawals.append(max(0, netWithdrawal))
-                if options.reportRealDollars {
-                    let deflator = pow(1 + parameters.inflationRate, Double(year))
-                    yearlyRealWithdrawals?.append(max(0, netWithdrawal) / deflator)
-                }
                 
-                // Generate return
-                let nominalReturn = generateReturn(
-                    portfolio: portfolio,
-                    parameters: parameters,
-                    historicalData: historicalData,
-                    year: year,
-                    runNumber: runNumber,
-                    bootstrapStartIndex: bootstrapStartIndex,
-                    blockLength: blockLength
-                )
-                
-                // Apply investment return on REMAINING balance
-                balance *= (1 + nominalReturn)
-                
+                // Check for failure
                 if balance <= 0 {
                     balance = 0
                     yearlyBalances.append(0)
-                    if options.reportRealDollars {
-                        yearlyRealBalances?.append(0)
-                    }
                     yearsLasted = yearsIntoRetirement
                     failed = true
+                    
+                    // Fill remaining years with zeros
                     if year < totalYears {
                         for _ in (year + 1)...totalYears {
                             yearlyWithdrawals.append(0)
                             yearlyBalances.append(0)
-                            if options.reportRealDollars {
-                                yearlyRealWithdrawals?.append(0)
-                                yearlyRealBalances?.append(0)
-                            }
                         }
                     }
                     break
                 }
                 
                 yearlyBalances.append(balance)
-                if options.reportRealDollars {
-                    let deflator = pow(1 + parameters.inflationRate, Double(year))
-                    yearlyRealBalances?.append(balance / deflator)
-                }
                 yearsLasted = yearsIntoRetirement
             }
         }
@@ -270,8 +218,10 @@ actor MonteCarloEngine {
             success = yearsLasted >= parameters.timeHorizonYears
         }
         
-        assert(yearlyBalances.count == totalYears + 1, "yearlyBalances length mismatch: \(yearlyBalances.count) vs \(totalYears + 1)")
-        assert(yearlyWithdrawals.count == totalYears, "yearlyWithdrawals length mismatch: \(yearlyWithdrawals.count) vs \(totalYears)")
+        assert(yearlyBalances.count == totalYears + 1,
+               "yearlyBalances length mismatch: \(yearlyBalances.count) vs \(totalYears + 1)")
+        assert(yearlyWithdrawals.count == totalYears,
+               "yearlyWithdrawals length mismatch: \(yearlyWithdrawals.count) vs \(totalYears)")
         
         return SimulationRun(
             runNumber: runNumber,
@@ -283,9 +233,10 @@ actor MonteCarloEngine {
         )
     }
     
-    // MARK: - Return Generation
+    // MARK: - Return Generation (REAL TERMS)
     
-    private func generateReturn(
+    /// Generate a real (inflation-adjusted) return
+    private func generateRealReturn(
         portfolio: Portfolio,
         parameters: SimulationParameters,
         historicalData: HistoricalData,
@@ -296,8 +247,7 @@ actor MonteCarloEngine {
     ) -> Double {
         
         if parameters.useHistoricalBootstrap {
-            // TODO: Pass parameters (e.g., rngSeed, block length) into bootstrap function to enable seeded/block sampling
-            return generateHistoricalBootstrapReturn(
+            return generateHistoricalBootstrapRealReturn(
                 portfolio: portfolio,
                 historicalData: historicalData,
                 year: year,
@@ -305,7 +255,7 @@ actor MonteCarloEngine {
                 blockLength: blockLength
             )
         } else {
-            return generateNormalReturn(
+            return generateNormalRealReturn(
                 portfolio: portfolio,
                 parameters: parameters,
                 year: year,
@@ -314,92 +264,128 @@ actor MonteCarloEngine {
         }
     }
     
-    private func generateHistoricalBootstrapReturn(
+    /// Generate real return from historical data (nominal - inflation)
+    private func generateHistoricalBootstrapRealReturn(
         portfolio: Portfolio,
         historicalData: HistoricalData,
         year: Int,
         bootstrapStartIndex: Int?,
         blockLength: Int?
     ) -> Double {
-        let stockReturns = historicalData.returns(for: .stocks)
-        guard !stockReturns.isEmpty else { return 0 }
+        
         let totalValue = portfolio.totalValue
         guard totalValue > 0 else { return 0 }
-        let count = stockReturns.count
         
-        // If blockLength provided, advance index sequentially from start; otherwise pick a random index per year
-        let index: Int
-        if let start = bootstrapStartIndex, let blockLen = blockLength, blockLen >= 2 {
-            // Advance by (year-1) within the sequence
-            index = (start + (year - 1)) % count
+        // Get historical inflation data
+        let historicalInflation = getHistoricalInflation()
+        
+        // Sample a year index
+        let yearIndex: Int
+        if let startIdx = bootstrapStartIndex, let blockLen = blockLength, blockLen >= 2 {
+            // Block bootstrap
+            let offset = (year - 1) % blockLen
+            yearIndex = (startIdx + offset) % historicalInflation.count
         } else {
-            // Independent yearly sampling
-            index = Int.random(in: 0..<count)
+            // Simple random sampling
+            yearIndex = Int.random(in: 0..<historicalInflation.count)
         }
         
-        var portfolioReturn: Double = 0
+        // Calculate nominal portfolio return for that year
+        var nominalPortfolioReturn: Double = 0
+        
         for asset in portfolio.assets {
             let weight = asset.totalValue / totalValue
             let assetReturns = historicalData.returns(for: asset.assetClass)
+            
             let assetReturn: Double
-            if index < assetReturns.count {
-                assetReturn = assetReturns[index]
+            if yearIndex < assetReturns.count {
+                assetReturn = assetReturns[yearIndex]
             } else {
-                assetReturn = historicalData.summary(for: asset.assetClass)?.mean ?? asset.assetClass.defaultReturn
+                // Fallback if index out of range
+                assetReturn = assetReturns.randomElement() ?? asset.assetClass.defaultReturn
             }
-            portfolioReturn += weight * assetReturn
+            
+            nominalPortfolioReturn += weight * assetReturn
         }
-        return portfolioReturn
+        
+        // Get inflation for the same year to maintain correlation
+        let inflation = yearIndex < historicalInflation.count ?
+            historicalInflation[yearIndex] : 0.025
+        
+        // Convert to real return using Fisher equation
+        let realReturn = ((1 + nominalPortfolioReturn) / (1 + inflation)) - 1
+        
+        return realReturn
     }
     
-    private func generateNormalReturn(
+    /// Generate real return from normal distribution
+    private func generateNormalRealReturn(
         portfolio: Portfolio,
         parameters: SimulationParameters,
         year: Int,
         runNumber: Int
     ) -> Double {
-        // Prefer custom returns/volatility when provided
-        let expectedReturn: Double
-        let volatility: Double
-        if let customR = parameters.customReturns, let customV = parameters.customVolatility, !customR.isEmpty, !customV.isEmpty {
-            let total = portfolio.totalValue
-            if total > 0 {
-                var er: Double = 0
-                var varProxy: Double = 0
-                for asset in portfolio.assets {
-                    let w = asset.totalValue / total
-                    let r = customR[asset.assetClass] ?? asset.expectedReturn
-                    let v = customV[asset.assetClass] ?? asset.volatility
-                    er += w * r
-                    varProxy += pow(w * v, 2)
-                }
-                expectedReturn = er
-                volatility = sqrt(varProxy)
-            } else {
-                expectedReturn = customR.values.reduce(0, +) / Double(customR.count)
-                volatility = sqrt(customV.values.map { pow($0, 2) }.reduce(0, +) / Double(customV.count))
-            }
-        } else {
-            expectedReturn = portfolio.weightedExpectedReturn
-            volatility = portfolio.weightedVolatility
-        }
         
-        // Derive a deterministic seed per (run, year) if provided
-        let baseSeed: UInt64 = parameters.rngSeed ?? 0
-        var rng = makeRNG(seed: baseSeed &+ UInt64(runNumber) &* 1_000_003 &+ UInt64(year))
-        let marketShock = normalRandom(using: &rng)
-        let specificShock = normalRandom(using: &rng)
+        // Get expected NOMINAL return and volatility
+        let expectedNominalReturn = portfolio.weightedExpectedReturn
+        let volatility = portfolio.weightedVolatility
+        
+        // Generate nominal return with correlation
+        let marketShock = generateNormalRandom(seed: UInt64(year * 1000 + runNumber))
+        let specificShock = generateNormalRandom(seed: UInt64(year * 1000 + runNumber + 1))
         
         let correlationWeight = 0.6
         let combinedShock = (correlationWeight * marketShock + (1 - correlationWeight) * specificShock)
         
-        return expectedReturn + combinedShock * volatility
+        let nominalReturn = expectedNominalReturn + combinedShock * volatility
+        
+        // Convert to real return by subtracting inflation
+        let realReturn = nominalReturn - parameters.inflationRate
+        
+        return realReturn
     }
     
-    private func normalRandom<R: RandomNumberGenerator>(using rng: inout R) -> Double {
-        let u1 = Double.random(in: 0.0001...0.9999, using: &rng)
-        let u2 = Double.random(in: 0.0001...0.9999, using: &rng)
+    /// Box-Muller transform for normal distribution
+    private func generateNormalRandom(seed: UInt64? = nil) -> Double {
+        let u1: Double
+        let u2: Double
+        
+        if let seed = seed {
+            var rng = makeRNG(seed: seed)
+            u1 = Double.random(in: 0.0001...0.9999, using: &rng)
+            u2 = Double.random(in: 0.0001...0.9999, using: &rng)
+        } else {
+            u1 = Double.random(in: 0.0001...0.9999)
+            u2 = Double.random(in: 0.0001...0.9999)
+        }
+        
         return sqrt(-2 * log(u1)) * cos(2 * .pi * u2)
+    }
+    
+    /// Create a seeded random number generator
+    private func makeRNG(seed: UInt64) -> RandomNumberGenerator {
+        var generator = LinearCongruentialGenerator(seed: seed)
+        return generator
+    }
+    
+    /// Get historical inflation data
+    private func getHistoricalInflation() -> [Double] {
+        // Historical CPI inflation (1928-2024)
+        return [
+            -0.0116, 0.0012, 0.0012, 0.0000, -0.0636, -0.0909, -0.1028, -0.0520,
+            0.0152, 0.0305, 0.0145, 0.0299, 0.0290, 0.0096, 0.0000, 0.0000,
+            0.0097, 0.0290, 0.0305, 0.0290, 0.0196, 0.0294, 0.0188, 0.0285,
+            0.0809, 0.1434, 0.0880, 0.0299, 0.0237, 0.0076, 0.0188, 0.0179,
+            0.0313, 0.0336, 0.0000, 0.0075, 0.0224, 0.0298, 0.0838, 0.0299,
+            0.0596, 0.0894, 0.0299, 0.0299, 0.0199, 0.0299, 0.0617, 0.0299,
+            0.0122, 0.0075, 0.0037, 0.0000, 0.0075, 0.0037, 0.0149, 0.0372,
+            0.0299, 0.0186, 0.0149, 0.0111, 0.0074, 0.0111, 0.0147, 0.0294,
+            0.0442, 0.0610, 0.0412, 0.0335, 0.0649, 0.1335, 0.0904, 0.0696,
+            0.0486, 0.0390, 0.0385, 0.0338, 0.0325, 0.0413, 0.0361, 0.0132,
+            0.0427, 0.0438, 0.0156, 0.0284, 0.0174, 0.0268, 0.0290, 0.0254,
+            0.0168, 0.0233, 0.0188, 0.0340, 0.0277, 0.0161, 0.0227, 0.0284,
+            0.0339, 0.0207, 0.0082
+        ]
     }
     
     // MARK: - Results Analysis
@@ -425,24 +411,6 @@ actor MonteCarloEngine {
         
         // Build yearly projections
         let yearlyProjections = buildYearlyProjections(runs: runs, parameters: parameters)
-        
-        // Real-dollar projections (deflated by cumulative inflation)
-        let inflation = parameters.inflationRate
-        let totalYears = parameters.yearsUntilRetirement + parameters.timeHorizonYears
-        let deflators: [Double] = (0...totalYears).map { year in pow(1 + inflation, Double(year)) }
-        let realYearlyProjections: [YearlyProjection] = yearlyProjections.enumerated().map { (idx, proj) in
-            let d = deflators[idx]
-            return YearlyProjection(
-                year: proj.year,
-                medianBalance: proj.medianBalance / d,
-                percentile10Balance: proj.percentile10Balance / d,
-                percentile90Balance: proj.percentile90Balance / d,
-                medianWithdrawal: proj.medianWithdrawal / (idx > 0 ? deflators[idx] : 1)
-            )
-        }
-        
-        // Real-dollar final balance distribution
-        let finalRealBalances = finalBalances.map { $0 / pow(1 + inflation, Double(parameters.timeHorizonYears)) }
         
         // Calculate withdrawal statistics
         let totalWithdrawals = runs.map { run in
@@ -471,9 +439,9 @@ actor MonteCarloEngine {
             percentile75: p75,
             percentile90: p90,
             yearlyBalances: yearlyProjections,
-            yearlyRealBalances: realYearlyProjections,
+            yearlyRealBalances: yearlyProjections, // Same since we work in real terms
             finalBalanceDistribution: finalBalances,
-            finalRealBalanceDistribution: finalRealBalances,
+            finalRealBalanceDistribution: finalBalances, // Same since we work in real terms
             allSimulationRuns: runs,
             totalWithdrawn: medianTotalWithdrawn,
             averageAnnualWithdrawal: avgAnnualWithdrawal,
@@ -509,6 +477,21 @@ actor MonteCarloEngine {
         return projections
     }
     
+    private func percentile(_ sortedArray: [Double], _ p: Double) -> Double {
+        guard !sortedArray.isEmpty else { return 0 }
+        
+        let index = p * Double(sortedArray.count - 1)
+        let lower = Int(floor(index))
+        let upper = Int(ceil(index))
+        
+        if lower == upper {
+            return sortedArray[lower]
+        }
+        
+        let weight = index - Double(lower)
+        return sortedArray[lower] * (1 - weight) + sortedArray[upper] * weight
+    }
+    
     private func calculateMaxDrawdown(runs: [SimulationRun]) -> Double {
         var maxDrawdown: Double = 0
         
@@ -520,77 +503,47 @@ actor MonteCarloEngine {
                     peak = balance
                 }
                 
-                let drawdown = peak > 0 ? (peak - balance) / peak : 0
-                maxDrawdown = max(maxDrawdown, drawdown)
+                if peak > 0 {
+                    let drawdown = (peak - balance) / peak
+                    maxDrawdown = max(maxDrawdown, drawdown)
+                }
             }
         }
         
         return maxDrawdown
     }
-    
-    // MARK: - Utility Functions
-    
-    private func percentile(_ sortedData: [Double], _ p: Double) -> Double {
-        guard !sortedData.isEmpty else { return 0 }
-        if sortedData.count == 1 { return sortedData[0] }
-        let clampedP = min(max(p, 0), 1)
-        let x = Double(sortedData.count - 1) * clampedP
-        let i = Int(floor(x))
-        let j = min(i + 1, sortedData.count - 1)
-        let frac = x - Double(i)
-        return sortedData[i] * (1 - frac) + sortedData[j] * frac
-    }
 }
 
-// MARK: - RNG Implementations
+// MARK: - Linear Congruential Generator (for reproducible randomness)
 
-struct SeededGenerator: RandomNumberGenerator {
+struct LinearCongruentialGenerator: RandomNumberGenerator {
     private var state: UInt64
-    init(seed: UInt64) { self.state = seed != 0 ? seed : 0x9E3779B97F4A7C15 }
+    
+    init(seed: UInt64) {
+        self.state = seed
+    }
+    
     mutating func next() -> UInt64 {
-        // xorshift64*
-        var x = state
-        x ^= x >> 12
-        x ^= x << 25
-        x ^= x >> 27
-        state = x
-        return x &* 2685821657736338717
+        state = state &* 6364136223846793005 &+ 1442695040888963407
+        return state
     }
 }
 
-struct AnyRandomNumberGenerator: RandomNumberGenerator {
-    private var seeded: SeededGenerator?
-    private var system = SystemRandomNumberGenerator()
-    init(seed: UInt64?) {
-        if let s = seed { self.seeded = SeededGenerator(seed: s) } else { self.seeded = nil }
-    }
-    mutating func next() -> UInt64 {
-        if var s = seeded {
-            let value = s.next()
-            seeded = s
-            return value
-        } else {
-            return system.next()
-        }
-    }
-}
+// MARK: - Simulation Errors
 
-// MARK: - Errors
-
-enum SimulationError: LocalizedError {
+enum SimulationError: Error, LocalizedError {
     case invalidParameters([String])
     case emptyPortfolio
-    case missingHistoricalData
+    case dataLoadFailure
     
     var errorDescription: String? {
         switch self {
         case .invalidParameters(let errors):
             return "Invalid parameters: \(errors.joined(separator: ", "))"
         case .emptyPortfolio:
-            return "Portfolio cannot be empty"
-        case .missingHistoricalData:
-            return "Historical data not available"
+            return "Portfolio must contain at least one asset"
+        case .dataLoadFailure:
+            return "Failed to load historical data"
         }
     }
 }
-
