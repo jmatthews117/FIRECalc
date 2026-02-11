@@ -184,7 +184,7 @@ struct SpaghettiChartView: View {
                 .minimumScaleFactor(0.8)
                 .fixedSize(horizontal: true, vertical: false)
                 .rotationEffect(.degrees(-90))
-                .position(x: plotRect.minX - inset + (inset * 0.35), y: plotRect.midY)
+                .position(x: plotRect.minX - inset + (inset * 0.0), y: plotRect.midY)
             
             // X-axis label below the plot area centered
             Text(xLabel)
