@@ -25,11 +25,12 @@ class SimulationViewModel: ObservableObject {
     private let persistence = PersistenceService.shared
     
     init() {
+        let settings = PersistenceService.shared.loadSettings()
         self.parameters = SimulationParameters(
             numberOfRuns: AppConstants.Simulation.defaultRuns,
             timeHorizonYears: AppConstants.Simulation.defaultTimeHorizon,
             inflationRate: AppConstants.Simulation.defaultInflationRate,
-            useHistoricalBootstrap: true,
+            useHistoricalBootstrap: settings.useHistoricalBootstrap,
             initialPortfolioValue: 1_000_000
         )
         

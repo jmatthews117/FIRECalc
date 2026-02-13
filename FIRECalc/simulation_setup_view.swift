@@ -245,6 +245,9 @@ struct SimulationSetupView: View {
     private func runSimulation() {
         print("🚀 Starting simulation...")
         
+        let settings = PersistenceService.shared.loadSettings()
+        let useBootstrap = simulationVM.useCustomReturns ? false : settings.useHistoricalBootstrap
+        
         // Update simulation parameters
         simulationVM.updateWithdrawalRate(withdrawalRate)
         simulationVM.updateTimeHorizon(Int(timeHorizon))
@@ -255,7 +258,7 @@ struct SimulationSetupView: View {
             numberOfRuns: Int(numberOfRuns),
             timeHorizonYears: Int(timeHorizon),
             inflationRate: inflationRate,
-            useHistoricalBootstrap: true,
+            useHistoricalBootstrap: useBootstrap,
             initialPortfolioValue: portfolioVM.totalValue,
             withdrawalConfig: WithdrawalConfiguration(
                 strategy: selectedStrategy,

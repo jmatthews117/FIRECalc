@@ -219,7 +219,8 @@ class PersistenceService {
                 UserDefaults.standard.integer(forKey: AppConstants.UserDefaultsKeys.defaultTimeHorizon) : AppConstants.Simulation.defaultTimeHorizon,
             defaultInflationRate: UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.defaultInflationRate) != 0 ?
                 UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.defaultInflationRate) : AppConstants.Simulation.defaultInflationRate,
-            useHistoricalBootstrap: UserDefaults.standard.bool(forKey: AppConstants.UserDefaultsKeys.useHistoricalBootstrap),
+            useHistoricalBootstrap: UserDefaults.standard.object(forKey: AppConstants.UserDefaultsKeys.useHistoricalBootstrap) != nil ?
+                UserDefaults.standard.bool(forKey: AppConstants.UserDefaultsKeys.useHistoricalBootstrap) : true,
             iexApiKey: loadAPIKey(),
             autoRefreshPrices: UserDefaults.standard.bool(forKey: AppConstants.UserDefaultsKeys.autoRefreshPrices)
         )
