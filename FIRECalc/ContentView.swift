@@ -327,32 +327,17 @@ struct PortfolioTabView: View {
             GroupedPortfolioView(portfolioVM: portfolioVM)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Menu {
-                            Button(action: { showingBulkUpload = true }) {
-                                Label("Multiple Assets", systemImage: "square.stack.3d.up")
+                        Button(action: { showingAddAsset = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle")
+                                Text("Add Asset")
                             }
-                            
-                            Button(action: { showingQuickAdd = true }) {
-                                Label("Quick Add Ticker", systemImage: "bolt.fill")
-                            }
-                            
-                            Button(action: { showingAddAsset = true }) {
-                                Label("Add Custom Asset", systemImage: "plus.circle")
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
+                            .font(.headline)
                         }
                     }
                 }
                 .sheet(isPresented: $showingAddAsset) {
                     AddAssetView(portfolioVM: portfolioVM)
-                }
-                .sheet(isPresented: $showingQuickAdd) {
-                    QuickAddTickerView(portfolioVM: portfolioVM)
-                }
-                .sheet(isPresented: $showingBulkUpload) {
-                    BulkAssetUploadView(portfolioVM: portfolioVM)
                 }
         }
     }

@@ -207,17 +207,21 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        saveSettings()
-                        dismiss()
-                    }
-                }
-            }
+            //.toolbar { }  <-- Removed Done button toolbar item
+            
             .onAppear {
                 loadSettings()
             }
+            .onChange(of: defaultRuns) { _, _ in saveSettings() }
+            .onChange(of: defaultTimeHorizon) { _, _ in saveSettings() }
+            .onChange(of: defaultInflation) { _, _ in saveSettings() }
+            .onChange(of: useHistoricalBootstrap) { _, _ in saveSettings() }
+            .onChange(of: hasRetirementDate) { _, _ in saveSettings() }
+            .onChange(of: retirementDate) { _, _ in saveSettings() }
+            .onChange(of: expectedAnnualSpend) { _, _ in saveSettings() }
+            .onChange(of: withdrawalPercentage) { _, _ in saveSettings() }
+            .onChange(of: annualFixedIncome) { _, _ in saveSettings() }
+            
             .confirmationDialog("Reset All Data", isPresented: $showingResetConfirmation) {
                 Button("Reset Everything", role: .destructive) {
                     resetAllData()

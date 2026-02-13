@@ -21,49 +21,52 @@ struct WithdrawalCalculator {
         config: WithdrawalConfiguration
     ) -> Double {
         
+        var withdrawal: Double
         switch config.strategy {
         case .fixedPercentage:
-            return fixedPercentageRule(
+            withdrawal = fixedPercentageRule(
                 baselineWithdrawal: baselineWithdrawal,
                 initialBalance: initialBalance,
                 year: year,
                 config: config
             )
-            
         case .dynamicPercentage:
-            return dynamicPercentage(
+            withdrawal = dynamicPercentage(
                 currentBalance: currentBalance,
                 config: config
             )
-            
         case .guardrails:
-            return guardrailsStrategy(
+            withdrawal = guardrailsStrategy(
                 currentBalance: currentBalance,
                 baselineWithdrawal: baselineWithdrawal,
                 year: year,
                 config: config
             )
-            
         case .rmd:
-            return requiredMinimumDistribution(
+            withdrawal = requiredMinimumDistribution(
                 currentBalance: currentBalance,
                 year: year,
                 config: config
             )
-            
         case .fixedDollar:
-            return fixedDollarAmount(
+            withdrawal = fixedDollarAmount(
                 config: config
             )
-            
         case .custom:
-            return fixedPercentageRule(
+            withdrawal = fixedPercentageRule(
                 baselineWithdrawal: baselineWithdrawal,
                 initialBalance: initialBalance,
                 year: year,
                 config: config
             )
         }
+        
+        // Subtract fixed income (pensions, Social Security) from required withdrawal in REAL dollars
+        if let income = config.fixedIncome, income > 0 {
+            withdrawal = max(0, withdrawal - income)
+        }
+        
+        return withdrawal
     }
     
     // MARK: - Strategy Implementations
@@ -266,3 +269,4 @@ extension WithdrawalCalculator {
         return withdrawals
     }
 }
+

@@ -84,6 +84,9 @@ struct WithdrawalConfiguration: Codable {
     var annualAmount: Double?
     var adjustForInflation: Bool
     
+    // Fixed income that offsets withdrawals (pensions, Social Security)
+    var fixedIncome: Double?
+    
     // Guardrails parameters
     var upperGuardrail: Double?  // e.g., 0.20 (20% above baseline)
     var lowerGuardrail: Double?  // e.g., 0.15 (15% below baseline)
@@ -101,6 +104,7 @@ struct WithdrawalConfiguration: Codable {
         withdrawalRate: Double = 0.04,
         annualAmount: Double? = nil,
         adjustForInflation: Bool = true,
+        fixedIncome: Double? = nil,
         upperGuardrail: Double? = nil,
         lowerGuardrail: Double? = nil,
         floorPercentage: Double? = nil,
@@ -112,6 +116,7 @@ struct WithdrawalConfiguration: Codable {
         self.withdrawalRate = withdrawalRate
         self.annualAmount = annualAmount
         self.adjustForInflation = adjustForInflation
+        self.fixedIncome = fixedIncome
         self.upperGuardrail = upperGuardrail
         self.lowerGuardrail = lowerGuardrail
         self.floorPercentage = floorPercentage
@@ -120,3 +125,4 @@ struct WithdrawalConfiguration: Codable {
         self.birthYear = birthYear
     }
 }
+

@@ -19,6 +19,8 @@ struct SimulationSetupView: View {
     @State private var withdrawalRate: Double = 0.04
     @State private var selectedStrategy: WithdrawalStrategy = .fixedPercentage
     
+    @State private var fixedIncome: String = "0"
+    
     var body: some View {
         NavigationView {
             Form {
@@ -109,6 +111,33 @@ struct SimulationSetupView: View {
                         .foregroundColor(.secondary)
                 }
                 
+                // Fixed Income Section
+                Section("Fixed Income (Pension & Social Security)") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Annual Fixed Income")
+                            Spacer()
+                            TextField("$0", text: $fixedIncome)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 120)
+                        }
+                        .onChange(of: fixedIncome) { _, newVal in
+                            fixedIncome = formatNumberInput(newVal)
+                        }
+                        
+                        if let income = parseFormattedNumber(fixedIncome), income > 0 {
+                            Text("This reduces required portfolio withdrawals by \(formatCurrency(income)) per year")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                        
+                        Text("We treat pensions and Social Security as external income that offsets your spending needs. Each year, required withdrawals from the portfolio are reduced by this amount (but not below zero).")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
                 // Quick Presets
                 Section("Quick Presets") {
                     Button("Conservative (3.5%, 30yr)") {
@@ -178,6 +207,35 @@ struct SimulationSetupView: View {
         }
     }
     
+    private func formatNumberInput(_ input: String) -> String {
+        let digitsOnly = input.filter { $0.isNumber }
+        if let number = Int(digitsOnly) {
+            return formatNumber(number)
+        }
+        return digitsOnly
+    }
+    
+    private func formatNumber(_ number: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        formatter.groupingSize = 3
+        return formatter.string(from: NSNumber(value: number)) ?? String(number)
+    }
+    
+    private func parseFormattedNumber(_ formatted: String) -> Double? {
+        let digitsOnly = formatted.filter { $0.isNumber }
+        return Double(digitsOnly)
+    }
+    
+    private func formatCurrency(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: value)) ?? "$0"
+    }
+    
     private func applyPreset(rate: Double, years: Double, runs: Double) {
         withdrawalRate = rate
         timeHorizon = years
@@ -201,7 +259,8 @@ struct SimulationSetupView: View {
             initialPortfolioValue: portfolioVM.totalValue,
             withdrawalConfig: WithdrawalConfiguration(
                 strategy: selectedStrategy,
-                withdrawalRate: withdrawalRate
+                withdrawalRate: withdrawalRate,
+                fixedIncome: parseFormattedNumber(fixedIncome) ?? 0
             )
         )
         
@@ -234,3 +293,4 @@ struct SimulationSetupView: View {
         showingResults: .constant(false)
     )
 }
+

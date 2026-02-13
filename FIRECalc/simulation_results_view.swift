@@ -10,6 +10,8 @@ import Charts
 struct SimulationResultsView: View {
     let result: SimulationResult
     @Environment(\.dismiss) private var dismiss
+    @State private var showHistogramFullScreen = false
+    @State private var showSpaghettiFullScreen = false
     
     var body: some View {
         NavigationView {
@@ -26,9 +28,11 @@ struct SimulationResultsView: View {
                     
                     // Ending Balance Distribution
                     endingBalanceHistogram
+                        .onTapGesture { showHistogramFullScreen = true }
                     
                     // Spaghetti Chart of All Paths
                     spaghettiChartSection
+                        .onTapGesture { showSpaghettiFullScreen = true }
                     
                     // Detailed Statistics
                     detailedStats
@@ -41,6 +45,22 @@ struct SimulationResultsView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
+            }
+        }
+        .fullScreenCover(isPresented: $showHistogramFullScreen) {
+            NavigationView {
+                ScrollView { endingBalanceHistogram }
+                    .navigationTitle("Ending Balance Distribution")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showHistogramFullScreen = false } } }
+            }
+        }
+        .fullScreenCover(isPresented: $showSpaghettiFullScreen) {
+            NavigationView {
+                ScrollView { spaghettiChartSection }
+                    .navigationTitle("All Simulated Paths")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showSpaghettiFullScreen = false } } }
             }
         }
     }
@@ -181,7 +201,7 @@ struct SimulationResultsView: View {
                     x: .value("Balance", bucket.midpoint),
                     y: .value("Count", bucket.count)
                 )
-                .foregroundStyle(bucket.isPositive ? Color.green.gradient : Color.red.gradient)
+                .foregroundStyle(bucket.isPositive ? Color.blue.gradient : Color.red.gradient)
             }
             .frame(height: 250)
             .chartXAxis {
@@ -210,7 +230,7 @@ struct SimulationResultsView: View {
             HStack(spacing: 20) {
                 HStack(spacing: 4) {
                     Rectangle()
-                        .fill(Color.green)
+                        .fill(Color.blue)
                         .frame(width: 20, height: 12)
                     Text("Money Remaining")
                         .font(.caption)

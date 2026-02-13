@@ -49,7 +49,7 @@ struct HistoricalReturnsView: View {
     
     private var assetClassPicker: some View {
         Picker("Asset Class", selection: $selectedAssetClass) {
-            ForEach(AssetClass.allCases) { assetClass in
+            ForEach(AssetClass.allCases.filter { $0 != .reits && $0 != .other }) { assetClass in
                 HStack {
                     Image(systemName: assetClass.iconName)
                     Text(assetClass.rawValue)
@@ -466,3 +466,4 @@ struct HistReturnsHistogramBucket: Identifiable {
         HistoricalReturnsView()
     }
 }
+

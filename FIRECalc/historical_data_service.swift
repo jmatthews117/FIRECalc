@@ -151,6 +151,12 @@ class HistoricalDataService {
             summary: stats(for: realEstate),
             notes: nil
         )
+        assetDict[AssetClass.preciousMetals.rawValue.lowercased()] = AssetClassData(
+            name: AssetClass.preciousMetals.rawValue,
+            historicalReturns: gold,
+            summary: stats(for: gold),
+            notes: "Mapped to Gold returns"
+        )
         // Optionally include Baa Corporate as corporate bonds if such asset class exists; otherwise ignore
         
         let historicalData = HistoricalData(

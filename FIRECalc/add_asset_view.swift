@@ -111,25 +111,7 @@ struct AddAssetView: View {
                     }
                     
                     // Bond Yield (only for bonds)
-                    if selectedAssetClass == .bonds {
-                        Section("Bond Details") {
-                            HStack {
-                                Text("Yield %")
-                                Spacer()
-                                TextField("e.g., 4.5", text: $bondYield)
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 80)
-                                    .focused($focusedField, equals: .bondYield)
-                            }
-                            
-                            if let yieldVal = Double(bondYield), yieldVal > 0 {
-                                Text("Annual yield: \(yieldVal)%")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
+                    // REMOVED as per instructions
                 }
                 
                 // Value Section - Different for different asset types
@@ -156,14 +138,7 @@ struct AddAssetView: View {
                                 .focused($focusedField, equals: .unitValue)
                         }
                         
-                        if let price = autoLoadedPrice, unitValue.isEmpty {
-                            Button("Use Loaded Price (\(price.toPreciseCurrency()))") {
-                                unitValue = String(price)
-                                focusedField = nil
-                            }
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                        }
+                        // REMOVED "Use Loaded Price" button block as per instructions
                         
                         if let total = totalValue {
                             HStack {
@@ -234,6 +209,16 @@ struct AddAssetView: View {
                         }
                     }
                     .padding(.vertical, 4)
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Return characteristics")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Text(returnCharacteristicsNote)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 6)
                 }
             }
             .navigationTitle("Add Asset")
@@ -326,6 +311,27 @@ struct AddAssetView: View {
             return "e.g., BTC, ETH, LTC, BCH"
         default:
             return ""
+        }
+    }
+    
+    private var returnCharacteristicsNote: String {
+        switch selectedAssetClass {
+        case .stocks:
+            return "Modeled using long-run U.S. stock market returns"
+        case .bonds:
+            return "Modeled using U.S. Treasury bond returns"
+        case .reits:
+            return "Modeled using U.S. REIT index returns"
+        case .realEstate:
+            return "Modeled using U.S. home price index (Case-Shiller)"
+        case .preciousMetals:
+            return "Modeled using gold historical returns"
+        case .crypto:
+            return "Modeled using Bitcoin historical returns"
+        case .cash:
+            return "Modeled using short-term Treasury/cash returns"
+        case .other:
+            return "Modeled using a diversified historical average"
         }
     }
     
