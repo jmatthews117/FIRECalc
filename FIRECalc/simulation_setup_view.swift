@@ -25,7 +25,6 @@ struct SimulationSetupView: View {
     // Per-strategy local state, kept in sync with withdrawalConfig
     @State private var withdrawalRate: Double
     @State private var fixedDollarAmount: Double
-    @State private var rmdAge: Int
     @State private var upperGuardrail: Double
     @State private var lowerGuardrail: Double
     @State private var floorEnabled: Bool
@@ -48,7 +47,6 @@ struct SimulationSetupView: View {
         self._withdrawalConfig = State(initialValue: config)
         self._withdrawalRate = State(initialValue: config.withdrawalRate)
         self._fixedDollarAmount = State(initialValue: config.annualAmount ?? 40_000)
-        self._rmdAge = State(initialValue: config.currentAge ?? 65)
         self._upperGuardrail = State(initialValue: config.upperGuardrail ?? (config.withdrawalRate * 1.25))
         self._lowerGuardrail = State(initialValue: config.lowerGuardrail ?? (config.withdrawalRate * 0.80))
         self._floorEnabled = State(initialValue: config.floorPercentage != nil)
@@ -231,12 +229,8 @@ struct SimulationSetupView: View {
             dynamicPercentageInputs
         case .guardrails:
             guardrailsInputs
-        case .rmd:
-            rmdInputs
         case .fixedDollar:
             fixedDollarInputs
-        case .custom:
-            customInputs
         }
     }
 
@@ -419,25 +413,6 @@ struct SimulationSetupView: View {
         }
     }
 
-    private var rmdInputs: some View {
-        Section("RMD Configuration") {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Current Age")
-                    Spacer()
-                    TextField("Age", value: $rmdAge, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
-                        .onChange(of: rmdAge) { _, v in withdrawalConfig.currentAge = v }
-                }
-                Text("Withdrawal percentage increases each year following IRS life expectancy tables")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-
     private var fixedDollarInputs: some View {
         Section("Fixed Dollar Configuration") {
             VStack(alignment: .leading, spacing: 8) {
@@ -455,22 +430,6 @@ struct SimulationSetupView: View {
                     .foregroundColor(.secondary)
             }
             Toggle("Adjust for Inflation", isOn: $withdrawalConfig.adjustForInflation)
-        }
-    }
-
-    private var customInputs: some View {
-        Section("Custom Strategy") {
-            HStack {
-                Text("Withdrawal Rate")
-                Spacer()
-                Text(withdrawalRate.toPercent())
-                    .foregroundColor(.secondary)
-                    .monospacedDigit()
-            }
-            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
-                .onChange(of: withdrawalRate) { _, v in
-                    withdrawalConfig.withdrawalRate = v
-                }
         }
     }
 

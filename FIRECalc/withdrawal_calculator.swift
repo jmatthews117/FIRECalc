@@ -43,23 +43,10 @@ struct WithdrawalCalculator {
                 year: year,
                 config: config
             )
-        case .rmd:
-            withdrawal = requiredMinimumDistribution(
-                currentBalance: currentBalance,
-                year: year,
-                config: config
-            )
         case .fixedDollar:
             withdrawal = fixedDollarAmount(
                 config: config,
                 year: year
-            )
-        case .custom:
-            withdrawal = fixedPercentageRule(
-                baselineWithdrawal: baselineWithdrawal,
-                initialBalance: initialBalance,
-                year: year,
-                config: config
             )
         }
         
@@ -172,27 +159,6 @@ struct WithdrawalCalculator {
         }
 
         return min(withdrawal, currentBalance)
-    }
-    
-    /// Required Minimum Distribution: IRS-based withdrawal table
-    private func requiredMinimumDistribution(
-        currentBalance: Double,
-        year: Int,
-        config: WithdrawalConfiguration
-    ) -> Double {
-
-        // currentAge is required for RMD. If it is missing the user most likely
-        // set up RMD without providing their age; fall back to the configured
-        // withdrawal rate so the simulation is still meaningful rather than
-        // silently returning an arbitrary number.
-        guard let currentAge = config.currentAge else {
-            return currentBalance * config.withdrawalRate
-        }
-
-        let age = currentAge + year - 1
-        let distributionPeriod = rmdDistributionPeriod(for: age)
-
-        return currentBalance / distributionPeriod
     }
     
     /// Fixed Dollar Amount: Withdraw a fixed amount each year.

@@ -11,9 +11,7 @@ enum WithdrawalStrategy: String, Codable, CaseIterable, Identifiable {
     case fixedPercentage = "4% Rule (Fixed Percentage)"
     case dynamicPercentage = "Dynamic Percentage"
     case guardrails = "Guardrails (Guyton-Klinger)"
-    case rmd = "Required Minimum Distribution"
     case fixedDollar = "Fixed Dollar Amount"
-    case custom = "Custom Strategy"
     
     var id: String { rawValue }
     
@@ -25,12 +23,8 @@ enum WithdrawalStrategy: String, Codable, CaseIterable, Identifiable {
             return "Withdraw a percentage of the current portfolio value each year."
         case .guardrails:
             return "Adjust withdrawals based on portfolio performance with upper and lower guardrails."
-        case .rmd:
-            return "Withdraw based on IRS Required Minimum Distribution tables."
         case .fixedDollar:
             return "Withdraw a fixed dollar amount each year, adjusted for inflation."
-        case .custom:
-            return "Define your own withdrawal parameters and rules."
         }
     }
     
@@ -39,9 +33,7 @@ enum WithdrawalStrategy: String, Codable, CaseIterable, Identifiable {
         case .fixedPercentage: return 0.04  // 4%
         case .dynamicPercentage: return 0.04
         case .guardrails: return 0.05       // 5% with guardrails
-        case .rmd: return 0.04              // Varies by age
         case .fixedDollar: return 0.04
-        case .custom: return 0.04
         }
     }
     
@@ -54,12 +46,8 @@ enum WithdrawalStrategy: String, Codable, CaseIterable, Identifiable {
             return [.withdrawalRate, .floorPercentage, .ceilingPercentage]
         case .guardrails:
             return [.withdrawalRate, .upperGuardrail, .lowerGuardrail, .guardrailAdjustmentMagnitude]
-        case .rmd:
-            return [.currentAge, .birthYear]
         case .fixedDollar:
             return [.annualAmount, .adjustForInflation]
-        case .custom:
-            return [.withdrawalRate, .customRules]
         }
     }
 }
@@ -72,10 +60,7 @@ enum StrategyParameter: String {
     case upperGuardrail = "Upper Guardrail"
     case lowerGuardrail = "Lower Guardrail"
     case guardrailAdjustmentMagnitude = "Adjustment Magnitude"
-    case currentAge = "Current Age"
-    case birthYear = "Birth Year"
     case annualAmount = "Annual Amount"
-    case customRules = "Custom Rules"
 }
 
 // Configuration for a specific withdrawal strategy
@@ -102,10 +87,6 @@ struct WithdrawalConfiguration: Codable {
     var floorPercentage: Double? // Minimum withdrawal as % of portfolio
     var ceilingPercentage: Double? // Maximum withdrawal as % of portfolio
     
-    // RMD parameters
-    var currentAge: Int?
-    var birthYear: Int?
-    
     init(
         strategy: WithdrawalStrategy = .fixedPercentage,
         withdrawalRate: Double = 0.04,
@@ -117,9 +98,7 @@ struct WithdrawalConfiguration: Codable {
         lowerGuardrail: Double? = nil,
         guardrailAdjustmentMagnitude: Double? = nil,
         floorPercentage: Double? = nil,
-        ceilingPercentage: Double? = nil,
-        currentAge: Int? = nil,
-        birthYear: Int? = nil
+        ceilingPercentage: Double? = nil
     ) {
         self.strategy = strategy
         self.withdrawalRate = withdrawalRate
@@ -132,8 +111,6 @@ struct WithdrawalConfiguration: Codable {
         self.guardrailAdjustmentMagnitude = guardrailAdjustmentMagnitude
         self.floorPercentage = floorPercentage
         self.ceilingPercentage = ceilingPercentage
-        self.currentAge = currentAge
-        self.birthYear = birthYear
     }
 }
 

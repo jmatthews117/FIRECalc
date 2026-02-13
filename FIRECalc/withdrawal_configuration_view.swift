@@ -91,12 +91,8 @@ struct WithdrawalConfigurationView: View {
             dynamicPercentageSection
         case .guardrails:
             guardrailsSection
-        case .rmd:
-            rmdSection
         case .fixedDollar:
             fixedDollarSection
-        case .custom:
-            customSection
         }
     }
     
@@ -298,27 +294,6 @@ struct WithdrawalConfigurationView: View {
         }
     }
     
-    private var rmdSection: some View {
-        Section("RMD Configuration") {
-            HStack {
-                Text("Current Age")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Spacer()
-                TextField("Age", value: Binding(
-                    get: { config.currentAge ?? 65 },
-                    set: { config.currentAge = $0 }
-                ), format: .number)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 80)
-            }
-            Text("Withdrawal amount based on IRS life expectancy tables")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-    
     private var fixedDollarSection: some View {
         Section("Fixed Dollar Amount") {
             HStack {
@@ -338,14 +313,6 @@ struct WithdrawalConfigurationView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             Toggle("Adjust for Inflation", isOn: $config.adjustForInflation)
-        }
-    }
-    
-    private var customSection: some View {
-        Section("Custom Strategy") {
-            Text("Configure your own withdrawal rules")
-                .font(.caption)
-                .foregroundColor(.secondary)
         }
     }
     
@@ -476,12 +443,8 @@ struct WithdrawalConfigurationView: View {
             return "Withdrawal fluctuates with portfolio value - higher in good years, lower in bad years"
         case .guardrails:
             return "Adjusts spending when portfolio performance deviates significantly from plan"
-        case .rmd:
-            return "Increases withdrawal percentage as you age, based on IRS tables"
         case .fixedDollar:
             return config.adjustForInflation ? "Fixed amount adjusted for inflation" : "Same dollar amount every year"
-        case .custom:
-            return "Custom withdrawal pattern"
         }
     }
     
@@ -593,12 +556,8 @@ struct StrategyInfoSheet: View {
             return "Each year, withdraw a fixed percentage of your current portfolio value. If your portfolio grows, you withdraw more. If it shrinks, you withdraw less. This naturally adjusts spending based on portfolio performance."
         case .guardrails:
             return "In year 1, withdraw a fixed dollar amount based on your initial rate. Each subsequent year, carry that same dollar amount forward. If the current withdrawal rate (dollars / current portfolio) rises above the upper guardrail, cut spending by 10%. If it falls below the lower guardrail, raise spending by 10%. Developed by Jonathan Guyton and William Klinger."
-        case .rmd:
-            return "Follow IRS Required Minimum Distribution tables which specify what percentage of your portfolio to withdraw based on your age. The percentage increases as you age, reflecting shorter life expectancy."
         case .fixedDollar:
             return "Withdraw the same dollar amount each year, optionally adjusted for inflation. Provides predictable income but doesn't respond to portfolio performance."
-        case .custom:
-            return "Define your own withdrawal rules based on your specific needs and circumstances."
         }
     }
     
@@ -625,23 +584,11 @@ struct StrategyInfoSheet: View {
                 "Protects against depletion",
                 "More spending than pure 4% rule"
             ]
-        case .rmd:
-            return [
-                "Required for traditional IRAs after 73",
-                "Increases with age (more when you need less)",
-                "IRS-approved tables",
-                "Tax-efficient for retirees"
-            ]
         case .fixedDollar:
             return [
                 "Maximum spending predictability",
                 "Simple to budget",
                 "No calculations needed"
-            ]
-        case .custom:
-            return [
-                "Tailored to your situation",
-                "Maximum flexibility"
             ]
         }
     }
@@ -668,23 +615,11 @@ struct StrategyInfoSheet: View {
                 "Still requires spending adjustments",
                 "Guardrail triggers can be jarring"
             ]
-        case .rmd:
-            return [
-                "Increases withdrawals in later years",
-                "Not optimized for spending needs",
-                "May force withdrawals when not needed",
-                "Only applies to tax-deferred accounts"
-            ]
         case .fixedDollar:
             return [
                 "Doesn't respond to portfolio changes",
                 "Higher risk of depletion",
                 "May leave money unspent"
-            ]
-        case .custom:
-            return [
-                "Requires careful design",
-                "May be suboptimal"
             ]
         }
     }
@@ -697,12 +632,8 @@ struct StrategyInfoSheet: View {
             return "Flexible retirees who can adjust spending based on market conditions. Good for those with other income sources or variable expenses."
         case .guardrails:
             return "Retirees who want more spending than the 4% rule but still want protection. Best for those comfortable with occasional spending adjustments."
-        case .rmd:
-            return "Traditional IRA owners over 73 who must take required minimum distributions. Useful for tax planning."
         case .fixedDollar:
             return "Those with very specific spending needs or who have guaranteed income from other sources (pension, Social Security) covering basics."
-        case .custom:
-            return "Sophisticated investors with unique circumstances or preferences."
         }
     }
 }
