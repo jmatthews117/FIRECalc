@@ -161,18 +161,25 @@ struct ManualReturnsView: View {
     
     private func loadCurrentSettings() {
         useCustomReturns = simulationVM.useCustomReturns
-        if useCustomReturns {
+        if !simulationVM.customReturns.isEmpty {
+            // Restore whatever the user previously configured, whether or not
+            // custom returns are currently enabled.
             customReturns = simulationVM.customReturns
             customVolatility = simulationVM.customVolatility
         } else {
+            // First time opening this sheet — seed sliders with historical defaults.
             initializeCustomReturns()
         }
     }
     
     private func applyChanges() {
         simulationVM.useCustomReturns = useCustomReturns
-        simulationVM.customReturns = customReturns
-        simulationVM.customVolatility = customVolatility
+        // Only persist edited values when the user actually has custom returns on,
+        // so we never clobber a previously saved configuration.
+        if useCustomReturns {
+            simulationVM.customReturns = customReturns
+            simulationVM.customVolatility = customVolatility
+        }
     }
     
     private func resetAllToHistorical() {

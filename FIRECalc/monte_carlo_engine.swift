@@ -318,50 +318,141 @@ actor MonteCarloEngine {
         return realReturn
     }
     
-    /// Generate real return from normal distribution
+    /// Generate a log-normal, fat-tailed, cross-asset-correlated real return.
+    ///
+    /// Three improvements over a simple normal draw:
+    ///
+    /// 1. **Log-normal**: each asset return is drawn as `exp(μ_ln + σ_ln·Z) − 1`
+    ///    so losses are naturally bounded at −100% and the arithmetic mean/variance
+    ///    still match the user-supplied values.
+    ///
+    /// 2. **Fat tails**: the base random variates are drawn from a Student's
+    ///    t-distribution (ν = 5) rather than a standard normal.  The draw is
+    ///    scaled back to unit variance so σ retains its original meaning.
+    ///    ν = 5 is a common empirical fit for annual equity-return kurtosis.
+    ///
+    /// 3. **Cross-asset correlation**: each asset class has a known empirical
+    ///    correlation to the broad equity market.  One shared market shock drives
+    ///    the correlated component; an independent idiosyncratic shock drives the
+    ///    residual.  This replicates the effect of a one-factor correlation model
+    ///    (e.g. Sharpe single-index) without requiring a full Cholesky decomposition.
+    ///
+    /// None of this code is reachable from the historical-bootstrap path.
     private func generateNormalRealReturn(
         portfolio: Portfolio,
         parameters: SimulationParameters,
         year: Int,
         runNumber: Int
     ) -> Double {
-        
-        // Get expected NOMINAL return and volatility
-        let expectedNominalReturn = portfolio.weightedExpectedReturn
-        let volatility = portfolio.weightedVolatility
-        
-        // Generate nominal return with correlation
-        let marketShock = generateNormalRandom(seed: UInt64(year * 1000 + runNumber))
-        let specificShock = generateNormalRandom(seed: UInt64(year * 1000 + runNumber + 1))
-        
-        let correlationWeight = 0.6
-        let combinedShock = (correlationWeight * marketShock + (1 - correlationWeight) * specificShock)
-        
-        let nominalReturn = expectedNominalReturn + combinedShock * volatility
-        
-        // Convert to real return by subtracting inflation
-        let realReturn = nominalReturn - parameters.inflationRate
-        
-        return realReturn
-    }
-    
-    /// Box-Muller transform for normal distribution
-    private func generateNormalRandom(seed: UInt64? = nil) -> Double {
-        let u1: Double
-        let u2: Double
-        
-        if let seed = seed {
-            var rng = makeRNG(seed: seed)
-            u1 = Double.random(in: 0.0001...0.9999, using: &rng)
-            u2 = Double.random(in: 0.0001...0.9999, using: &rng)
-        } else {
-            u1 = Double.random(in: 0.0001...0.9999)
-            u2 = Double.random(in: 0.0001...0.9999)
+
+        let totalValue = portfolio.totalValue
+        guard totalValue > 0 else { return 0 }
+
+        // ── Shared market shock (one per year/run, fat-tailed) ──────────────
+        // seed1 drives the single market-wide factor used by all assets this year.
+        let seed1: UInt64 = UInt64(runNumber) &* 1_000_003 &+ UInt64(year)
+        let marketZ = generateStudentT(seed: seed1)
+
+        var nominalReturn = 0.0
+
+        for (assetIndex, asset) in portfolio.assets.enumerated() {
+            let weight = asset.totalValue / totalValue
+
+            // Prefer user-supplied custom values; fall back to asset-class defaults.
+            let mu  = parameters.customReturns?[asset.assetClass]    ?? asset.assetClass.defaultReturn
+            let vol = parameters.customVolatility?[asset.assetClass] ?? asset.assetClass.defaultVolatility
+
+            // ── Per-asset idiosyncratic shock ────────────────────────────────
+            // Each asset gets its own independent seed so shocks are uncorrelated
+            // across assets after the market factor is removed.
+            let seed2: UInt64 = seed1 &+ 999_983 &+ UInt64(assetIndex) &* 7_919
+            let idioZ = generateStudentT(seed: seed2)
+
+            // ── Correlation factor ───────────────────────────────────────────
+            // ρ is the asset's empirical correlation to the broad equity market.
+            // The correlated shock = ρ·marketZ + √(1−ρ²)·idioZ
+            // This preserves unit variance while injecting the correct covariance
+            // structure (single-index / one-factor model).
+            let rho = marketCorrelation(for: asset.assetClass)
+            let combinedZ = rho * marketZ + sqrt(1 - rho * rho) * idioZ
+
+            // ── Log-normal conversion ────────────────────────────────────────
+            // Given arithmetic mean μ and std dev σ, the equivalent log-space
+            // parameters are:
+            //   σ_ln² = ln(1 + (σ/（1+μ))²)   ← variance of ln(1+R)
+            //   μ_ln  = ln(1+μ) − σ_ln²/2      ← mean of ln(1+R)
+            //
+            // Then: 1 + R = exp(μ_ln + σ_ln · Z)
+            // which gives E[R] = μ and Var[R] ≈ σ² as required.
+            let sigmaLnSq = log(1 + pow(vol / (1 + mu), 2))
+            let sigmaLn   = sqrt(sigmaLnSq)
+            let muLn      = log(1 + mu) - sigmaLnSq / 2
+
+            let assetReturn = exp(muLn + sigmaLn * combinedZ) - 1
+            nominalReturn  += weight * assetReturn
         }
-        
+
+        // Fisher equation — consistent with the bootstrap path.
+        return ((1 + nominalReturn) / (1 + parameters.inflationRate)) - 1
+    }
+
+    // MARK: - Empirical market correlation by asset class
+
+    /// Returns ρ, the approximate correlation of each asset class with the
+    /// broad equity market (S&P 500), derived from long-run historical data.
+    /// Used to build a one-factor correlated shock.
+    private func marketCorrelation(for assetClass: AssetClass) -> Double {
+        switch assetClass {
+        case .stocks:         return 1.00  // IS the market factor
+        case .reits:          return 0.70  // High equity sensitivity
+        case .corporateBonds: return 0.30  // Moderate credit/equity link
+        case .bonds:          return -0.10 // Mild flight-to-quality offset
+        case .realEstate:     return 0.50  // Moderate
+        case .preciousMetals: return 0.05  // Near-zero equity correlation
+        case .crypto:         return 0.40  // Positive but noisy
+        case .cash:           return 0.00  // Uncorrelated by construction
+        case .other:          return 0.50  // Conservative middle estimate
+        }
+    }
+
+    // MARK: - Fat-tailed random variate (Student's t, ν = 5)
+
+    /// Returns a draw from a Student's t-distribution with ν = 5 degrees of
+    /// freedom, scaled to unit variance.  ν = 5 is a standard empirical fit
+    /// for annual equity return kurtosis (excess kurtosis ≈ 6 vs. normal's 0).
+    ///
+    /// Method: t = Z / √(χ²/ν) where Z ~ N(0,1) and χ² ~ χ²(ν).
+    /// χ²(5) is approximated as the sum of 5 independent N(0,1)² draws.
+    /// The result is then divided by √(ν/(ν−2)) = √(5/3) to restore unit variance.
+    private func generateStudentT(seed: UInt64) -> Double {
+        let nu: Double = 5
+
+        // Standard normal draw for the numerator
+        let zSeed: UInt64 = seed &* 2_654_435_761
+        let z = generateStandardNormal(seed: zSeed)
+
+        // χ²(ν) as sum of ν squared normals
+        var chiSq: Double = 0
+        for i in 0..<Int(nu) {
+            let xi = generateStandardNormal(seed: seed &+ UInt64(i) &* 1_234_567)
+            chiSq += xi * xi
+        }
+
+        let t = z / sqrt(chiSq / nu)
+
+        // Scale to unit variance: Var(t_ν) = ν/(ν−2)
+        let unitVarianceScale = sqrt((nu - 2) / nu)   // √(3/5)
+        return t * unitVarianceScale
+    }
+
+    /// Box-Muller standard normal draw from a deterministic seed.
+    private func generateStandardNormal(seed: UInt64) -> Double {
+        var rng = makeRNG(seed: seed)
+        let u1 = Double.random(in: 0.0001...0.9999, using: &rng)
+        let u2 = Double.random(in: 0.0001...0.9999, using: &rng)
         return sqrt(-2 * log(u1)) * cos(2 * .pi * u2)
     }
-    
+
     /// Create a seeded random number generator
     private func makeRNG(seed: UInt64) -> RandomNumberGenerator {
         var generator = LinearCongruentialGenerator(seed: seed)
