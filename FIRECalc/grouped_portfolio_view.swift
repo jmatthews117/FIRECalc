@@ -358,7 +358,7 @@ struct AssetRowView2: View {
                 .frame(width: 30)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(asset.name)
+                Text(asset.name.isEmpty ? (asset.ticker ?? "Unnamed Asset") : asset.name)
                     .font(.subheadline)
                     .fontWeight(.medium)
                 
@@ -397,3 +397,4 @@ struct AssetRowView2: View {
         GroupedPortfolioView(portfolioVM: PortfolioViewModel(portfolio: .sample))
     }
 }
+

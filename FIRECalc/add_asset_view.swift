@@ -59,9 +59,9 @@ struct AddAssetView: View {
                 
                 // Ticker Input (for stocks, bonds, REITs, crypto, precious metals)
                 if selectedAssetClass.supportsTicker || selectedAssetClass == .bonds || selectedAssetClass == .preciousMetals {
-                    Section("Ticker Symbol") {
+                    Section("Ticker Symbol\n(Input Custom Label if no Ticker)") {
                         VStack(alignment: .leading, spacing: 8) {
-                            TextField("e.g., AAPL, SPY, GLD", text: $ticker)
+                            TextField("e.g., AAPL, SPY, GLD or [My Label]", text: $ticker)
                                 .textInputAutocapitalization(.characters)
                                 .autocorrectionDisabled()
                                 .focused($focusedField, equals: .ticker)
@@ -109,9 +109,6 @@ struct AddAssetView: View {
                                 .foregroundColor(.blue)
                         }
                     }
-                    
-                    // Bond Yield (only for bonds)
-                    // REMOVED as per instructions
                 }
                 
                 // Value Section - Different for different asset types
@@ -137,8 +134,6 @@ struct AddAssetView: View {
                                 .frame(width: 100)
                                 .focused($focusedField, equals: .unitValue)
                         }
-                        
-                        // REMOVED "Use Loaded Price" button block as per instructions
                         
                         if let total = totalValue {
                             HStack {
@@ -182,7 +177,7 @@ struct AddAssetView: View {
                         VStack(alignment: .leading) {
                             Text(displayName)
                                 .font(.headline)
-                                .foregroundColor(displayName.isEmpty ? .secondary : .primary)
+                                .foregroundColor(!displayName.isEmpty ? .primary : .secondary)
                             
                             HStack(spacing: 4) {
                                 Text(selectedAssetClass.rawValue)
@@ -385,7 +380,8 @@ struct AddAssetView: View {
     private func addAsset() {
         focusedField = nil
         
-        let finalName = assetName.isEmpty ? ticker.uppercased() : assetName
+        let finalName = !assetName.isEmpty ? assetName : (!ticker.isEmpty ? ticker.uppercased() : displayName)
+        
         let finalTicker = ticker.isEmpty ? nil : ticker.uppercased()
         
         let finalPrice: Double
@@ -415,3 +411,4 @@ struct AddAssetView: View {
 #Preview {
     AddAssetView(portfolioVM: PortfolioViewModel())
 }
+

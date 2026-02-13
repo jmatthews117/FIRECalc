@@ -12,6 +12,7 @@ struct Asset: Identifiable, Codable, Hashable {
     var name: String
     var assetClass: AssetClass
     var ticker: String?  // Optional ticker symbol for live price updates
+    var customLabel: String?  // Optional user-provided label (e.g., for bonds)
     
     // Value tracking
     var quantity: Double  // Number of shares/units
@@ -32,6 +33,7 @@ struct Asset: Identifiable, Codable, Hashable {
         name: String,
         assetClass: AssetClass,
         ticker: String? = nil,
+        customLabel: String? = nil,
         quantity: Double = 1.0,
         unitValue: Double,
         purchaseDate: Date = Date(),
@@ -42,6 +44,7 @@ struct Asset: Identifiable, Codable, Hashable {
         self.name = name
         self.assetClass = assetClass
         self.ticker = ticker
+        self.customLabel = customLabel
         self.quantity = quantity
         self.unitValue = unitValue
         self.purchaseDate = purchaseDate

@@ -98,7 +98,7 @@ struct AssetDetailRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(asset.name)
+                Text(asset.name.isEmpty ? (asset.ticker ?? "Unnamed Asset") : asset.name)
                     .font(.headline)
                 
                 if let ticker = asset.ticker {
@@ -146,3 +146,4 @@ struct AssetDetailRow: View {
         AssetListView(portfolioVM: PortfolioViewModel(portfolio: .sample))
     }
 }
+

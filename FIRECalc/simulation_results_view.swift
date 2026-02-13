@@ -362,6 +362,7 @@ struct SimulationResultsView: View {
     // FIXED: Improved histogram bucketing algorithm with $0 bucket at x-axis origin
     private func createImprovedHistogramBuckets() -> [ImprovedHistogramBucket] {
         let sortedBalances = result.finalBalanceDistribution.sorted()
+        let zeroBucketEpsilon: Double = 1.0 // small offset so the $0 bucket renders just to the right of the y-axis
         
         guard !sortedBalances.isEmpty else { return [] }
         
@@ -377,7 +378,7 @@ struct SimulationResultsView: View {
                 return [ImprovedHistogramBucket(
                     lowerBound: 0,
                     upperBound: 0,
-                    midpoint: 0,  // Centered at $0 on x-axis
+                    midpoint: zeroBucketEpsilon,  // Slightly right of 0 on x-axis
                     count: zeroAndNegativeCount,
                     isPositive: false
                 )]
@@ -397,12 +398,12 @@ struct SimulationResultsView: View {
         
         var buckets: [ImprovedHistogramBucket] = []
         
-        // Add $0 bucket first if there are any (centered at 0 on x-axis)
+        // Add $0 bucket first if there are any (slightly to the right of 0 on x-axis)
         if zeroAndNegativeCount > 0 {
             buckets.append(ImprovedHistogramBucket(
                 lowerBound: 0,
                 upperBound: 0,
-                midpoint: 0,  // This puts the bar directly over the $0 tick mark
+                midpoint: zeroBucketEpsilon,  // Offset slightly so it doesn't overlap the y-axis
                 count: zeroAndNegativeCount,
                 isPositive: false  // This ensures red color
             ))
@@ -540,3 +541,4 @@ struct ImprovedHistogramBucket: Identifiable {
 #Preview {
     SimulationResultsView(result: .sample)
 }
+
