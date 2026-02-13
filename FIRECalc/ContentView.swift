@@ -665,7 +665,7 @@ struct ToolsTabView: View {
                     }
                     
                     NavigationLink(destination: WithdrawalConfigurationView(
-                        config: .constant(WithdrawalConfiguration()),
+                        config: $simulationVM.withdrawalConfiguration,
                         portfolioValue: portfolioVM.totalValue
                     )) {
                         HStack {

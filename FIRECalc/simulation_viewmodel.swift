@@ -16,6 +16,14 @@ class SimulationViewModel: ObservableObject {
     @Published var isSimulating: Bool = false
     @Published var progress: Double = 0
     @Published var errorMessage: String?
+
+    /// Persisted withdrawal configuration, shared between the Tools tab
+    /// standalone view and the Simulation Setup sheet.
+    @Published var withdrawalConfiguration: WithdrawalConfiguration {
+        didSet {
+            persistence.saveWithdrawalConfiguration(withdrawalConfiguration)
+        }
+    }
     
     // MODIFIED: Custom returns support
     @Published var useCustomReturns: Bool = false
@@ -26,12 +34,15 @@ class SimulationViewModel: ObservableObject {
     
     init() {
         let settings = PersistenceService.shared.loadSettings()
+        let savedConfig = PersistenceService.shared.loadWithdrawalConfiguration() ?? WithdrawalConfiguration()
+        self.withdrawalConfiguration = savedConfig
         self.parameters = SimulationParameters(
             numberOfRuns: AppConstants.Simulation.defaultRuns,
             timeHorizonYears: AppConstants.Simulation.defaultTimeHorizon,
             inflationRate: AppConstants.Simulation.defaultInflationRate,
             useHistoricalBootstrap: settings.useHistoricalBootstrap,
-            initialPortfolioValue: 1_000_000
+            initialPortfolioValue: 1_000_000,
+            withdrawalConfig: savedConfig
         )
         
         if let history = try? persistence.loadSimulationHistory() {

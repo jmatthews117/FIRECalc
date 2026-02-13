@@ -175,6 +175,23 @@ class PersistenceService {
         return try decoder.decode(Portfolio.self, from: data)
     }
     
+    // MARK: - Withdrawal Configuration
+
+    private let withdrawalConfigKey = "savedWithdrawalConfiguration"
+
+    func saveWithdrawalConfiguration(_ config: WithdrawalConfiguration) {
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(config) {
+            UserDefaults.standard.set(data, forKey: withdrawalConfigKey)
+        }
+    }
+
+    func loadWithdrawalConfiguration() -> WithdrawalConfiguration? {
+        guard let data = UserDefaults.standard.data(forKey: withdrawalConfigKey) else { return nil }
+        let decoder = JSONDecoder()
+        return try? decoder.decode(WithdrawalConfiguration.self, from: data)
+    }
+
     // MARK: - UserDefaults (Settings)
     
     func saveAPIKey(_ key: String) {

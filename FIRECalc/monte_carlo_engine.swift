@@ -162,7 +162,11 @@ actor MonteCarloEngine {
                     config: parameters.withdrawalConfig
                 )
                 
-                if yearsIntoRetirement == 1 {
+                // Always track the actual withdrawal taken so strategies like
+                // Guardrails correctly compound their year-over-year adjustments.
+                // For fixedPercentage the baseline is set once and never changes
+                // anyway, so updating it every year is harmless there too.
+                if yearsIntoRetirement == 1 || parameters.withdrawalConfig.strategy != .fixedPercentage {
                     baselineWithdrawal = withdrawal
                 }
                 
@@ -348,14 +352,19 @@ actor MonteCarloEngine {
         let totalValue = portfolio.totalValue
         guard totalValue > 0 else { return 0 }
 
+        // One RNG per (run, year) — advanced sequentially for each draw so
+        // every variate is independent while the sequence remains reproducible.
+        let baseSeed: UInt64 = (parameters.rngSeed ?? 0)
+            &+ UInt64(runNumber) &* 1_000_003
+            &+ UInt64(year) &* 999_983
+        var rng = makeRNG(seed: baseSeed)
+
         // ── Shared market shock (one per year/run, fat-tailed) ──────────────
-        // seed1 drives the single market-wide factor used by all assets this year.
-        let seed1: UInt64 = UInt64(runNumber) &* 1_000_003 &+ UInt64(year)
-        let marketZ = generateStudentT(seed: seed1)
+        let marketZ = generateStudentT(seed: rng.next())
 
         var nominalReturn = 0.0
 
-        for (assetIndex, asset) in portfolio.assets.enumerated() {
+        for asset in portfolio.assets {
             let weight = asset.totalValue / totalValue
 
             // Prefer user-supplied custom values; fall back to asset-class defaults.
@@ -363,27 +372,13 @@ actor MonteCarloEngine {
             let vol = parameters.customVolatility?[asset.assetClass] ?? asset.assetClass.defaultVolatility
 
             // ── Per-asset idiosyncratic shock ────────────────────────────────
-            // Each asset gets its own independent seed so shocks are uncorrelated
-            // across assets after the market factor is removed.
-            let seed2: UInt64 = seed1 &+ 999_983 &+ UInt64(assetIndex) &* 7_919
-            let idioZ = generateStudentT(seed: seed2)
+            let idioZ = generateStudentT(seed: rng.next())
 
             // ── Correlation factor ───────────────────────────────────────────
-            // ρ is the asset's empirical correlation to the broad equity market.
-            // The correlated shock = ρ·marketZ + √(1−ρ²)·idioZ
-            // This preserves unit variance while injecting the correct covariance
-            // structure (single-index / one-factor model).
             let rho = marketCorrelation(for: asset.assetClass)
             let combinedZ = rho * marketZ + sqrt(1 - rho * rho) * idioZ
 
             // ── Log-normal conversion ────────────────────────────────────────
-            // Given arithmetic mean μ and std dev σ, the equivalent log-space
-            // parameters are:
-            //   σ_ln² = ln(1 + (σ/（1+μ))²)   ← variance of ln(1+R)
-            //   μ_ln  = ln(1+μ) − σ_ln²/2      ← mean of ln(1+R)
-            //
-            // Then: 1 + R = exp(μ_ln + σ_ln · Z)
-            // which gives E[R] = μ and Var[R] ≈ σ² as required.
             let sigmaLnSq = log(1 + pow(vol / (1 + mu), 2))
             let sigmaLn   = sqrt(sigmaLnSq)
             let muLn      = log(1 + mu) - sigmaLnSq / 2
@@ -427,14 +422,16 @@ actor MonteCarloEngine {
     private func generateStudentT(seed: UInt64) -> Double {
         let nu: Double = 5
 
-        // Standard normal draw for the numerator
-        let zSeed: UInt64 = seed &* 2_654_435_761
-        let z = generateStandardNormal(seed: zSeed)
+        // Use a single advancing RNG so every draw is independent.
+        var rng = makeRNG(seed: seed)
 
-        // χ²(ν) as sum of ν squared normals
+        // Standard normal draw for the numerator
+        let z = generateStandardNormal(using: &rng)
+
+        // χ²(ν) as sum of ν squared independent normals
         var chiSq: Double = 0
-        for i in 0..<Int(nu) {
-            let xi = generateStandardNormal(seed: seed &+ UInt64(i) &* 1_234_567)
+        for _ in 0..<Int(nu) {
+            let xi = generateStandardNormal(using: &rng)
             chiSq += xi * xi
         }
 
@@ -445,18 +442,16 @@ actor MonteCarloEngine {
         return t * unitVarianceScale
     }
 
-    /// Box-Muller standard normal draw from a deterministic seed.
-    private func generateStandardNormal(seed: UInt64) -> Double {
-        var rng = makeRNG(seed: seed)
+    /// Box-Muller standard normal draw consuming two values from the provided RNG.
+    private func generateStandardNormal(using rng: inout LinearCongruentialGenerator) -> Double {
         let u1 = Double.random(in: 0.0001...0.9999, using: &rng)
         let u2 = Double.random(in: 0.0001...0.9999, using: &rng)
         return sqrt(-2 * log(u1)) * cos(2 * .pi * u2)
     }
 
     /// Create a seeded random number generator
-    private func makeRNG(seed: UInt64) -> RandomNumberGenerator {
-        var generator = LinearCongruentialGenerator(seed: seed)
-        return generator
+    private func makeRNG(seed: UInt64) -> LinearCongruentialGenerator {
+        return LinearCongruentialGenerator(seed: seed)
     }
     
     /// Get historical inflation data

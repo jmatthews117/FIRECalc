@@ -13,13 +13,49 @@ struct SimulationSetupView: View {
     @Binding var showingResults: Bool
     @Environment(\.dismiss) private var dismiss
     
-    @State private var numberOfRuns: Double = 10000
-    @State private var timeHorizon: Double = 30
-    @State private var inflationRate: Double = 0.02
-    @State private var withdrawalRate: Double = 0.04
-    @State private var selectedStrategy: WithdrawalStrategy = .fixedPercentage
-    
+    @State private var numberOfRuns: Double
+    @State private var timeHorizon: Double
+    @State private var inflationRate: Double
+
+    // Single source of truth for the entire withdrawal configuration.
+    // Strategy-specific controls below mutate this directly so nothing
+    // is lost when runSimulation() fires.
+    @State private var withdrawalConfig: WithdrawalConfiguration
+
+    // Per-strategy local state, kept in sync with withdrawalConfig
+    @State private var withdrawalRate: Double
+    @State private var fixedDollarAmount: Double
+    @State private var rmdAge: Int
+    @State private var upperGuardrail: Double
+    @State private var lowerGuardrail: Double
+    @State private var floorEnabled: Bool
+    @State private var floorRate: Double
+    @State private var ceilingEnabled: Bool
+    @State private var ceilingRate: Double
+
     @State private var fixedIncome: String = "0"
+
+    init(portfolioVM: PortfolioViewModel, simulationVM: SimulationViewModel, showingResults: Binding<Bool>) {
+        self.portfolioVM = portfolioVM
+        self.simulationVM = simulationVM
+        self._showingResults = showingResults
+
+        self._numberOfRuns = State(initialValue: Double(simulationVM.parameters.numberOfRuns))
+        self._timeHorizon = State(initialValue: Double(simulationVM.parameters.timeHorizonYears))
+        self._inflationRate = State(initialValue: simulationVM.parameters.inflationRate)
+
+        let config = simulationVM.withdrawalConfiguration
+        self._withdrawalConfig = State(initialValue: config)
+        self._withdrawalRate = State(initialValue: config.withdrawalRate)
+        self._fixedDollarAmount = State(initialValue: config.annualAmount ?? 40_000)
+        self._rmdAge = State(initialValue: config.currentAge ?? 65)
+        self._upperGuardrail = State(initialValue: config.upperGuardrail ?? 0.20)
+        self._lowerGuardrail = State(initialValue: config.lowerGuardrail ?? 0.15)
+        self._floorEnabled = State(initialValue: config.floorPercentage != nil)
+        self._floorRate = State(initialValue: config.floorPercentage ?? 0.025)
+        self._ceilingEnabled = State(initialValue: config.ceilingPercentage != nil)
+        self._ceilingRate = State(initialValue: config.ceilingPercentage ?? 0.06)
+    }
     
     var body: some View {
         NavigationView {
@@ -43,74 +79,54 @@ struct SimulationSetupView: View {
                 
                 // Simulation Parameters
                 Section("Simulation Settings") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Simulation Runs")
-                            Spacer()
-                            Text("\(Int(numberOfRuns))")
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $numberOfRuns, in: 1000...50000, step: 1000)
-                        
-                        Text("More runs = more accurate, but slower")
-                            .font(.caption)
+                    HStack {
+                        Text("Simulation Runs")
+                        Spacer()
+                        Text("\(Int(numberOfRuns))")
                             .foregroundColor(.secondary)
+                            .monospacedDigit()
                     }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Time Horizon")
-                            Spacer()
-                            Text("\(Int(timeHorizon)) years")
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $timeHorizon, in: 5...50, step: 1)
+                    Slider(value: $numberOfRuns, in: 1000...50000, step: 1000)
+                    Text("More runs = more accurate, but slower")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    HStack {
+                        Text("Time Horizon")
+                        Spacer()
+                        Text("\(Int(timeHorizon)) years")
+                            .foregroundColor(.secondary)
+                            .monospacedDigit()
                     }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Inflation Rate")
-                            Spacer()
-                            Text(inflationRate.toPercent())
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $inflationRate, in: 0...0.10, step: 0.005)
+                    Slider(value: $timeHorizon, in: 5...50, step: 1)
+
+                    HStack {
+                        Text("Inflation Rate")
+                        Spacer()
+                        Text(inflationRate.toPercent())
+                            .foregroundColor(.secondary)
+                            .monospacedDigit()
                     }
+                    Slider(value: $inflationRate, in: 0...0.10, step: 0.005)
                 }
                 
-                // Withdrawal Strategy
+                // Withdrawal Strategy — strategy picker + strategy-specific controls
                 Section("Withdrawal Strategy") {
-                    Picker("Strategy", selection: $selectedStrategy) {
+                    Picker("Strategy", selection: $withdrawalConfig.strategy) {
                         ForEach(WithdrawalStrategy.allCases) { strategy in
-                            Text(strategy.rawValue)
-                                .tag(strategy)
+                            Text(strategy.rawValue).tag(strategy)
                         }
                     }
                     .pickerStyle(.menu)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Withdrawal Rate")
-                            Spacer()
-                            Text(withdrawalRate.toPercent())
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
-                        
-                        Text("Initial annual withdrawal: \((portfolioVM.totalValue * withdrawalRate).toCurrency())")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Text(selectedStrategy.description)
+
+                    Text(withdrawalConfig.strategy.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
+
+                // Strategy-specific inputs
+                strategyInputSection
+
                 // Fixed Income Section
                 Section("Fixed Income (Pension & Social Security)") {
                     VStack(alignment: .leading, spacing: 8) {
@@ -181,7 +197,6 @@ struct SimulationSetupView: View {
                         .controlSize(.large)
                     }
                     
-                    // Debug info
                     if let error = simulationVM.errorMessage {
                         Text("Error: \(error)")
                             .font(.caption)
@@ -199,13 +214,241 @@ struct SimulationSetupView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
             }
         }
     }
+
+    // MARK: - Strategy-specific input sections
+
+    @ViewBuilder
+    private var strategyInputSection: some View {
+        switch withdrawalConfig.strategy {
+        case .fixedPercentage:
+            fixedPercentageInputs
+        case .dynamicPercentage:
+            dynamicPercentageInputs
+        case .guardrails:
+            guardrailsInputs
+        case .rmd:
+            rmdInputs
+        case .fixedDollar:
+            fixedDollarInputs
+        case .custom:
+            customInputs
+        }
+    }
+
+    private var fixedPercentageInputs: some View {
+        Section("4% Rule Configuration") {
+            HStack {
+                Text("Withdrawal Rate")
+                Spacer()
+                Text(withdrawalRate.toPercent())
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
+                .onChange(of: withdrawalRate) { _, v in
+                    withdrawalConfig.withdrawalRate = v
+                }
+            Text("First year: \((portfolioVM.totalValue * withdrawalRate).toCurrency()) · stays constant in real terms")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Toggle("Adjust for Inflation", isOn: $withdrawalConfig.adjustForInflation)
+        }
+    }
+
+    private var dynamicPercentageInputs: some View {
+        Section("Dynamic Percentage Configuration") {
+            HStack {
+                Text("Withdrawal Rate")
+                Spacer()
+                Text(withdrawalRate.toPercent())
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
+                .onChange(of: withdrawalRate) { _, v in
+                    withdrawalConfig.withdrawalRate = v
+                    // Clamp floor/ceiling to stay on the correct side
+                    if floorEnabled, floorRate > v {
+                        floorRate = v
+                        withdrawalConfig.floorPercentage = v
+                    }
+                    if ceilingEnabled, ceilingRate < v {
+                        ceilingRate = v
+                        withdrawalConfig.ceilingPercentage = v
+                    }
+                }
+            Text("Withdraws \(withdrawalRate.toPercent()) of current balance each year")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Toggle("Set Floor", isOn: $floorEnabled)
+                .onChange(of: floorEnabled) { _, enabled in
+                    if enabled {
+                        floorRate = min(floorRate, withdrawalRate)
+                        withdrawalConfig.floorPercentage = floorRate
+                    } else {
+                        withdrawalConfig.floorPercentage = nil
+                    }
+                }
+
+            if floorEnabled {
+                HStack {
+                    Text("Minimum Rate")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(floorRate.toPercent())
+                        .foregroundColor(.secondary)
+                        .monospacedDigit()
+                }
+                Slider(value: $floorRate, in: 0.005...withdrawalRate, step: 0.005)
+                    .onChange(of: floorRate) { _, v in
+                        withdrawalConfig.floorPercentage = v
+                    }
+                Text("Fixed floor: \((portfolioVM.totalValue * floorRate).toCurrency())/yr (based on initial portfolio)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Toggle("Set Ceiling", isOn: $ceilingEnabled)
+                .onChange(of: ceilingEnabled) { _, enabled in
+                    if enabled {
+                        ceilingRate = max(ceilingRate, withdrawalRate)
+                        withdrawalConfig.ceilingPercentage = ceilingRate
+                    } else {
+                        withdrawalConfig.ceilingPercentage = nil
+                    }
+                }
+
+            if ceilingEnabled {
+                HStack {
+                    Text("Maximum Rate")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(ceilingRate.toPercent())
+                        .foregroundColor(.secondary)
+                        .monospacedDigit()
+                }
+                Slider(value: $ceilingRate, in: withdrawalRate...0.15, step: 0.005)
+                    .onChange(of: ceilingRate) { _, v in
+                        withdrawalConfig.ceilingPercentage = v
+                    }
+                Text("Fixed ceiling: \((portfolioVM.totalValue * ceilingRate).toCurrency())/yr (based on initial portfolio)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var guardrailsInputs: some View {
+        Section("Guardrails Configuration") {
+            HStack {
+                Text("Initial Withdrawal Rate")
+                Spacer()
+                Text(withdrawalRate.toPercent())
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
+                .onChange(of: withdrawalRate) { _, v in
+                    withdrawalConfig.withdrawalRate = v
+                }
+            Text("First year: \((portfolioVM.totalValue * withdrawalRate).toCurrency())")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            HStack {
+                Text("Upper Guardrail")
+                Spacer()
+                Text(upperGuardrail.toPercent())
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: $upperGuardrail, in: 0.05...0.50, step: 0.05)
+                .onChange(of: upperGuardrail) { _, v in
+                    withdrawalConfig.upperGuardrail = v
+                }
+            Text("Cut spending 10% if rate exceeds \((withdrawalRate * (1 + upperGuardrail)).toPercent())")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            HStack {
+                Text("Lower Guardrail")
+                Spacer()
+                Text(lowerGuardrail.toPercent())
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: $lowerGuardrail, in: 0.05...0.50, step: 0.05)
+                .onChange(of: lowerGuardrail) { _, v in
+                    withdrawalConfig.lowerGuardrail = v
+                }
+            Text("Raise spending 10% if rate falls below \((withdrawalRate * (1 - lowerGuardrail)).toPercent())")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var rmdInputs: some View {
+        Section("RMD Configuration") {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Current Age")
+                    Spacer()
+                    TextField("Age", value: $rmdAge, format: .number)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 80)
+                        .onChange(of: rmdAge) { _, v in withdrawalConfig.currentAge = v }
+                }
+                Text("Withdrawal percentage increases each year following IRS life expectancy tables")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var fixedDollarInputs: some View {
+        Section("Fixed Dollar Configuration") {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Annual Withdrawal")
+                    Spacer()
+                    TextField("Amount", value: $fixedDollarAmount, format: .currency(code: "USD"))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 130)
+                        .onChange(of: fixedDollarAmount) { _, v in withdrawalConfig.annualAmount = v }
+                }
+                Text("Monthly: \((fixedDollarAmount / 12).toCurrency())")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Toggle("Adjust for Inflation", isOn: $withdrawalConfig.adjustForInflation)
+        }
+    }
+
+    private var customInputs: some View {
+        Section("Custom Strategy") {
+            HStack {
+                Text("Withdrawal Rate")
+                Spacer()
+                Text(withdrawalRate.toPercent())
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
+                .onChange(of: withdrawalRate) { _, v in
+                    withdrawalConfig.withdrawalRate = v
+                }
+        }
+    }
+
+    // MARK: - Helpers
     
     private func formatNumberInput(_ input: String) -> String {
         let digitsOnly = input.filter { $0.isNumber }
@@ -238,6 +481,7 @@ struct SimulationSetupView: View {
     
     private func applyPreset(rate: Double, years: Double, runs: Double) {
         withdrawalRate = rate
+        withdrawalConfig.withdrawalRate = rate
         timeHorizon = years
         numberOfRuns = runs
     }
@@ -247,24 +491,26 @@ struct SimulationSetupView: View {
         
         let settings = PersistenceService.shared.loadSettings()
         let useBootstrap = simulationVM.useCustomReturns ? false : settings.useHistoricalBootstrap
-        
-        // Update simulation parameters
+
+        // Stamp the inflation rate into the config so Fixed Dollar nominal mode works.
+        var config = withdrawalConfig
+        config.inflationRate = inflationRate
+        config.fixedIncome = parseFormattedNumber(fixedIncome) ?? 0
+
+        // Persist the configuration back to the VM so it survives navigation.
+        simulationVM.withdrawalConfiguration = config
+
         simulationVM.updateWithdrawalRate(withdrawalRate)
         simulationVM.updateTimeHorizon(Int(timeHorizon))
         simulationVM.updateInflationRate(inflationRate)
         
-        // Update number of runs
         simulationVM.parameters = SimulationParameters(
             numberOfRuns: Int(numberOfRuns),
             timeHorizonYears: Int(timeHorizon),
             inflationRate: inflationRate,
             useHistoricalBootstrap: useBootstrap,
             initialPortfolioValue: portfolioVM.totalValue,
-            withdrawalConfig: WithdrawalConfiguration(
-                strategy: selectedStrategy,
-                withdrawalRate: withdrawalRate,
-                fixedIncome: parseFormattedNumber(fixedIncome) ?? 0
-            )
+            withdrawalConfig: config
         )
         
         Task {
@@ -275,8 +521,7 @@ struct SimulationSetupView: View {
             
             if simulationVM.hasResult {
                 print("📈 Opening results view...")
-                // Small delay to ensure state updates
-                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                try? await Task.sleep(nanoseconds: 100_000_000)
                 
                 await MainActor.run {
                     dismiss()

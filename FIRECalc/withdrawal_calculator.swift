@@ -33,6 +33,7 @@ struct WithdrawalCalculator {
         case .dynamicPercentage:
             withdrawal = dynamicPercentage(
                 currentBalance: currentBalance,
+                initialBalance: initialBalance,
                 config: config
             )
         case .guardrails:
@@ -50,7 +51,8 @@ struct WithdrawalCalculator {
             )
         case .fixedDollar:
             withdrawal = fixedDollarAmount(
-                config: config
+                config: config,
+                year: year
             )
         case .custom:
             withdrawal = fixedPercentageRule(
@@ -90,26 +92,37 @@ struct WithdrawalCalculator {
         return baselineWithdrawal
     }
     
-    /// Dynamic Percentage: Withdraw percentage of current portfolio value
+    /// Dynamic Percentage: Withdraw percentage of current portfolio value,
+    /// with an optional floor and ceiling expressed as a percentage of the
+    /// INITIAL portfolio value (not the current balance).
+    ///
+    /// Using the initial portfolio value for the dollar floor/ceiling means the
+    /// limits represent a real spending level in today's purchasing power — e.g.
+    /// "I need at least $40k/year no matter what the market does".  If the limits
+    /// were applied as a percentage of the *current* balance they would shrink
+    /// with the portfolio and provide no meaningful spending protection.
     private func dynamicPercentage(
         currentBalance: Double,
+        initialBalance: Double,
         config: WithdrawalConfiguration
     ) -> Double {
-        
+
         var withdrawal = currentBalance * config.withdrawalRate
-        
-        // Apply floor and ceiling if configured
+
+        // Floor and ceiling are percentages applied to the INITIAL balance so
+        // they represent fixed real dollar thresholds.
         if let floor = config.floorPercentage {
-            let minWithdrawal = currentBalance * floor
+            let minWithdrawal = initialBalance * floor
             withdrawal = max(withdrawal, minWithdrawal)
         }
-        
+
         if let ceiling = config.ceilingPercentage {
-            let maxWithdrawal = currentBalance * ceiling
+            let maxWithdrawal = initialBalance * ceiling
             withdrawal = min(withdrawal, maxWithdrawal)
         }
-        
-        return withdrawal
+
+        // Never withdraw more than the remaining balance.
+        return min(withdrawal, currentBalance)
     }
     
     /// Guardrails (Guyton-Klinger): Adjust withdrawals based on portfolio performance
@@ -148,30 +161,47 @@ struct WithdrawalCalculator {
         year: Int,
         config: WithdrawalConfiguration
     ) -> Double {
-        
+
+        // currentAge is required for RMD. If it is missing the user most likely
+        // set up RMD without providing their age; fall back to the configured
+        // withdrawal rate so the simulation is still meaningful rather than
+        // silently returning an arbitrary number.
         guard let currentAge = config.currentAge else {
-            // Fallback to simple percentage if age not provided
             return currentBalance * config.withdrawalRate
         }
-        
+
         let age = currentAge + year - 1
         let distributionPeriod = rmdDistributionPeriod(for: age)
-        
+
         return currentBalance / distributionPeriod
     }
     
-    /// Fixed Dollar Amount: Withdraw fixed amount
-    /// In real terms, this is already constant purchasing power
+    /// Fixed Dollar Amount: Withdraw a fixed amount each year.
+    ///
+    /// The engine works in REAL (inflation-adjusted) terms, so:
+    /// - `adjustForInflation = true`  → return the amount as-is; the real-return
+    ///   arithmetic already keeps purchasing power constant.
+    /// - `adjustForInflation = false` → the user wants a *nominal* fixed payment
+    ///   (e.g. a mortgage).  We store the inflation rate inside the config so we
+    ///   can erode the real value by dividing by (1 + inflationRate)^(year-1).
+    ///   If no inflation rate is stored we treat it as inflation-adjusted for safety.
     private func fixedDollarAmount(
-        config: WithdrawalConfiguration
+        config: WithdrawalConfiguration,
+        year: Int
     ) -> Double {
-        
-        guard let amount = config.annualAmount else {
+        guard let amount = config.annualAmount, amount > 0 else {
             return 0
         }
-        
-        // Return the amount as-is (already in real dollars)
-        return amount
+
+        guard !config.adjustForInflation, let inflation = config.inflationRate, inflation > 0 else {
+            // Inflation-adjusted (or no rate available): constant real purchasing power.
+            return amount
+        }
+
+        // Nominal fixed: erode real value over time so the actual portfolio draw
+        // shrinks in real terms, just as a fixed nominal payment does.
+        let realAmount = amount / pow(1 + inflation, Double(year - 1))
+        return realAmount
     }
     
     // MARK: - RMD Life Expectancy Table

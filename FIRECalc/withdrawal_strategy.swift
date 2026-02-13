@@ -83,7 +83,12 @@ struct WithdrawalConfiguration: Codable {
     var withdrawalRate: Double
     var annualAmount: Double?
     var adjustForInflation: Bool
-    
+
+    /// The simulation's inflation rate, forwarded here so that the
+    /// Fixed Dollar strategy can model a *nominal* fixed payment correctly.
+    /// Only used when `strategy == .fixedDollar && adjustForInflation == false`.
+    var inflationRate: Double?
+
     // Fixed income that offsets withdrawals (pensions, Social Security)
     var fixedIncome: Double?
     
@@ -104,6 +109,7 @@ struct WithdrawalConfiguration: Codable {
         withdrawalRate: Double = 0.04,
         annualAmount: Double? = nil,
         adjustForInflation: Bool = true,
+        inflationRate: Double? = nil,
         fixedIncome: Double? = nil,
         upperGuardrail: Double? = nil,
         lowerGuardrail: Double? = nil,
@@ -116,6 +122,7 @@ struct WithdrawalConfiguration: Codable {
         self.withdrawalRate = withdrawalRate
         self.annualAmount = annualAmount
         self.adjustForInflation = adjustForInflation
+        self.inflationRate = inflationRate
         self.fixedIncome = fixedIncome
         self.upperGuardrail = upperGuardrail
         self.lowerGuardrail = lowerGuardrail

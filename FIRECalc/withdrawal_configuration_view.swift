@@ -16,13 +16,21 @@ struct WithdrawalConfigurationView: View {
     @State private var selectedStrategy: WithdrawalStrategy
     @State private var withdrawalRate: Double
     @State private var fixedDollarAmount: Double
-    
+    @State private var floorEnabled: Bool
+    @State private var ceilingEnabled: Bool
+    @State private var floorPercentage: Double
+    @State private var ceilingPercentage: Double
+
     init(config: Binding<WithdrawalConfiguration>, portfolioValue: Double) {
         self._config = config
         self.portfolioValue = portfolioValue
         self._selectedStrategy = State(initialValue: config.wrappedValue.strategy)
         self._withdrawalRate = State(initialValue: config.wrappedValue.withdrawalRate)
         self._fixedDollarAmount = State(initialValue: config.wrappedValue.annualAmount ?? 0)
+        self._floorEnabled = State(initialValue: config.wrappedValue.floorPercentage != nil)
+        self._ceilingEnabled = State(initialValue: config.wrappedValue.ceilingPercentage != nil)
+        self._floorPercentage = State(initialValue: config.wrappedValue.floorPercentage ?? 0.025)
+        self._ceilingPercentage = State(initialValue: config.wrappedValue.ceilingPercentage ?? 0.06)
     }
     
     var body: some View {
@@ -88,168 +96,218 @@ struct WithdrawalConfigurationView: View {
     
     private var fixedPercentageSection: some View {
         Section("4% Rule Configuration") {
-            VStack(alignment: .leading, spacing: 12) {
+            HStack {
                 Text("Withdrawal Rate")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
-                HStack {
-                    Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
-                    Text(withdrawalRate.toPercent())
-                        .font(.headline)
-                        .frame(width: 60, alignment: .trailing)
-                }
+                Spacer()
+                Text(withdrawalRate.toPercent())
+                    .font(.headline)
+                    .monospacedDigit()
+            }
+            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
                 .onChange(of: withdrawalRate) { _, newValue in
                     config.withdrawalRate = newValue
                 }
-                
-                Text("First year withdrawal: \((portfolioValue * withdrawalRate).toCurrency())")
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                
-                Text("Subsequent years adjust for inflation")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
+            Text("First year withdrawal: \((portfolioValue * withdrawalRate).toCurrency())")
+                .font(.caption)
+                .foregroundColor(.blue)
+            Text("Subsequent years adjust for inflation")
+                .font(.caption)
+                .foregroundColor(.secondary)
             Toggle("Adjust for Inflation", isOn: $config.adjustForInflation)
         }
     }
     
     private var dynamicPercentageSection: some View {
         Section("Dynamic Percentage Configuration") {
-            VStack(alignment: .leading, spacing: 12) {
+            HStack {
                 Text("Withdrawal Rate")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
-                HStack {
-                    Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
-                    Text(withdrawalRate.toPercent())
-                        .font(.headline)
-                        .frame(width: 60, alignment: .trailing)
-                }
+                Spacer()
+                Text(withdrawalRate.toPercent())
+                    .font(.headline)
+                    .monospacedDigit()
+            }
+            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
                 .onChange(of: withdrawalRate) { _, newValue in
                     config.withdrawalRate = newValue
+                    // Clamp floor/ceiling to stay on the correct side of the withdrawal rate
+                    if floorEnabled && floorPercentage > newValue {
+                        floorPercentage = newValue
+                        config.floorPercentage = newValue
+                    }
+                    if ceilingEnabled && ceilingPercentage < newValue {
+                        ceilingPercentage = newValue
+                        config.ceilingPercentage = newValue
+                    }
                 }
-                
-                Text("Withdraws \(withdrawalRate.toPercent()) of current portfolio value each year")
+            Text("Withdraws \(withdrawalRate.toPercent()) of current portfolio value each year")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Toggle("Set Floor", isOn: $floorEnabled)
+                .onChange(of: floorEnabled) { _, enabled in
+                    if enabled {
+                        // Default to withdrawal rate or lower
+                        floorPercentage = min(floorPercentage, withdrawalRate)
+                        config.floorPercentage = floorPercentage
+                    } else {
+                        config.floorPercentage = nil
+                    }
+                }
+
+            if floorEnabled {
+                HStack {
+                    Text("Floor")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(floorPercentage.toPercent())
+                        .font(.headline)
+                        .monospacedDigit()
+                }
+                Slider(value: $floorPercentage, in: 0.005...withdrawalRate, step: 0.005)
+                    .onChange(of: floorPercentage) { _, newValue in
+                        config.floorPercentage = newValue
+                    }
+                Text("Fixed floor: \((portfolioValue * floorPercentage).toCurrency())/yr (based on initial portfolio)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
-            Toggle("Set Floor", isOn: Binding(
-                get: { config.floorPercentage != nil },
-                set: { enabled in
-                    config.floorPercentage = enabled ? 0.025 : nil
+
+            Toggle("Set Ceiling", isOn: $ceilingEnabled)
+                .onChange(of: ceilingEnabled) { _, enabled in
+                    if enabled {
+                        // Default to withdrawal rate or higher
+                        ceilingPercentage = max(ceilingPercentage, withdrawalRate)
+                        config.ceilingPercentage = ceilingPercentage
+                    } else {
+                        config.ceilingPercentage = nil
+                    }
                 }
-            ))
-            
-            if let floor = config.floorPercentage {
-                HStack {
-                    Text("Floor")
-                    Spacer()
-                    Text(floor.toPercent())
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Toggle("Set Ceiling", isOn: Binding(
-                get: { config.ceilingPercentage != nil },
-                set: { enabled in
-                    config.ceilingPercentage = enabled ? 0.06 : nil
-                }
-            ))
-            
-            if let ceiling = config.ceilingPercentage {
+
+            if ceilingEnabled {
                 HStack {
                     Text("Ceiling")
-                    Spacer()
-                    Text(ceiling.toPercent())
+                        .font(.subheadline)
                         .foregroundColor(.secondary)
+                    Spacer()
+                    Text(ceilingPercentage.toPercent())
+                        .font(.headline)
+                        .monospacedDigit()
                 }
+                Slider(value: $ceilingPercentage, in: withdrawalRate...0.15, step: 0.005)
+                    .onChange(of: ceilingPercentage) { _, newValue in
+                        config.ceilingPercentage = newValue
+                    }
+                Text("Fixed ceiling: \((portfolioValue * ceilingPercentage).toCurrency())/yr (based on initial portfolio)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
     }
     
     private var guardrailsSection: some View {
         Section("Guardrails Configuration") {
-            VStack(alignment: .leading, spacing: 12) {
+            HStack {
                 Text("Initial Withdrawal Rate")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
-                HStack {
-                    Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
-                    Text(withdrawalRate.toPercent())
-                        .font(.headline)
-                        .frame(width: 60, alignment: .trailing)
-                }
+                Spacer()
+                Text(withdrawalRate.toPercent())
+                    .font(.headline)
+                    .monospacedDigit()
+            }
+            Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
                 .onChange(of: withdrawalRate) { _, newValue in
                     config.withdrawalRate = newValue
                 }
-            }
-            
-            VStack(alignment: .leading, spacing: 8) {
+
+            HStack {
                 Text("Upper Guardrail")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
-                Text("Reduce spending by 10% if withdrawal rate exceeds \((withdrawalRate * 1.20).toPercent())")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Spacer()
+                Text((config.upperGuardrail ?? 0.20).toPercent())
+                    .font(.headline)
+                    .monospacedDigit()
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
+            Slider(
+                value: Binding(
+                    get: { config.upperGuardrail ?? 0.20 },
+                    set: { config.upperGuardrail = $0 }
+                ),
+                in: 0.05...0.50,
+                step: 0.05
+            )
+            Text("Reduce spending by 10% if withdrawal rate exceeds \((withdrawalRate * (1 + (config.upperGuardrail ?? 0.20))).toPercent())")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            HStack {
                 Text("Lower Guardrail")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
-                Text("Increase spending by 10% if withdrawal rate falls below \((withdrawalRate * 0.85).toPercent())")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Spacer()
+                Text((config.lowerGuardrail ?? 0.15).toPercent())
+                    .font(.headline)
+                    .monospacedDigit()
             }
+            Slider(
+                value: Binding(
+                    get: { config.lowerGuardrail ?? 0.15 },
+                    set: { config.lowerGuardrail = $0 }
+                ),
+                in: 0.05...0.50,
+                step: 0.05
+            )
+            Text("Increase spending by 10% if withdrawal rate falls below \((withdrawalRate * (1 - (config.lowerGuardrail ?? 0.15))).toPercent())")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
     
     private var rmdSection: some View {
         Section("RMD Configuration") {
-            VStack(alignment: .leading, spacing: 12) {
+            HStack {
                 Text("Current Age")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
+                Spacer()
                 TextField("Age", value: Binding(
                     get: { config.currentAge ?? 65 },
                     set: { config.currentAge = $0 }
                 ), format: .number)
                 .keyboardType(.numberPad)
-                
-                Text("Withdrawal amount based on IRS life expectancy tables")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 80)
             }
+            Text("Withdrawal amount based on IRS life expectancy tables")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
     
     private var fixedDollarSection: some View {
         Section("Fixed Dollar Amount") {
-            VStack(alignment: .leading, spacing: 12) {
+            HStack {
                 Text("Annual Withdrawal Amount")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
+                Spacer()
                 TextField("Amount", value: $fixedDollarAmount, format: .currency(code: "USD"))
                     .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 130)
                     .onChange(of: fixedDollarAmount) { _, newValue in
                         config.annualAmount = newValue
                     }
-                
-                Text("Withdraws exactly this amount each year")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
-            
+            Text("Withdraws exactly this amount each year")
+                .font(.caption)
+                .foregroundColor(.secondary)
             Toggle("Adjust for Inflation", isOn: $config.adjustForInflation)
         }
     }
