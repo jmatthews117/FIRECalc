@@ -12,6 +12,7 @@ import SwiftUI
 class SimulationViewModel: ObservableObject {
     @Published var parameters: SimulationParameters
     @Published var currentResult: SimulationResult?
+    @Published var simulationHistory: [SimulationResult] = []
     @Published var isSimulating: Bool = false
     @Published var progress: Double = 0
     @Published var errorMessage: String?
@@ -32,9 +33,9 @@ class SimulationViewModel: ObservableObject {
             initialPortfolioValue: 1_000_000
         )
         
-        if let history = try? persistence.loadSimulationHistory(),
-           let lastResult = history.last {
-            self.currentResult = lastResult
+        if let history = try? persistence.loadSimulationHistory() {
+            self.simulationHistory = history.reversed() // newest first
+            self.currentResult = history.last
         }
     }
     
@@ -74,6 +75,9 @@ class SimulationViewModel: ObservableObject {
             progress = 1.0
             
             try? persistence.saveSimulationResult(result)
+            if let history = try? persistence.loadSimulationHistory() {
+                simulationHistory = history.reversed()
+            }
             
         } catch {
             errorMessage = error.localizedDescription

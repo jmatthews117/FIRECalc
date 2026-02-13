@@ -351,6 +351,8 @@ struct SimulationsTab: View {
     @State private var showingSetup = false
     @State private var showingResults = false
     @State private var showingManualReturns = false
+    @State private var showingHistoryResult = false
+    @State private var selectedHistoryResult: SimulationResult?
     
     var body: some View {
         NavigationView {
@@ -561,21 +563,62 @@ struct SimulationsTab: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Simulation History")
                 .font(.headline)
-            
-            if simulationVM.hasResult {
-                Text("View past simulations and compare results")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            } else {
+
+            if simulationVM.simulationHistory.isEmpty {
                 Text("No simulations yet. Run your first simulation to see results.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+            } else {
+                ForEach(simulationVM.simulationHistory.prefix(5), id: \.id) { result in
+                    Button {
+                        selectedHistoryResult = result
+                        showingHistoryResult = true
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(result.runDate.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.subheadline)
+                                    .foregroundColor(.primary)
+                                Text("\(result.parameters.timeHorizonYears) yr horizon • \(result.parameters.numberOfRuns) runs")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+
+                            Text(String(format: "%.0f%%", result.successRate * 100))
+                                .font(.headline)
+                                .foregroundColor(successColor(for: result.successRate))
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.plain)
+
+                    if result.id != simulationVM.simulationHistory.prefix(5).last?.id {
+                        Divider()
+                    }
+                }
             }
         }
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 4)
+        .sheet(isPresented: $showingHistoryResult) {
+            if let result = selectedHistoryResult {
+                SimulationResultsView(result: result)
+            }
+        }
+    }
+
+    private func successColor(for rate: Double) -> Color {
+        if rate >= 0.9 { return .green }
+        if rate >= 0.75 { return .orange }
+        return .red
     }
 }
 
