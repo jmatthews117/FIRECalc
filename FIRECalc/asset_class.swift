@@ -10,6 +10,7 @@ import Foundation
 enum AssetClass: String, Codable, CaseIterable, Identifiable {
     case stocks = "Stocks"
     case bonds = "Bonds"
+    case corporateBonds = "Corporate Bonds"
     case reits = "REITs"
     case realEstate = "Real Estate"
     case preciousMetals = "Precious Metals"
@@ -24,6 +25,7 @@ enum AssetClass: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .stocks: return 0.10      // 10%
         case .bonds: return 0.045      // 4.5%
+        case .corporateBonds: return 0.055 // 5.5%
         case .reits: return 0.09       // 9%
         case .realEstate: return 0.08  // 8%
         case .preciousMetals: return 0.05 // 5%
@@ -38,6 +40,7 @@ enum AssetClass: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .stocks: return 0.18      // 18%
         case .bonds: return 0.06       // 6%
+        case .corporateBonds: return 0.08  // 8%
         case .reits: return 0.20       // 20%
         case .realEstate: return 0.12  // 12%
         case .preciousMetals: return 0.15 // 15%
@@ -52,6 +55,7 @@ enum AssetClass: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .stocks: return "chart.line.uptrend.xyaxis"
         case .bonds: return "doc.text"
+        case .corporateBonds: return "building.columns"
         case .reits: return "building.2"
         case .realEstate: return "house"
         case .preciousMetals: return "crown"
@@ -66,6 +70,7 @@ enum AssetClass: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .stocks: return "blue"
         case .bonds: return "green"
+        case .corporateBonds: return "teal"
         case .reits: return "purple"
         case .realEstate: return "orange"
         case .preciousMetals: return "yellow"

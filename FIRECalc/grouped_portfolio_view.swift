@@ -243,6 +243,7 @@ struct GroupedPortfolioView: View {
         switch assetClass {
         case .stocks: return .blue
         case .bonds: return .green
+        case .corporateBonds: return .teal
         case .reits: return .purple
         case .realEstate: return .orange
         case .preciousMetals: return .yellow.opacity(0.8)
@@ -301,14 +302,14 @@ struct GroupedPortfolioView: View {
             .cornerRadius(12)
             
             // Bond Calculator Button
-            if assetClass == .bonds {
+            if assetClass == .bonds || assetClass == .corporateBonds {
                 Button(action: { showingBondCalculator = true }) {
                     HStack {
                         Image(systemName: "calculator")
                         Text("Bond Pricing Calculator")
                             .font(.caption)
                     }
-                    .foregroundColor(.blue)
+                    .foregroundColor(.teal)
                 }
                 .padding(.horizontal)
             }

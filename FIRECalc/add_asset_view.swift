@@ -58,7 +58,7 @@ struct AddAssetView: View {
                 }
                 
                 // Ticker Input (for stocks, bonds, REITs, crypto, precious metals)
-                if selectedAssetClass.supportsTicker || selectedAssetClass == .bonds || selectedAssetClass == .preciousMetals {
+                if selectedAssetClass.supportsTicker || selectedAssetClass == .bonds || selectedAssetClass == .corporateBonds || selectedAssetClass == .preciousMetals {
                     Section("Ticker Symbol\n(Input Custom Label if no Ticker)") {
                         VStack(alignment: .leading, spacing: 8) {
                             TextField("e.g., AAPL, SPY, GLD or [My Label]", text: $ticker)
@@ -255,6 +255,7 @@ struct AddAssetView: View {
     private var needsQuantityAndPrice: Bool {
         selectedAssetClass == .stocks ||
         selectedAssetClass == .bonds ||
+        selectedAssetClass == .corporateBonds ||
         selectedAssetClass == .reits ||
         selectedAssetClass == .crypto ||
         selectedAssetClass == .preciousMetals
@@ -298,6 +299,8 @@ struct AddAssetView: View {
             return "e.g., AAPL, SPY, VTI, QQQ"
         case .bonds:
             return "e.g., TLT (Treasury), LQD (Corporate), HYG (High Yield)"
+        case .corporateBonds:
+            return "e.g., LQD (Investment Grade), HYG (High Yield), VCIT"
         case .reits:
             return "e.g., VNQ (REIT Index), O (Realty Income)"
         case .preciousMetals:
@@ -315,6 +318,8 @@ struct AddAssetView: View {
             return "Modeled using long-run U.S. stock market returns"
         case .bonds:
             return "Modeled using U.S. Treasury bond returns"
+        case .corporateBonds:
+            return "Modeled using Baa corporate bond historical returns"
         case .reits:
             return "Modeled using U.S. REIT index returns"
         case .realEstate:

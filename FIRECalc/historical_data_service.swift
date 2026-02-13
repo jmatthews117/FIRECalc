@@ -157,7 +157,12 @@ class HistoricalDataService {
             summary: stats(for: gold),
             notes: "Mapped to Gold returns"
         )
-        // Optionally include Baa Corporate as corporate bonds if such asset class exists; otherwise ignore
+        assetDict[AssetClass.corporateBonds.rawValue.lowercased()] = AssetClassData(
+            name: AssetClass.corporateBonds.rawValue,
+            historicalReturns: baaCorp,
+            summary: stats(for: baaCorp),
+            notes: "Baa Corporate Bond returns"
+        )
         
         let historicalData = HistoricalData(
             metadata: HistoricalMetadata(
@@ -317,6 +322,12 @@ extension HistoricalDataService {
                     name: "Bonds",
                     historicalReturns: generateNormalReturns(mean: 0.045, stdDev: 0.08, count: 98),
                     summary: ReturnSummary(mean: 0.045, median: 0.045, standardDeviation: 0.08, min: -0.09, max: 0.26),
+                    notes: "Generated from normal distribution"
+                ),
+                "corporate bonds": AssetClassData(
+                    name: "Corporate Bonds",
+                    historicalReturns: generateNormalReturns(mean: 0.055, stdDev: 0.09, count: 98),
+                    summary: ReturnSummary(mean: 0.055, median: 0.055, standardDeviation: 0.09, min: -0.16, max: 0.30),
                     notes: "Generated from normal distribution"
                 )
             ],
