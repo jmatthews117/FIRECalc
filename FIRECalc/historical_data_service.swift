@@ -80,13 +80,17 @@ class HistoricalDataService {
     func loadHistoricalData() throws -> HistoricalData {
         if let cached = cachedData { return cached }
         
-        // Load new nominal returns by year dataset
-        guard let url = Bundle.main.url(forResource: "returns_by_year", withExtension: "json") else {
+        // Load updated nominal returns by year dataset (includes Bitcoin)
+        guard let url = Bundle.main.url(forResource: "updated_returns_by_year", withExtension: "json") else {
             throw DataError.fileNotFound
         }
         let data = try Data(contentsOf: url)
         
-        // Define row model matching JSON keys exactly
+        // Define row model matching JSON keys exactly.
+        // Bitcoin covers the full historical period in this dataset, so it is
+        // non-optional. A missing or null value will produce a loud decode error
+        // rather than silently producing a shorter array that would break the
+        // year-index alignment in the bootstrap engine.
         struct YearlyNominalRow: Decodable {
             let Year: Int
             let `S&P 500 (includes dividends)`: String
@@ -96,12 +100,16 @@ class HistoricalDataService {
             let `Baa Corporate Bond`: String
             let `Real Estate`: String
             let `Gold*`: String
+            let Bitcoin: String
         }
         
         let decoder = JSONDecoder()
         let rows = try decoder.decode([YearlyNominalRow].self, from: data)
         
-        // Build per-asset arrays
+        // Build per-asset arrays. Every asset — including Bitcoin — must produce
+        // exactly one entry per row so that all arrays stay the same length and
+        // the shared yearIndex in generateHistoricalBootstrapRealReturn always
+        // hits a valid slot for every asset class.
         var stocks: [Double] = []
         var smallCap: [Double] = []
         var tbill: [Double] = []
@@ -109,6 +117,7 @@ class HistoricalDataService {
         var baaCorp: [Double] = []
         var realEstate: [Double] = []
         var gold: [Double] = []
+        var bitcoin: [Double] = []
         
         for row in rows {
             if let v = parsePercent(row.`S&P 500 (includes dividends)`) { stocks.append(v) }
@@ -118,6 +127,7 @@ class HistoricalDataService {
             if let v = parsePercent(row.`Baa Corporate Bond`) { baaCorp.append(v) }
             if let v = parsePercent(row.`Real Estate`) { realEstate.append(v) }
             if let v = parsePercent(row.`Gold*`) { gold.append(v) }
+            if let v = parsePercent(row.Bitcoin) { bitcoin.append(v) }
         }
         
         let years = rows.map { $0.Year }
@@ -131,7 +141,7 @@ class HistoricalDataService {
             name: AssetClass.stocks.rawValue,
             historicalReturns: stocks,
             summary: stats(for: stocks),
-            notes: "From returns_by_year.json (nominal)"
+            notes: "From updated_returns_by_year.json (nominal)"
         )
         assetDict[AssetClass.bonds.rawValue.lowercased()] = AssetClassData(
             name: AssetClass.bonds.rawValue,
@@ -163,10 +173,20 @@ class HistoricalDataService {
             summary: stats(for: baaCorp),
             notes: "Baa Corporate Bond returns"
         )
+        // Bitcoin is required for every row, so this array should always be
+        // the same length as stocks/bonds/etc. Register it unconditionally so
+        // the bootstrap engine never hits the out-of-bounds fallback path for
+        // crypto assets.
+        assetDict[AssetClass.crypto.rawValue.lowercased()] = AssetClassData(
+            name: AssetClass.crypto.rawValue,
+            historicalReturns: bitcoin,
+            summary: stats(for: bitcoin),
+            notes: "Bitcoin annual returns from updated_returns_by_year.json"
+        )
         
         let historicalData = HistoricalData(
             metadata: HistoricalMetadata(
-                description: "Nominal returns by year (parsed from returns_by_year.json)",
+                description: "Nominal returns by year (parsed from updated_returns_by_year.json)",
                 dataSource: "User-provided dataset",
                 startYear: startYear,
                 endYear: endYear,

@@ -187,6 +187,10 @@ struct SimulationResultsView: View {
                     y: .value("Count", bucket.count)
                 )
                 .foregroundStyle(bucket.isPositive ? Color.blue.gradient : Color.red.gradient)
+                
+                RuleMark(x: .value("Initial Value", result.parameters.initialPortfolioValue))
+                    .foregroundStyle(.black)
+                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [6, 4]))
             }
             .frame(height: 250)
             .chartXAxis {
@@ -226,6 +230,22 @@ struct SimulationResultsView: View {
                         .fill(Color.red)
                         .frame(width: 20, height: 12)
                     Text("Ran Out")
+                        .font(.caption)
+                }
+                
+                HStack(spacing: 6) {
+                    Canvas { context, size in
+                        var path = Path()
+                        path.move(to: CGPoint(x: 0, y: size.height / 2))
+                        path.addLine(to: CGPoint(x: size.width, y: size.height / 2))
+                        context.stroke(
+                            path,
+                            with: .color(.primary),
+                            style: StrokeStyle(lineWidth: 2, dash: [4, 3])
+                        )
+                    }
+                    .frame(width: 20, height: 12)
+                    Text("Starting Value")
                         .font(.caption)
                 }
             }
@@ -291,9 +311,44 @@ struct SimulationResultsView: View {
                 lineOpacity: 0.08,
                 maxPathsToDraw: 600,
                 yLabel: "Balance",
-                xLabel: "Years"
+                xLabel: "Years",
+                initialPortfolioValue: result.parameters.initialPortfolioValue
             )
             .frame(height: 260)
+            
+            HStack(spacing: 20) {
+                HStack(spacing: 4) {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(width: 20, height: 2)
+                    Text("Survived")
+                        .font(.caption)
+                }
+                HStack(spacing: 4) {
+                    Rectangle()
+                        .fill(Color.red)
+                        .frame(width: 20, height: 2)
+                    Text("Ran Out")
+                        .font(.caption)
+                }
+                HStack(spacing: 6) {
+                    // Dashed black line swatch
+                    Canvas { context, size in
+                        var path = Path()
+                        path.move(to: CGPoint(x: 0, y: size.height / 2))
+                        path.addLine(to: CGPoint(x: size.width, y: size.height / 2))
+                        context.stroke(
+                            path,
+                            with: .color(.primary),
+                            style: StrokeStyle(lineWidth: 1.5, dash: [4, 3])
+                        )
+                    }
+                    .frame(width: 20, height: 12)
+                    Text("Starting Value")
+                        .font(.caption)
+                }
+            }
+            .padding(.top, 4)
         }
         .padding()
         .background(Color(.systemBackground))
