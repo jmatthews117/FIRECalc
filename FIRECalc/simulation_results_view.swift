@@ -1,7 +1,8 @@
+//
 //  simulation_results_view.swift
 //  FIRECalc
 //
-//  FIXED - Proper histogram scaling and bucketing
+//  FIXED - Separate $0 bucket with red color matching legend
 //
 
 import SwiftUI
@@ -93,48 +94,32 @@ struct SimulationResultsView: View {
         }
         .padding()
         .background(successRateColor.opacity(0.1))
-        .cornerRadius(12)
+        .cornerRadius(16)
     }
     
-    // MARK: - How It Works Card
+    // MARK: - How It Works
     
     private var howItWorksCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundColor(.yellow)
-                Text("How This Simulation Works")
-                    .font(.headline)
-            }
+            Text("How This Works")
+                .font(.headline)
             
-            VStack(alignment: .leading, spacing: 8) {
-                ExplanationRow(
-                    icon: "repeat",
-                    text: "Ran \(result.parameters.numberOfRuns.formatted()) different scenarios"
-                )
-                
-                ExplanationRow(
-                    icon: "calendar",
-                    text: "Each scenario covers \(result.parameters.timeHorizonYears) years of retirement"
-                )
-                
-                ExplanationRow(
-                    icon: "chart.bar.fill",
-                    text: "Used historical market data (1926-2024) to model realistic returns"
-                )
-                
-                ExplanationRow(
-                    icon: "arrow.down.circle",
-                    text: "Applied \(result.parameters.withdrawalConfig.strategy.rawValue) withdrawal strategy"
-                )
-                
-                ExplanationRow(
-                    icon: "percent",
-                    text: "Started with \(result.parameters.withdrawalConfig.withdrawalRate.toPercent()) withdrawal rate"
-                )
-            }
+            ExplanationRow(
+                icon: "chart.bar.fill",
+                text: "Ran \(result.parameters.numberOfRuns.formatted()) different scenarios using historical market data"
+            )
             
-            Text("Each scenario uses real historical returns (adjusted for inflation) and preserves correlations between asset classes to simulate realistic market conditions.")
+            ExplanationRow(
+                icon: "calendar",
+                text: "Simulated \(result.parameters.timeHorizonYears) years of retirement with annual withdrawals"
+            )
+            
+            ExplanationRow(
+                icon: "percent",
+                text: "Used \(result.parameters.withdrawalConfig.strategy.rawValue) withdrawal strategy at \(result.parameters.withdrawalConfig.withdrawalRate.toPercent())"
+            )
+            
+            Text("Results show what could happen based on past market performance. Your actual experience may differ.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.top, 4)
@@ -374,33 +359,65 @@ struct SimulationResultsView: View {
         }
     }
     
-    // FIXED: Improved histogram bucketing algorithm
+    // FIXED: Improved histogram bucketing algorithm with $0 bucket at x-axis origin
     private func createImprovedHistogramBuckets() -> [ImprovedHistogramBucket] {
         let sortedBalances = result.finalBalanceDistribution.sorted()
         
         guard !sortedBalances.isEmpty else { return [] }
         
-        let minBalance = sortedBalances.first ?? 0
-        let maxBalance = sortedBalances.last ?? 0
+        // Count all values <= 0 (ran out of money or went negative)
+        let zeroAndNegativeCount = sortedBalances.filter { $0 <= 0 }.count
+        
+        // Filter for positive values only
+        let positiveBalances = sortedBalances.filter { $0 > 0 }
+        
+        guard !positiveBalances.isEmpty else {
+            // All values are $0 or negative
+            if zeroAndNegativeCount > 0 {
+                return [ImprovedHistogramBucket(
+                    lowerBound: 0,
+                    upperBound: 0,
+                    midpoint: 0,  // Centered at $0 on x-axis
+                    count: zeroAndNegativeCount,
+                    isPositive: false
+                )]
+            }
+            return []
+        }
+        
+        let minBalance = positiveBalances.first ?? 0
+        let maxBalance = positiveBalances.last ?? 0
         
         // Use 20 buckets for better resolution
         let bucketCount = 20
         
-        // Calculate range and bucket size
+        // Calculate range and bucket size for positive values
         let range = maxBalance - minBalance
         let bucketSize = range / Double(bucketCount)
         
         var buckets: [ImprovedHistogramBucket] = []
         
+        // Add $0 bucket first if there are any (centered at 0 on x-axis)
+        if zeroAndNegativeCount > 0 {
+            buckets.append(ImprovedHistogramBucket(
+                lowerBound: 0,
+                upperBound: 0,
+                midpoint: 0,  // This puts the bar directly over the $0 tick mark
+                count: zeroAndNegativeCount,
+                isPositive: false  // This ensures red color
+            ))
+        }
+        
         // Ensure bucket size is reasonable (at least $1)
         let effectiveBucketSize = max(bucketSize, 1.0)
         
+        // Create buckets for positive values (these will be to the right of $0)
         for i in 0..<bucketCount {
             let lowerBound = minBalance + Double(i) * effectiveBucketSize
             let upperBound = lowerBound + effectiveBucketSize
             
             // Count values in this bucket (inclusive lower, exclusive upper for all but last)
-            let count = sortedBalances.filter { balance in
+            let count = positiveBalances.filter { balance in
                 if i == bucketCount - 1 {
                     // Last bucket includes upper bound
                     return balance >= lowerBound && balance <= upperBound
@@ -417,7 +434,7 @@ struct SimulationResultsView: View {
                     upperBound: upperBound,
                     midpoint: midpoint,
                     count: count,
-                    isPositive: midpoint > 0
+                    isPositive: true  // All positive buckets are blue
                 ))
             }
         }
@@ -523,4 +540,3 @@ struct ImprovedHistogramBucket: Identifiable {
 #Preview {
     SimulationResultsView(result: .sample)
 }
-
