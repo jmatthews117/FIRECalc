@@ -49,8 +49,8 @@ struct SimulationSetupView: View {
         self._withdrawalRate = State(initialValue: config.withdrawalRate)
         self._fixedDollarAmount = State(initialValue: config.annualAmount ?? 40_000)
         self._rmdAge = State(initialValue: config.currentAge ?? 65)
-        self._upperGuardrail = State(initialValue: config.upperGuardrail ?? 0.20)
-        self._lowerGuardrail = State(initialValue: config.lowerGuardrail ?? 0.15)
+        self._upperGuardrail = State(initialValue: config.upperGuardrail ?? (config.withdrawalRate * 1.25))
+        self._lowerGuardrail = State(initialValue: config.lowerGuardrail ?? (config.withdrawalRate * 0.80))
         self._floorEnabled = State(initialValue: config.floorPercentage != nil)
         self._floorRate = State(initialValue: config.floorPercentage ?? 0.025)
         self._ceilingEnabled = State(initialValue: config.ceilingPercentage != nil)
@@ -356,38 +356,64 @@ struct SimulationSetupView: View {
             Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
                 .onChange(of: withdrawalRate) { _, v in
                     withdrawalConfig.withdrawalRate = v
+                    // Keep guardrails on the correct side of the initial rate
+                    if upperGuardrail < v {
+                        upperGuardrail = v
+                        withdrawalConfig.upperGuardrail = v
+                    }
+                    if lowerGuardrail > v {
+                        lowerGuardrail = v
+                        withdrawalConfig.lowerGuardrail = v
+                    }
                 }
             Text("First year: \((portfolioVM.totalValue * withdrawalRate).toCurrency())")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             HStack {
-                Text("Upper Guardrail")
+                Text("Upper Guardrail Rate")
                 Spacer()
                 Text(upperGuardrail.toPercent())
                     .foregroundColor(.secondary)
                     .monospacedDigit()
             }
-            Slider(value: $upperGuardrail, in: 0.05...0.50, step: 0.05)
+            Slider(value: $upperGuardrail, in: withdrawalRate...0.15, step: 0.005)
                 .onChange(of: upperGuardrail) { _, v in
                     withdrawalConfig.upperGuardrail = v
                 }
-            Text("Cut spending 10% if rate exceeds \((withdrawalRate * (1 + upperGuardrail)).toPercent())")
+            Text("Cut spending 10% if current rate rises above \(upperGuardrail.toPercent()) — triggers when portfolio shrinks")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             HStack {
-                Text("Lower Guardrail")
+                Text("Lower Guardrail Rate")
                 Spacer()
                 Text(lowerGuardrail.toPercent())
                     .foregroundColor(.secondary)
                     .monospacedDigit()
             }
-            Slider(value: $lowerGuardrail, in: 0.05...0.50, step: 0.05)
+            Slider(value: $lowerGuardrail, in: 0.005...withdrawalRate, step: 0.005)
                 .onChange(of: lowerGuardrail) { _, v in
                     withdrawalConfig.lowerGuardrail = v
                 }
-            Text("Raise spending 10% if rate falls below \((withdrawalRate * (1 - lowerGuardrail)).toPercent())")
+            Text("Raise spending 10% if current rate falls below \(lowerGuardrail.toPercent()) — triggers when portfolio grows")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Divider()
+
+            HStack {
+                Text("Adjustment Magnitude")
+                Spacer()
+                Text(String(format: "%.0f%%", (withdrawalConfig.guardrailAdjustmentMagnitude ?? 0.10) * 100))
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: Binding(
+                get: { withdrawalConfig.guardrailAdjustmentMagnitude ?? 0.10 },
+                set: { withdrawalConfig.guardrailAdjustmentMagnitude = $0 }
+            ), in: 0.05...0.20, step: 0.01)
+            Text("Change spending by this percent when a guardrail is crossed")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

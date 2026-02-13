@@ -101,7 +101,10 @@ class PersistenceService {
     
     func saveSimulationResult(_ result: SimulationResult) throws {
         var history = (try? loadSimulationHistory()) ?? []
-        history.append(result)
+        // Strip the per-run paths before persisting — they can be enormous
+        // (e.g. 1 000 runs × 50 years = 50 000 Double arrays) and are only
+        // needed while the results sheet is on screen, not in stored history.
+        history.append(result.withoutSimulationRuns())
         
         // Keep only last 50 simulations
         if history.count > 50 {
@@ -110,7 +113,7 @@ class PersistenceService {
         
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
+        // Don't use .prettyPrinted for history — it bloats file size significantly.
         
         let data = try encoder.encode(history)
         try data.write(to: simulationHistoryURL)

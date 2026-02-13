@@ -13,6 +13,12 @@ struct SimulationResultsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showHistogramFullScreen = false
     @State private var showSpaghettiFullScreen = false
+
+    // Pre-computed once so SwiftUI doesn't re-run the O(n²) bucketing on
+    // every render pass.  `nonisolated(unsafe)` isn't needed — @State is
+    // already isolated to the view's identity.
+    @State private var histogramBuckets: [ImprovedHistogramBucket] = []
+    @State private var spaghettiSeries: [SpaghettiChartView.PathSeries] = []
     
     var body: some View {
         NavigationView {
@@ -62,6 +68,13 @@ struct SimulationResultsView: View {
                     .navigationTitle("All Simulated Paths")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showSpaghettiFullScreen = false } } }
+            }
+        }
+        .task {
+            // Compute expensive derived data once, off the critical render path.
+            histogramBuckets = createImprovedHistogramBuckets()
+            spaghettiSeries = result.allSimulationRuns.enumerated().map { (idx, run) in
+                SpaghettiChartView.PathSeries(id: idx, values: run.yearlyBalances)
             }
         }
     }
@@ -179,9 +192,7 @@ struct SimulationResultsView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            let buckets = createImprovedHistogramBuckets()
-            
-            Chart(buckets) { bucket in
+            Chart(histogramBuckets) { bucket in
                 BarMark(
                     x: .value("Balance", bucket.midpoint),
                     y: .value("Count", bucket.count)
@@ -302,12 +313,8 @@ struct SimulationResultsView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
             
-            let series: [SpaghettiChartView.PathSeries] = result.allSimulationRuns.enumerated().map { (idx, run) in
-                SpaghettiChartView.PathSeries(id: idx, values: run.yearlyBalances)
-            }
-            
             SpaghettiChartView(
-                series: series,
+                series: spaghettiSeries,
                 lineOpacity: 0.08,
                 maxPathsToDraw: 600,
                 yLabel: "Balance",

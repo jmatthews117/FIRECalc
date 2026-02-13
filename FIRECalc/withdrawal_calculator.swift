@@ -125,34 +125,53 @@ struct WithdrawalCalculator {
         return min(withdrawal, currentBalance)
     }
     
-    /// Guardrails (Guyton-Klinger): Adjust withdrawals based on portfolio performance
+    /// Guardrails (Guyton-Klinger): Adjust withdrawals based on portfolio performance.
+    ///
+    /// How it works in the original Guyton-Klinger paper:
+    ///   - Each year, compute the *current* withdrawal rate = this year's dollar
+    ///     withdrawal / current portfolio value.
+    ///   - If the current rate has risen ABOVE the upper guardrail rate (portfolio
+    ///     shrank / spending got too high) → cut the dollar withdrawal by 10%.
+    ///   - If the current rate has fallen BELOW the lower guardrail rate (portfolio
+    ///     grew / spending is very low) → raise the dollar withdrawal by 10%.
+    ///   - Otherwise, carry the same dollar withdrawal forward (real-terms constant).
+    ///
+    /// `upperGuardrail` and `lowerGuardrail` are stored as **absolute withdrawal
+    /// rate thresholds** (e.g. 0.06 = 6%, 0.04 = 4%).  In year 1 we set the
+    /// baseline from the initial portfolio; guardrail comparisons start in year 2.
     private func guardrailsStrategy(
         currentBalance: Double,
         baselineWithdrawal: Double,
         year: Int,
         config: WithdrawalConfiguration
     ) -> Double {
-        
-        // Start with baseline (in real dollars, so no inflation adjustment needed)
-        var withdrawal = baselineWithdrawal
-        
-        // Calculate current withdrawal rate
-        let currentRate = withdrawal / currentBalance
-        let targetRate = config.withdrawalRate
-        
-        // Apply guardrails
-        let upperBound = targetRate * (1 + (config.upperGuardrail ?? 0.20))
-        let lowerBound = targetRate * (1 - (config.lowerGuardrail ?? 0.15))
-        
-        if currentRate > upperBound {
-            // Portfolio performing poorly - reduce withdrawal by 10%
-            withdrawal *= 0.90
-        } else if currentRate < lowerBound {
-            // Portfolio performing well - increase withdrawal by 10%
-            withdrawal *= 1.10
+
+        // Year 1: establish the baseline dollar withdrawal straight from the
+        // initial rate — no guardrail check yet.
+        if year == 1 {
+            return currentBalance * config.withdrawalRate
         }
+
+        // Carry forward the previous year's dollar amount, then check guardrails.
+        var withdrawal = baselineWithdrawal
+
+        // Current withdrawal rate = what we'd withdraw as a % of today's portfolio.
+        let currentRate = withdrawal / currentBalance
+
+        // Absolute guardrail thresholds (default: initial rate ±25 / 20%).
+        let upperBound = config.upperGuardrail ?? (config.withdrawalRate * 1.25)
+        let lowerBound = config.lowerGuardrail ?? (config.withdrawalRate * 0.80)
         
-        return min(withdrawal, currentBalance) // Never withdraw more than available
+        let magnitude = config.guardrailAdjustmentMagnitude ?? 0.10
+        if currentRate > upperBound {
+            // Portfolio has shrunk — current rate is dangerously high. Cut by configured magnitude.
+            withdrawal *= (1.0 - magnitude)
+        } else if currentRate < lowerBound {
+            // Portfolio has grown — current rate is very low. Raise by configured magnitude.
+            withdrawal *= (1.0 + magnitude)
+        }
+
+        return min(withdrawal, currentBalance)
     }
     
     /// Required Minimum Distribution: IRS-based withdrawal table

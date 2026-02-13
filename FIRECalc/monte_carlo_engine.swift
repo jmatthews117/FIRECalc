@@ -21,7 +21,7 @@ actor MonteCarloEngine {
         }
     }
     
-    private let options = SimulationOptions()
+    private static let options = SimulationOptions()
     
     // MARK: - Main Simulation Method
     
@@ -41,27 +41,50 @@ actor MonteCarloEngine {
         
         print("Starting Monte Carlo simulation with \(parameters.numberOfRuns) runs...")
         print("Working in REAL terms (all returns inflation-adjusted)")
-        
-        var allRuns: [SimulationRun] = []
-        
-        // Run all simulations
-        for runNumber in 0..<parameters.numberOfRuns {
-            let run = await performSingleRun(
-                portfolio: portfolio,
-                parameters: parameters,
-                historicalData: historicalData,
-                runNumber: runNumber
-            )
-            allRuns.append(run)
-            
-            // Progress reporting (every 1000 runs)
-            if (runNumber + 1) % 1000 == 0 {
-                print("Completed \(runNumber + 1)/\(parameters.numberOfRuns) runs")
+
+        // Split work into batches — one per logical CPU core — so task-creation
+        // overhead stays low while all cores stay saturated.
+        let coreCount = max(1, ProcessInfo.processInfo.activeProcessorCount)
+        let totalRuns = parameters.numberOfRuns
+        let batchSize = max(1, (totalRuns + coreCount - 1) / coreCount)
+
+        let allRuns: [SimulationRun] = try await withThrowingTaskGroup(
+            of: [SimulationRun].self
+        ) { group in
+
+            var start = 0
+            while start < totalRuns {
+                let batchStart = start
+                let batchEnd   = min(start + batchSize, totalRuns)
+                group.addTask {
+                    // Each task is nonisolated — pure value-type computation,
+                    // no shared mutable state.
+                    var batchRuns: [SimulationRun] = []
+                    batchRuns.reserveCapacity(batchEnd - batchStart)
+                    for runNumber in batchStart..<batchEnd {
+                        let run = MonteCarloEngine.performSingleRun(
+                            portfolio: portfolio,
+                            parameters: parameters,
+                            historicalData: historicalData,
+                            runNumber: runNumber
+                        )
+                        batchRuns.append(run)
+                    }
+                    return batchRuns
+                }
+                start = batchEnd
             }
+
+            var collected: [SimulationRun] = []
+            collected.reserveCapacity(totalRuns)
+            for try await batch in group {
+                collected.append(contentsOf: batch)
+            }
+            return collected
         }
         
         // Analyze results
-        let result = analyzeResults(runs: allRuns, parameters: parameters)
+        let result = MonteCarloEngine.analyzeResults(runs: allRuns, parameters: parameters)
         
         print("Simulation complete. Success rate: \(String(format: "%.1f%%", result.successRate * 100))")
         
@@ -69,13 +92,13 @@ actor MonteCarloEngine {
     }
     
     // MARK: - Single Run Simulation
-    
-    private func performSingleRun(
+
+    private static func performSingleRun(
         portfolio: Portfolio,
         parameters: SimulationParameters,
         historicalData: HistoricalData,
         runNumber: Int
-    ) async -> SimulationRun {
+    ) -> SimulationRun {
         
         // All balances are in REAL (today's) dollars
         var balance = parameters.initialPortfolioValue
@@ -240,7 +263,7 @@ actor MonteCarloEngine {
     // MARK: - Return Generation (REAL TERMS)
     
     /// Generate a real (inflation-adjusted) return
-    private func generateRealReturn(
+    private static func generateRealReturn(
         portfolio: Portfolio,
         parameters: SimulationParameters,
         historicalData: HistoricalData,
@@ -269,7 +292,7 @@ actor MonteCarloEngine {
     }
     
     /// Generate real return from historical data (nominal - inflation)
-    private func generateHistoricalBootstrapRealReturn(
+    private static func generateHistoricalBootstrapRealReturn(
         portfolio: Portfolio,
         historicalData: HistoricalData,
         year: Int,
@@ -342,7 +365,7 @@ actor MonteCarloEngine {
     ///    (e.g. Sharpe single-index) without requiring a full Cholesky decomposition.
     ///
     /// None of this code is reachable from the historical-bootstrap path.
-    private func generateNormalRealReturn(
+    private static func generateNormalRealReturn(
         portfolio: Portfolio,
         parameters: SimulationParameters,
         year: Int,
@@ -396,7 +419,7 @@ actor MonteCarloEngine {
     /// Returns ρ, the approximate correlation of each asset class with the
     /// broad equity market (S&P 500), derived from long-run historical data.
     /// Used to build a one-factor correlated shock.
-    private func marketCorrelation(for assetClass: AssetClass) -> Double {
+    private static func marketCorrelation(for assetClass: AssetClass) -> Double {
         switch assetClass {
         case .stocks:         return 1.00  // IS the market factor
         case .reits:          return 0.70  // High equity sensitivity
@@ -419,7 +442,7 @@ actor MonteCarloEngine {
     /// Method: t = Z / √(χ²/ν) where Z ~ N(0,1) and χ² ~ χ²(ν).
     /// χ²(5) is approximated as the sum of 5 independent N(0,1)² draws.
     /// The result is then divided by √(ν/(ν−2)) = √(5/3) to restore unit variance.
-    private func generateStudentT(seed: UInt64) -> Double {
+    private static func generateStudentT(seed: UInt64) -> Double {
         let nu: Double = 5
 
         // Use a single advancing RNG so every draw is independent.
@@ -443,19 +466,19 @@ actor MonteCarloEngine {
     }
 
     /// Box-Muller standard normal draw consuming two values from the provided RNG.
-    private func generateStandardNormal(using rng: inout LinearCongruentialGenerator) -> Double {
+    private static func generateStandardNormal(using rng: inout LinearCongruentialGenerator) -> Double {
         let u1 = Double.random(in: 0.0001...0.9999, using: &rng)
         let u2 = Double.random(in: 0.0001...0.9999, using: &rng)
         return sqrt(-2 * log(u1)) * cos(2 * .pi * u2)
     }
 
     /// Create a seeded random number generator
-    private func makeRNG(seed: UInt64) -> LinearCongruentialGenerator {
+    private static func makeRNG(seed: UInt64) -> LinearCongruentialGenerator {
         return LinearCongruentialGenerator(seed: seed)
     }
     
     /// Get historical inflation data
-    private func getHistoricalInflation() -> [Double] {
+    private static func getHistoricalInflation() -> [Double] {
         // Historical CPI inflation (1928-2024)
         return [
             -0.0116, 0.0012, 0.0012, 0.0000, -0.0636, -0.0909, -0.1028, -0.0520,
@@ -476,7 +499,7 @@ actor MonteCarloEngine {
     
     // MARK: - Results Analysis
     
-    private func analyzeResults(
+    private static func analyzeResults(
         runs: [SimulationRun],
         parameters: SimulationParameters
     ) -> SimulationResult {
@@ -537,7 +560,7 @@ actor MonteCarloEngine {
         )
     }
     
-    private func buildYearlyProjections(
+    private static func buildYearlyProjections(
         runs: [SimulationRun],
         parameters: SimulationParameters
     ) -> [YearlyProjection] {
@@ -563,7 +586,7 @@ actor MonteCarloEngine {
         return projections
     }
     
-    private func percentile(_ sortedArray: [Double], _ p: Double) -> Double {
+    private static func percentile(_ sortedArray: [Double], _ p: Double) -> Double {
         guard !sortedArray.isEmpty else { return 0 }
         
         let index = p * Double(sortedArray.count - 1)
@@ -578,7 +601,7 @@ actor MonteCarloEngine {
         return sortedArray[lower] * (1 - weight) + sortedArray[upper] * weight
     }
     
-    private func calculateMaxDrawdown(runs: [SimulationRun]) -> Double {
+    private static func calculateMaxDrawdown(runs: [SimulationRun]) -> Double {
         var maxDrawdown: Double = 0
         
         for run in runs {

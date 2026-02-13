@@ -20,17 +20,23 @@ struct WithdrawalConfigurationView: View {
     @State private var ceilingEnabled: Bool
     @State private var floorPercentage: Double
     @State private var ceilingPercentage: Double
+    @State private var upperGuardrail: Double
+    @State private var lowerGuardrail: Double
 
     init(config: Binding<WithdrawalConfiguration>, portfolioValue: Double) {
         self._config = config
         self.portfolioValue = portfolioValue
+        let rate = config.wrappedValue.withdrawalRate
         self._selectedStrategy = State(initialValue: config.wrappedValue.strategy)
-        self._withdrawalRate = State(initialValue: config.wrappedValue.withdrawalRate)
+        self._withdrawalRate = State(initialValue: rate)
         self._fixedDollarAmount = State(initialValue: config.wrappedValue.annualAmount ?? 0)
         self._floorEnabled = State(initialValue: config.wrappedValue.floorPercentage != nil)
         self._ceilingEnabled = State(initialValue: config.wrappedValue.ceilingPercentage != nil)
         self._floorPercentage = State(initialValue: config.wrappedValue.floorPercentage ?? 0.025)
         self._ceilingPercentage = State(initialValue: config.wrappedValue.ceilingPercentage ?? 0.06)
+        // Default upper guardrail to initial rate × 1.25, lower to initial rate × 0.80
+        self._upperGuardrail = State(initialValue: config.wrappedValue.upperGuardrail ?? (rate * 1.25))
+        self._lowerGuardrail = State(initialValue: config.wrappedValue.lowerGuardrail ?? (rate * 0.80))
     }
     
     var body: some View {
@@ -223,47 +229,70 @@ struct WithdrawalConfigurationView: View {
             Slider(value: $withdrawalRate, in: 0.01...0.10, step: 0.005)
                 .onChange(of: withdrawalRate) { _, newValue in
                     config.withdrawalRate = newValue
+                    // Keep guardrails on the correct side of the initial rate
+                    if upperGuardrail < newValue {
+                        upperGuardrail = newValue
+                        config.upperGuardrail = newValue
+                    }
+                    if lowerGuardrail > newValue {
+                        lowerGuardrail = newValue
+                        config.lowerGuardrail = newValue
+                    }
                 }
+            Text("First year withdrawal: \((portfolioValue * withdrawalRate).toCurrency())")
+                .font(.caption)
+                .foregroundColor(.blue)
 
             HStack {
-                Text("Upper Guardrail")
+                Text("Upper Guardrail Rate")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 Spacer()
-                Text((config.upperGuardrail ?? 0.20).toPercent())
+                Text(upperGuardrail.toPercent())
                     .font(.headline)
                     .monospacedDigit()
             }
-            Slider(
-                value: Binding(
-                    get: { config.upperGuardrail ?? 0.20 },
-                    set: { config.upperGuardrail = $0 }
-                ),
-                in: 0.05...0.50,
-                step: 0.05
-            )
-            Text("Reduce spending by 10% if withdrawal rate exceeds \((withdrawalRate * (1 + (config.upperGuardrail ?? 0.20))).toPercent())")
+            Slider(value: $upperGuardrail, in: withdrawalRate...0.15, step: 0.005)
+                .onChange(of: upperGuardrail) { _, newValue in
+                    config.upperGuardrail = newValue
+                }
+            Text("Cut spending 10% if current rate rises above \(upperGuardrail.toPercent()) — triggers when portfolio shrinks")
                 .font(.caption)
                 .foregroundColor(.secondary)
 
             HStack {
-                Text("Lower Guardrail")
+                Text("Lower Guardrail Rate")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 Spacer()
-                Text((config.lowerGuardrail ?? 0.15).toPercent())
+                Text(lowerGuardrail.toPercent())
                     .font(.headline)
                     .monospacedDigit()
             }
-            Slider(
-                value: Binding(
-                    get: { config.lowerGuardrail ?? 0.15 },
-                    set: { config.lowerGuardrail = $0 }
-                ),
-                in: 0.05...0.50,
-                step: 0.05
-            )
-            Text("Increase spending by 10% if withdrawal rate falls below \((withdrawalRate * (1 - (config.lowerGuardrail ?? 0.15))).toPercent())")
+            Slider(value: $lowerGuardrail, in: 0.005...withdrawalRate, step: 0.005)
+                .onChange(of: lowerGuardrail) { _, newValue in
+                    config.lowerGuardrail = newValue
+                }
+            Text("Raise spending 10% if current rate falls below \(lowerGuardrail.toPercent()) — triggers when portfolio grows")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Divider()
+
+            HStack {
+                Text("Adjustment Magnitude")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text(String(format: "%.0f%%", (config.guardrailAdjustmentMagnitude ?? 0.10) * 100))
+                    .font(.headline)
+                    .monospacedDigit()
+            }
+            Slider(value: Binding(
+                get: { config.guardrailAdjustmentMagnitude ?? 0.10 },
+                set: { config.guardrailAdjustmentMagnitude = $0 }
+            ), in: 0.05...0.20, step: 0.01)
+            Text("Change spending by this percent when a guardrail is crossed")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -563,7 +592,7 @@ struct StrategyInfoSheet: View {
         case .dynamicPercentage:
             return "Each year, withdraw a fixed percentage of your current portfolio value. If your portfolio grows, you withdraw more. If it shrinks, you withdraw less. This naturally adjusts spending based on portfolio performance."
         case .guardrails:
-            return "Start with an initial withdrawal rate. If your actual withdrawal rate rises above the upper guardrail (portfolio performing poorly), cut spending by 10%. If it falls below the lower guardrail (portfolio performing well), increase spending by 10%. Developed by Jonathan Guyton and William Klinger."
+            return "In year 1, withdraw a fixed dollar amount based on your initial rate. Each subsequent year, carry that same dollar amount forward. If the current withdrawal rate (dollars / current portfolio) rises above the upper guardrail, cut spending by 10%. If it falls below the lower guardrail, raise spending by 10%. Developed by Jonathan Guyton and William Klinger."
         case .rmd:
             return "Follow IRS Required Minimum Distribution tables which specify what percentage of your portfolio to withdraw based on your age. The percentage increases as you age, reflecting shorter life expectancy."
         case .fixedDollar:
@@ -686,3 +715,4 @@ struct StrategyInfoSheet: View {
         )
     }
 }
+

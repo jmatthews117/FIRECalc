@@ -53,7 +53,7 @@ enum WithdrawalStrategy: String, Codable, CaseIterable, Identifiable {
         case .dynamicPercentage:
             return [.withdrawalRate, .floorPercentage, .ceilingPercentage]
         case .guardrails:
-            return [.withdrawalRate, .upperGuardrail, .lowerGuardrail]
+            return [.withdrawalRate, .upperGuardrail, .lowerGuardrail, .guardrailAdjustmentMagnitude]
         case .rmd:
             return [.currentAge, .birthYear]
         case .fixedDollar:
@@ -71,6 +71,7 @@ enum StrategyParameter: String {
     case ceilingPercentage = "Ceiling Percentage"
     case upperGuardrail = "Upper Guardrail"
     case lowerGuardrail = "Lower Guardrail"
+    case guardrailAdjustmentMagnitude = "Adjustment Magnitude"
     case currentAge = "Current Age"
     case birthYear = "Birth Year"
     case annualAmount = "Annual Amount"
@@ -95,6 +96,7 @@ struct WithdrawalConfiguration: Codable {
     // Guardrails parameters
     var upperGuardrail: Double?  // e.g., 0.20 (20% above baseline)
     var lowerGuardrail: Double?  // e.g., 0.15 (15% below baseline)
+    var guardrailAdjustmentMagnitude: Double? // e.g., 0.10 for ±10%
     
     // Dynamic percentage limits
     var floorPercentage: Double? // Minimum withdrawal as % of portfolio
@@ -113,6 +115,7 @@ struct WithdrawalConfiguration: Codable {
         fixedIncome: Double? = nil,
         upperGuardrail: Double? = nil,
         lowerGuardrail: Double? = nil,
+        guardrailAdjustmentMagnitude: Double? = nil,
         floorPercentage: Double? = nil,
         ceilingPercentage: Double? = nil,
         currentAge: Int? = nil,
@@ -126,6 +129,7 @@ struct WithdrawalConfiguration: Codable {
         self.fixedIncome = fixedIncome
         self.upperGuardrail = upperGuardrail
         self.lowerGuardrail = lowerGuardrail
+        self.guardrailAdjustmentMagnitude = guardrailAdjustmentMagnitude
         self.floorPercentage = floorPercentage
         self.ceilingPercentage = ceilingPercentage
         self.currentAge = currentAge

@@ -40,8 +40,11 @@ struct SpaghettiChartView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
+                // Compute domain once so neither Canvas nor axes() repeat the scan.
+                let domain = computeDomain()
+
                 if showAxes {
-                    axes(in: geo.size)
+                    axes(in: geo.size, domain: domain)
                 }
                 Canvas { context, size in
                     let inset: CGFloat = showAxes ? 32 : 8
@@ -52,19 +55,7 @@ struct SpaghettiChartView: View {
                     let clamped = Array(series.prefix(maxPathsToDraw))
                     guard let domainCount = clamped.first?.values.count, domainCount > 1 else { return }
                     
-                    // Compute global min/max for y scaling
-                    var minY = Double.greatestFiniteMagnitude
-                    var maxY = -Double.greatestFiniteMagnitude
-                    for s in clamped {
-                        if let localMin = s.values.min(), let localMax = s.values.max() {
-                            minY = min(minY, localMin)
-                            maxY = max(maxY, localMax)
-                        }
-                    }
-                    if minY == Double.greatestFiniteMagnitude || maxY == -Double.greatestFiniteMagnitude {
-                        return
-                    }
-                    if maxY == minY { maxY += 1 } // avoid divide by zero
+                    let (minY, maxY) = domain
                     
                     // Draw each path
                     for s in clamped {
@@ -103,27 +94,33 @@ struct SpaghettiChartView: View {
         }
         .frame(minHeight: 200)
     }
-    
-    @ViewBuilder
-    private func axes(in size: CGSize) -> some View {
-        let inset: CGFloat = 32
-        let plotRect = CGRect(x: inset, y: 8, width: size.width - inset - 8, height: size.height - inset - 8)
 
-        let clamped = Array(series.prefix(maxPathsToDraw))
-        let domainCount = clamped.first?.values.count ?? 0
+    /// Scans all (clamped) series exactly once and returns (minY, maxY).
+    private func computeDomain() -> (Double, Double) {
+        let clamped = series.prefix(maxPathsToDraw)
         var minY = Double.greatestFiniteMagnitude
         var maxY = -Double.greatestFiniteMagnitude
         for s in clamped {
-            if let lo = s.values.min(), let hi = s.values.max() {
-                minY = min(minY, lo)
-                maxY = max(maxY, hi)
+            for v in s.values {
+                if v < minY { minY = v }
+                if v > maxY { maxY = v }
             }
         }
         if minY == Double.greatestFiniteMagnitude || maxY == -Double.greatestFiniteMagnitude {
-            minY = 0
-            maxY = 1
+            return (0, 1)
         }
         if maxY == minY { maxY += 1 }
+        return (minY, maxY)
+    }
+    
+    @ViewBuilder
+    private func axes(in size: CGSize, domain: (Double, Double)) -> some View {
+        let inset: CGFloat = 32
+        let plotRect = CGRect(x: inset, y: 8, width: size.width - inset - 8, height: size.height - inset - 8)
+
+        let clamped = series.prefix(maxPathsToDraw)
+        let domainCount = clamped.first?.values.count ?? 0
+        let (minY, maxY) = domain
 
         func fmt(_ v: Double) -> String {
             if v >= 1_000_000 {

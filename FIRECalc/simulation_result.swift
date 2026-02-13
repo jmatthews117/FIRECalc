@@ -116,6 +116,39 @@ struct SimulationRun: Codable {
     let yearsLasted: Int
 }
 
+// MARK: - Persistence Helper
+
+extension SimulationResult {
+    /// Returns a copy of this result with `allSimulationRuns` cleared.
+    /// Use this before writing to disk — the run paths are large and are only
+    /// needed while the results sheet is displayed in memory.
+    func withoutSimulationRuns() -> SimulationResult {
+        SimulationResult(
+            id: id,
+            runDate: runDate,
+            parameters: parameters,
+            successRate: successRate,
+            medianFinalBalance: medianFinalBalance,
+            meanFinalBalance: meanFinalBalance,
+            percentile10: percentile10,
+            percentile25: percentile25,
+            percentile50: percentile50,
+            percentile75: percentile75,
+            percentile90: percentile90,
+            yearlyBalances: yearlyBalances,
+            yearlyRealBalances: yearlyRealBalances,
+            finalBalanceDistribution: finalBalanceDistribution,
+            finalRealBalanceDistribution: finalRealBalanceDistribution,
+            allSimulationRuns: [],   // intentionally empty for storage
+            totalWithdrawn: totalWithdrawn,
+            averageAnnualWithdrawal: averageAnnualWithdrawal,
+            probabilityOfRuin: probabilityOfRuin,
+            yearsUntilRuin: yearsUntilRuin,
+            maxDrawdown: maxDrawdown
+        )
+    }
+}
+
 // MARK: - Sample Result
 
 extension SimulationResult {
