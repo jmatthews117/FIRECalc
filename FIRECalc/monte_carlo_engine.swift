@@ -175,6 +175,8 @@ actor MonteCarloEngine {
                 
                 balance *= (1 + realReturn)
                 
+                // Removed debug prints as per instructions
+                
                 // STEP 2: Calculate withdrawal (from grown balance)
                 // Withdrawal is in REAL dollars (today's purchasing power)
                 let withdrawal = withdrawalCalc.calculateWithdrawal(
@@ -184,6 +186,8 @@ actor MonteCarloEngine {
                     initialBalance: parameters.initialPortfolioValue,
                     config: parameters.withdrawalConfig
                 )
+                
+                // Removed debug print for withdrawal as per instructions
                 
                 // Always track the actual withdrawal taken so strategies like
                 // Guardrails correctly compound their year-over-year adjustments.
@@ -200,8 +204,12 @@ actor MonteCarloEngine {
                 
                 let netWithdrawal = max(0, withdrawal - totalIncome)
                 
+                // Removed debug prints for total income and net withdrawal as per instructions
+                
                 // STEP 3: Subtract net withdrawal from balance
                 balance -= netWithdrawal
+                
+                // Removed debug print for ending balance after withdrawal as per instructions
                 
                 // If income exceeds withdrawal, surplus is reinvested
                 if netWithdrawal == 0 && totalIncome > withdrawal {
@@ -656,3 +664,4 @@ enum SimulationError: Error, LocalizedError {
         }
     }
 }
+

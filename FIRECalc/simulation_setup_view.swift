@@ -207,6 +207,86 @@ struct SimulationSetupView: View {
                             .foregroundColor(.green)
                     }
                 }
+                
+                // Debug Summary Section
+                Section("Debug Summary") {
+                    HStack {
+                        Text("Initial Portfolio Value")
+                        Spacer()
+                        Text(portfolioVM.totalValue.toCurrency())
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Strategy")
+                        Spacer()
+                        Text(withdrawalConfig.strategy.rawValue)
+                            .foregroundColor(.secondary)
+                    }
+                    if withdrawalConfig.strategy == .fixedDollar {
+                        HStack {
+                            Text("Annual Withdrawal")
+                            Spacer()
+                            Text(fixedDollarAmount.toCurrency())
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        HStack {
+                            Text("Withdrawal Rate")
+                            Spacer()
+                            Text(withdrawalRate.toPercent())
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    HStack {
+                        Text("Config Fixed Income")
+                        Spacer()
+                        Text(formatCurrency(withdrawalConfig.fixedIncome ?? 0))
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Param Social Security")
+                        Spacer()
+                        Text(formatCurrency(simulationVM.parameters.socialSecurityIncome ?? 0))
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Param Pension")
+                        Spacer()
+                        Text(formatCurrency(simulationVM.parameters.pensionIncome ?? 0))
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Param Other Income")
+                        Spacer()
+                        Text(formatCurrency(simulationVM.parameters.otherIncome ?? 0))
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Years Until Retirement")
+                        Spacer()
+                        Text("\(simulationVM.parameters.yearsUntilRetirement)")
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Monthly Contribution")
+                        Spacer()
+                        Text(formatCurrency(simulationVM.parameters.monthlyContribution))
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("First-Year Gross Withdrawal")
+                        Spacer()
+                        Text(debugGrossWithdrawal.toCurrency())
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("First-Year Net Withdrawal")
+                        Spacer()
+                        let netWithdrawal = max(0, debugGrossWithdrawal - debugTotalIncome)
+                        Text(netWithdrawal.toCurrency())
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             .navigationTitle("Setup Simulation")
             .navigationBarTitleDisplayMode(.inline)
@@ -481,6 +561,38 @@ struct SimulationSetupView: View {
         var config = withdrawalConfig
         config.inflationRate = inflationRate
         config.fixedIncome = parseFormattedNumber(fixedIncome) ?? 0
+        
+        // Synchronize strategy-specific fields
+        if config.strategy == .fixedDollar {
+            config.annualAmount = fixedDollarAmount
+        } else {
+            config.withdrawalRate = withdrawalRate
+        }
+
+        // DEBUG PRINT
+        let socialSecurity = simulationVM.parameters.socialSecurityIncome ?? 0
+        let pension = simulationVM.parameters.pensionIncome ?? 0
+        let otherIncome = simulationVM.parameters.otherIncome ?? 0
+        let yearsUntilRetirement = simulationVM.parameters.yearsUntilRetirement
+        let monthlyContribution = simulationVM.parameters.monthlyContribution
+        let grossWithdrawal = withdrawalConfig.strategy == .fixedDollar ? fixedDollarAmount : portfolioVM.totalValue * withdrawalRate
+        let totalIncome = (config.fixedIncome ?? 0) + socialSecurity + pension + otherIncome
+        let netWithdrawal = max(0, grossWithdrawal - totalIncome)
+
+        print("""
+        🧾 Simulation Debug Summary:
+        - Initial Portfolio Value: \(portfolioVM.totalValue)
+        - Strategy: \(withdrawalConfig.strategy.rawValue)
+        - Rate or Amount: \(withdrawalConfig.strategy == .fixedDollar ? "\(fixedDollarAmount)" : "\(withdrawalRate)")
+        - Config Fixed Income: \(config.fixedIncome ?? 0)
+        - Param Social Security: \(socialSecurity)
+        - Param Pension: \(pension)
+        - Param Other Income: \(otherIncome)
+        - Years Until Retirement: \(yearsUntilRetirement)
+        - Monthly Contribution: \(monthlyContribution)
+        - First-Year Gross Withdrawal: \(grossWithdrawal)
+        - First-Year Net Withdrawal: \(netWithdrawal)
+        """)
 
         // Persist the configuration back to the VM so it survives navigation.
         simulationVM.withdrawalConfiguration = config
@@ -516,6 +628,24 @@ struct SimulationSetupView: View {
                 print("❌ No result available. Error: \(simulationVM.errorMessage ?? "Unknown")")
             }
         }
+    }
+    
+    // MARK: - Debug Computed Properties
+    
+    private var debugGrossWithdrawal: Double {
+        if withdrawalConfig.strategy == .fixedDollar {
+            return fixedDollarAmount
+        } else {
+            return portfolioVM.totalValue * withdrawalRate
+        }
+    }
+    
+    private var debugTotalIncome: Double {
+        let fixedIncomeValue = withdrawalConfig.fixedIncome ?? 0
+        let socialSecurity = simulationVM.parameters.socialSecurityIncome ?? 0
+        let pension = simulationVM.parameters.pensionIncome ?? 0
+        let otherIncome = simulationVM.parameters.otherIncome ?? 0
+        return fixedIncomeValue + socialSecurity + pension + otherIncome
     }
 }
 
