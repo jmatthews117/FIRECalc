@@ -39,7 +39,7 @@ struct ContentView: View {
                 }
             
             // Settings Tab
-            SettingsTabView(benefitManager: benefitManager)
+            SettingsTabView(portfolioVM: portfolioVM, benefitManager: benefitManager)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
@@ -633,7 +633,7 @@ struct ToolsTabView: View {
         NavigationView {
             List {
                 Section("Analysis Tools") {
-                    NavigationLink(destination: FIRECalculatorView()) {
+                    NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM)) {
                         HStack {
                             Image(systemName: "flag.checkered")
                                 .foregroundColor(.orange)
@@ -690,11 +690,12 @@ struct ToolsTabView: View {
 // MARK: - Settings Tab
 
 struct SettingsTabView: View {
+    @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
 
     var body: some View {
         NavigationView {
-            SettingsView(benefitManager: benefitManager)
+            SettingsView(portfolioVM: portfolioVM, benefitManager: benefitManager)
         }
     }
 }

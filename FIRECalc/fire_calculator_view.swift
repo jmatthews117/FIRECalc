@@ -9,6 +9,8 @@ import SwiftUI
 import Charts
 
 struct FIRECalculatorView: View {
+    @ObservedObject var portfolioVM: PortfolioViewModel
+
     @State private var currentAge: Int = 35
     @State private var currentSavings: String = ""
     @State private var annualIncome: String = ""
@@ -40,6 +42,11 @@ struct FIRECalculatorView: View {
         }
         .navigationTitle("FIRE Calculator")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if currentSavings.isEmpty && portfolioVM.totalValue > 0 {
+                currentSavings = String(format: "%.0f", portfolioVM.totalValue)
+            }
+        }
     }
     
     // MARK: - Input Section
@@ -539,6 +546,6 @@ struct MilestoneRow: View {
 
 #Preview {
     NavigationView {
-        FIRECalculatorView()
+        FIRECalculatorView(portfolioVM: PortfolioViewModel())
     }
 }

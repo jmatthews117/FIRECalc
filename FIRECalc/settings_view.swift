@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
 
     // Simulation defaults
@@ -505,5 +506,5 @@ struct ExportView: View {
 }
 
 #Preview {
-    SettingsView(benefitManager: DefinedBenefitManager())
+    SettingsView(portfolioVM: PortfolioViewModel(), benefitManager: DefinedBenefitManager())
 }

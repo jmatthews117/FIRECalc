@@ -269,7 +269,7 @@ struct DashboardView: View {
             }
             .buttonStyle(.plain)
             
-            NavigationLink(destination: FIRECalculatorView()) {
+            NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM)) {
                 HStack {
                     Image(systemName: "flag.checkered")
                         .font(.title2)
