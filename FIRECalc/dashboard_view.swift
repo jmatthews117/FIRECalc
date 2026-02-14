@@ -22,9 +22,9 @@ struct DashboardView: View {
                     // Portfolio Overview Card
                     portfolioOverviewCard
                     
-                    // Retirement Progress Card (if retirement date is set)
-                    if let retirementDate = portfolioVM.targetRetirementDate {
-                        retirementProgressCard(targetDate: retirementDate)
+                    // Retirement Progress Card (if target is set)
+                    if savedRetirementTarget > 0 && portfolioVM.hasAssets {
+                        retirementProgressCard
                     }
                     
                     // Asset Allocation Chart (if has assets)
@@ -141,43 +141,88 @@ struct DashboardView: View {
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
     
+    // MARK: - FIRE Helpers (reads persisted settings)
+
+    private var savedCurrentAge: Int? {
+        let age = UserDefaults.standard.integer(forKey: "current_age")
+        return age > 0 ? age : nil
+    }
+
+    private var savedAnnualSavings: Double {
+        UserDefaults.standard.double(forKey: "annual_savings")
+    }
+
+    private var savedRetirementTarget: Double {
+        UserDefaults.standard.double(forKey: "retirement_target")
+    }
+
+    /// Years until portfolio (grown at weighted expected return + annual savings) hits the target.
+    private var yearsToFIRE: Int? {
+        let target = savedRetirementTarget
+        guard target > 0, portfolioVM.hasAssets else { return nil }
+        let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
+        guard annualReturn > 0 else { return nil }
+        let currentValue = portfolioVM.totalValue
+        if currentValue >= target { return 0 }
+        var value = currentValue
+        for year in 1...100 {
+            value = value * (1 + annualReturn) + savedAnnualSavings
+            if value >= target { return year }
+        }
+        return nil
+    }
+
     // MARK: - Retirement Progress Card
-    
-    private func retirementProgressCard(targetDate: Date) -> some View {
-        let yearsToRetirement = Calendar.current.dateComponents([.year], from: Date(), to: targetDate).year ?? 0
-        let progress = min(1.0, max(0.0, portfolioVM.retirementProgress))
-        
+
+    private var retirementProgressCard: some View {
+        let target = savedRetirementTarget
+        let progress = target > 0 ? min(1.0, max(0.0, portfolioVM.totalValue / target)) : 0
+
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "flag.checkered")
                     .font(.title2)
                     .foregroundColor(.orange)
-                
+
                 Text("Retirement Progress")
                     .font(.headline)
-                
+
                 Spacer()
             }
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("\(Int(progress * 100))%")
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundColor(.orange)
-                    
+
                     Spacer()
-                    
+
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("Target: \(portfolioVM.targetRetirementValue.toCurrency())")
+                        Text("Goal: \(target.toCurrency())")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        
-                        Text("\(yearsToRetirement) years to go")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+
+                        if let years = yearsToFIRE {
+                            if years == 0 {
+                                Text("Already funded! 🎉")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                            } else {
+                                Text("~\(years) yr\(years == 1 ? "" : "s") to FIRE")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                if let age = savedCurrentAge {
+                                    Text("Retire at age ~\(age + years)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
                     }
                 }
-                
+
                 ProgressView(value: progress)
                     .tint(.orange)
                     .scaleEffect(x: 1, y: 2, anchor: .center)
