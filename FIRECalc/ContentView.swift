@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var portfolioVM = PortfolioViewModel()
     @StateObject private var simulationVM = SimulationViewModel()
+    @StateObject private var benefitManager = DefinedBenefitManager()
     
     var body: some View {
         TabView {
@@ -38,7 +39,7 @@ struct ContentView: View {
                 }
             
             // Settings Tab
-            SettingsTabView()
+            SettingsTabView(benefitManager: benefitManager)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
@@ -627,7 +628,7 @@ struct SimulationsTab: View {
 struct ToolsTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -637,7 +638,6 @@ struct ToolsTabView: View {
                             Image(systemName: "flag.checkered")
                                 .foregroundColor(.orange)
                                 .frame(width: 30)
-                            
                             VStack(alignment: .leading) {
                                 Text("FIRE Calculator")
                                     .font(.headline)
@@ -647,13 +647,12 @@ struct ToolsTabView: View {
                             }
                         }
                     }
-                    
+
                     NavigationLink(destination: HistoricalReturnsView()) {
                         HStack {
                             Image(systemName: "chart.bar.xaxis")
                                 .foregroundColor(.blue)
                                 .frame(width: 30)
-                            
                             VStack(alignment: .leading) {
                                 Text("Historical Returns")
                                     .font(.headline)
@@ -663,7 +662,7 @@ struct ToolsTabView: View {
                             }
                         }
                     }
-                    
+
                     NavigationLink(destination: WithdrawalConfigurationView(
                         config: $simulationVM.withdrawalConfiguration,
                         portfolioValue: portfolioVM.totalValue
@@ -672,29 +671,10 @@ struct ToolsTabView: View {
                             Image(systemName: "arrow.down.circle")
                                 .foregroundColor(.purple)
                                 .frame(width: 30)
-                            
                             VStack(alignment: .leading) {
                                 Text("Withdrawal Strategies")
                                     .font(.headline)
                                 Text("Compare approaches")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                }
-                
-                Section("Income Planning") {
-                    NavigationLink(destination: DefinedBenefitPlansView()) {
-                        HStack {
-                            Image(systemName: "building.columns")
-                                .foregroundColor(.green)
-                                .frame(width: 30)
-                            
-                            VStack(alignment: .leading) {
-                                Text("Social Security & Pensions")
-                                    .font(.headline)
-                                Text("Manage fixed income")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -710,9 +690,11 @@ struct ToolsTabView: View {
 // MARK: - Settings Tab
 
 struct SettingsTabView: View {
+    @ObservedObject var benefitManager: DefinedBenefitManager
+
     var body: some View {
         NavigationView {
-            SettingsView()
+            SettingsView(benefitManager: benefitManager)
         }
     }
 }

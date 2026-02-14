@@ -13,7 +13,6 @@ struct DashboardView: View {
     @State private var showingAddAsset = false
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
-    @State private var showingSettings = false
     @State private var showingQuickAdd = false
     
     var body: some View {
@@ -55,12 +54,6 @@ struct DashboardView: View {
             }
             .navigationTitle("FIRECalc")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showingSettings = true }) {
-                        Image(systemName: "gear")
-                    }
-                }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button(action: { showingQuickAdd = true }) {
@@ -93,9 +86,6 @@ struct DashboardView: View {
                 if let result = simulationVM.currentResult {
                     SimulationResultsView(result: result)
                 }
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
             }
             .alert("Error", isPresented: .constant(portfolioVM.errorMessage != nil)) {
                 Button("OK") { portfolioVM.errorMessage = nil }

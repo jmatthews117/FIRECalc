@@ -9,7 +9,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    
+    @ObservedObject var benefitManager: DefinedBenefitManager
+
     // Simulation defaults
     @State private var defaultRuns: Double = 10000
     @State private var defaultTimeHorizon: Double = 30
@@ -21,7 +22,6 @@ struct SettingsView: View {
     @State private var hasRetirementDate: Bool = false
     @State private var expectedAnnualSpend: String = "40000"
     @State private var withdrawalPercentage: Double = 0.04
-    @StateObject private var benefitManager = DefinedBenefitManager()
 
     @State private var showingResetConfirmation = false
     @State private var showingExportSheet = false
@@ -93,23 +93,20 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        NavigationLink(destination: DefinedBenefitPlansView()) {
-                            HStack {
-                                Image(systemName: "building.columns.fill")
-                                    .foregroundColor(.blue)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Defined Benefits")
-                                    Text("Pensions, Social Security, Annuities")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                                // Show the current total inline
-                                Text(fixedIncomeSummary)
-                                    .font(.subheadline)
+                    NavigationLink(destination: DefinedBenefitPlansView(manager: benefitManager)) {
+                        HStack {
+                            Image(systemName: "building.columns.fill")
+                                .foregroundColor(.green)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Social Security & Pensions")
+                                Text("Manage fixed income sources")
+                                    .font(.caption)
                                     .foregroundColor(.secondary)
                             }
+                            Spacer()
+                            Text(fixedIncomeSummary)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
                     }
                 } header: {
@@ -508,5 +505,5 @@ struct ExportView: View {
 }
 
 #Preview {
-    SettingsView()
+    SettingsView(benefitManager: DefinedBenefitManager())
 }

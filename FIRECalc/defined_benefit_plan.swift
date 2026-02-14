@@ -16,18 +16,14 @@ struct DefinedBenefitPlan: Identifiable, Codable {
     var annualBenefit: Double
     var startAge: Int
     var inflationAdjusted: Bool
-    var survivorBenefit: Double? // Percentage (0.0 - 1.0)
-    var notes: String?
-    
+
     init(
         id: UUID = UUID(),
         name: String,
         type: PlanType,
         annualBenefit: Double,
         startAge: Int,
-        inflationAdjusted: Bool = false,
-        survivorBenefit: Double? = nil,
-        notes: String? = nil
+        inflationAdjusted: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -35,8 +31,6 @@ struct DefinedBenefitPlan: Identifiable, Codable {
         self.annualBenefit = annualBenefit
         self.startAge = startAge
         self.inflationAdjusted = inflationAdjusted
-        self.survivorBenefit = survivorBenefit
-        self.notes = notes
     }
     
     enum PlanType: String, Codable, CaseIterable, Identifiable {
@@ -67,31 +61,29 @@ struct DefinedBenefitPlan: Identifiable, Codable {
     }
     
     // MARK: - Benefit Calculation
-    
-    func benefit(at age: Int, inflationRate: Double, yearsElapsed: Int) -> Double {
-        guard age >= startAge else { return 0 }
-        
+
+    /// Real (inflation-adjusted) annual value of this benefit at a given year
+    /// into retirement. COLA plans hold their purchasing power; non-COLA plans
+    /// erode at the simulation inflation rate.
+    func realBenefit(yearsIntoRetirement: Int, inflationRate: Double) -> Double {
         if inflationAdjusted {
-            // Compound inflation adjustment
-            let inflationMultiplier = pow(1 + inflationRate, Double(yearsElapsed))
-            return annualBenefit * inflationMultiplier
-        } else {
+            // Real value stays constant — COLA exactly matches inflation.
             return annualBenefit
+        } else {
+            // Fixed nominal: real purchasing power erodes each year.
+            return annualBenefit / pow(1 + inflationRate, Double(yearsIntoRetirement - 1))
         }
     }
-    
+
     func presentValue(currentAge: Int, discountRate: Double = 0.03, lifeExpectancy: Int = 90) -> Double {
         var pv: Double = 0
-        
         for age in currentAge...lifeExpectancy {
             if age >= startAge {
                 let yearsFromNow = age - currentAge
-                let benefit = self.benefit(at: age, inflationRate: 0, yearsElapsed: 0)
-                let discountedBenefit = benefit / pow(1 + discountRate, Double(yearsFromNow))
+                let discountedBenefit = annualBenefit / pow(1 + discountRate, Double(yearsFromNow))
                 pv += discountedBenefit
             }
         }
-        
         return pv
     }
 }
@@ -217,6 +209,22 @@ class DefinedBenefitManager: ObservableObject {
         plans.reduce(0) { $0 + $1.annualBenefit }
     }
 
+    /// Pre-computed income buckets ready to stamp into a WithdrawalConfiguration.
+    /// COLA plans → fixedIncomeReal (constant real value).
+    /// Non-COLA plans → fixedIncomeNominal (erodes with inflation).
+    var simulationIncomeBuckets: (real: Double, nominal: Double) {
+        var real = 0.0
+        var nominal = 0.0
+        for plan in plans {
+            if plan.inflationAdjusted {
+                real += plan.annualBenefit
+            } else {
+                nominal += plan.annualBenefit
+            }
+        }
+        return (real, nominal)
+    }
+
     func totalPresentValue(currentAge: Int, lifeExpectancy: Int = 90) -> Double {
         plans.reduce(0) { $0 + $1.presentValue(currentAge: currentAge, lifeExpectancy: lifeExpectancy) }
     }
@@ -241,20 +249,17 @@ extension DefinedBenefitPlan {
         type: .socialSecurity,
         annualBenefit: 24_000,
         startAge: 67,
-        inflationAdjusted: true,
-        notes: "Full retirement age benefit"
+        inflationAdjusted: true
     )
-    
+
     static let samplePension = DefinedBenefitPlan(
         name: "Company Pension",
         type: .pension,
         annualBenefit: 18_000,
         startAge: 65,
-        inflationAdjusted: false,
-        survivorBenefit: 0.50,
-        notes: "50% survivor benefit"
+        inflationAdjusted: false
     )
-    
+
     static let samples: [DefinedBenefitPlan] = [
         sampleSocialSecurity,
         samplePension

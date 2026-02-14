@@ -50,11 +50,27 @@ struct WithdrawalCalculator {
             )
         }
         
-        // Subtract fixed income (pensions, Social Security) from required withdrawal in REAL dollars
-        if let income = config.fixedIncome, income > 0 {
-            withdrawal = max(0, withdrawal - income)
+        // Subtract fixed income from required withdrawal in REAL dollars.
+        //
+        // COLA plans (fixedIncomeReal): real value is constant — subtract the
+        // face value directly every year.
+        //
+        // Nominal plans (fixedIncomeNominal): the pension pays fixed dollars, so
+        // its real purchasing power erodes with inflation. Divide by
+        // (1 + r)^(year-1) to get the real equivalent for this year.
+        // Year 1 is un-eroded (divide by 1), year 2 loses one year of inflation, etc.
+        var totalRealOffset = config.fixedIncomeReal ?? 0
+
+        if let nominal = config.fixedIncomeNominal, nominal > 0 {
+            let inflation = config.inflationRate ?? 0
+            let erosionFactor = pow(1 + inflation, Double(year - 1))
+            totalRealOffset += nominal / erosionFactor
         }
-        
+
+        if totalRealOffset > 0 {
+            withdrawal = max(0, withdrawal - totalRealOffset)
+        }
+
         return withdrawal
     }
     

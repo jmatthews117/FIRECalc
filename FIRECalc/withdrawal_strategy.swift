@@ -75,8 +75,38 @@ struct WithdrawalConfiguration: Codable {
     /// Only used when `strategy == .fixedDollar && adjustForInflation == false`.
     var inflationRate: Double?
 
-    // Fixed income that offsets withdrawals (pensions, Social Security)
-    var fixedIncome: Double?
+    // Fixed income that offsets withdrawals (pensions, Social Security).
+    //
+    // Split into two buckets so the engine can apply the correct real-term
+    // treatment to each without needing access to the full plan list:
+    //
+    //   fixedIncomeReal    — COLA-adjusted plans (e.g. Social Security).
+    //                        Real value is constant; subtract the same amount
+    //                        every year.
+    //
+    //   fixedIncomeNominal — Fixed-nominal plans (e.g. most pensions).
+    //                        Real value erodes with inflation; the engine
+    //                        divides by (1 + inflationRate)^(year-1) each year.
+    //
+    // Both default to nil (no income) so existing configs deserialise cleanly.
+    var fixedIncomeReal: Double?
+    var fixedIncomeNominal: Double?
+
+    /// Convenience: total face-value income across both buckets (used for UI display).
+    var totalFixedIncome: Double {
+        (fixedIncomeReal ?? 0) + (fixedIncomeNominal ?? 0)
+    }
+
+    // Back-compat alias so any remaining call sites that read fixedIncome still compile.
+    var fixedIncome: Double? {
+        get { totalFixedIncome > 0 ? totalFixedIncome : nil }
+        set {
+            // Legacy setter: treat the whole amount as real (COLA). Callers that
+            // know the split should set fixedIncomeReal/fixedIncomeNominal directly.
+            fixedIncomeReal = newValue
+            fixedIncomeNominal = nil
+        }
+    }
     
     // Guardrails parameters
     var upperGuardrail: Double?  // e.g., 0.20 (20% above baseline)
@@ -93,7 +123,8 @@ struct WithdrawalConfiguration: Codable {
         annualAmount: Double? = nil,
         adjustForInflation: Bool = true,
         inflationRate: Double? = nil,
-        fixedIncome: Double? = nil,
+        fixedIncomeReal: Double? = nil,
+        fixedIncomeNominal: Double? = nil,
         upperGuardrail: Double? = nil,
         lowerGuardrail: Double? = nil,
         guardrailAdjustmentMagnitude: Double? = nil,
@@ -105,7 +136,8 @@ struct WithdrawalConfiguration: Codable {
         self.annualAmount = annualAmount
         self.adjustForInflation = adjustForInflation
         self.inflationRate = inflationRate
-        self.fixedIncome = fixedIncome
+        self.fixedIncomeReal = fixedIncomeReal
+        self.fixedIncomeNominal = fixedIncomeNominal
         self.upperGuardrail = upperGuardrail
         self.lowerGuardrail = lowerGuardrail
         self.guardrailAdjustmentMagnitude = guardrailAdjustmentMagnitude

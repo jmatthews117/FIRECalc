@@ -34,10 +34,9 @@ struct SimulationSetupView: View {
 
     @StateObject private var benefitManager = DefinedBenefitManager()
 
-    // Per-run override — pre-populated from stored plans, resets after run.
-    @State private var fixedIncomeOverride: String = "0"
-    // The total stored in plans at the time the sheet opened (used to restore).
-    private let storedPlanTotal: Double
+    // Income buckets read from persisted plans at sheet-open time.
+    private let storedRealBucket: Double
+    private let storedNominalBucket: Double
 
     init(portfolioVM: PortfolioViewModel, simulationVM: SimulationViewModel, showingResults: Binding<Bool>) {
         self.portfolioVM = portfolioVM
@@ -59,16 +58,12 @@ struct SimulationSetupView: View {
         self._ceilingEnabled = State(initialValue: config.ceilingPercentage != nil)
         self._ceilingRate = State(initialValue: config.ceilingPercentage ?? 0.06)
 
-        // Seed the override from the persisted plan total.
-        let planTotal = PersistenceService.shared.loadDefinedBenefitPlans()
-            .reduce(0) { $0 + $1.annualBenefit }
-        self.storedPlanTotal = planTotal
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = ","
-        formatter.groupingSize = 3
-        let formattedTotal = formatter.string(from: NSNumber(value: Int(planTotal))) ?? "0"
-        self._fixedIncomeOverride = State(initialValue: formattedTotal)
+        // Capture income buckets from persisted plans at sheet-open time.
+        let plans = PersistenceService.shared.loadDefinedBenefitPlans()
+        let planTotal = plans.reduce(0) { $0 + $1.annualBenefit }
+        let realBucket = plans.filter { $0.inflationAdjusted }.reduce(0) { $0 + $1.annualBenefit }
+        self.storedRealBucket = realBucket
+        self.storedNominalBucket = planTotal - realBucket
     }
     
     var body: some View {
@@ -143,20 +138,10 @@ struct SimulationSetupView: View {
 
                 // Fixed Income Section
                 Section {
-                    // Per-plan breakdown (read-only)
                     if benefitManager.plans.isEmpty {
-                        HStack {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(.secondary)
-                            Text("No plans configured")
-                                .foregroundColor(.secondary)
-                                .font(.subheadline)
-                            Spacer()
-                            NavigationLink("Add in Settings") {
-                                DefinedBenefitPlansView()
-                            }
+                        Text("No plans configured. Add them in the Settings tab.")
                             .font(.subheadline)
-                        }
+                            .foregroundColor(.secondary)
                     } else {
                         ForEach(benefitManager.plans) { plan in
                             HStack {
@@ -166,16 +151,9 @@ struct SimulationSetupView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(plan.name)
                                         .font(.subheadline)
-                                    HStack(spacing: 4) {
-                                        Text(plan.type.rawValue)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        if plan.inflationAdjusted {
-                                            Text("• COLA")
-                                                .font(.caption)
-                                                .foregroundColor(.green)
-                                        }
-                                    }
+                                    Text(plan.inflationAdjusted ? "COLA — constant real value" : "Fixed — erodes with inflation")
+                                        .font(.caption)
+                                        .foregroundColor(plan.inflationAdjusted ? .green : .orange)
                                 }
                                 Spacer()
                                 Text(plan.annualBenefit.toCurrency())
@@ -183,63 +161,20 @@ struct SimulationSetupView: View {
                                     .fontWeight(.semibold)
                             }
                         }
-
-                        Divider()
-
                         HStack {
-                            Text("Stored Total")
+                            Text("Total")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .fontWeight(.medium)
                             Spacer()
-                            Text(storedPlanTotal.toCurrency())
+                            Text(formatCurrency(storedRealBucket + storedNominalBucket))
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-
-                    // Editable override for this run only
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Override for this run")
-                                .font(.subheadline)
-                            Spacer()
-                            TextField("$0", text: $fixedIncomeOverride)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 120)
-                                .onChange(of: fixedIncomeOverride) { _, newVal in
-                                    fixedIncomeOverride = formatNumberInput(newVal)
-                                }
-                        }
-
-                        if let income = parseFormattedNumber(fixedIncomeOverride), income > 0 {
-                            let overrideIsModified = abs(income - storedPlanTotal) > 0.5
-                            if overrideIsModified {
-                                Label(
-                                    "Modified from stored \(storedPlanTotal.toCurrency()) — resets after run",
-                                    systemImage: "arrow.uturn.backward.circle"
-                                )
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                            } else {
-                                Text("Reduces required withdrawals by \(formatCurrency(income))/yr")
-                                    .font(.caption)
-                                    .foregroundColor(.green)
-                            }
                         }
                     }
                 } header: {
-                    HStack {
-                        Text("Fixed Income")
-                        Spacer()
-                        NavigationLink("Manage") {
-                            DefinedBenefitPlansView()
-                        }
-                        .font(.caption)
-                    }
+                    Text("Fixed Income")
                 } footer: {
-                    Text("Pensions, Social Security, and annuities reduce required portfolio withdrawals each year. Manage your plans in Settings → Defined Benefits.")
+                    Text("Pensions, Social Security, and annuities reduce required portfolio withdrawals each year.")
                 }
                 
                 // Quick Presets
@@ -299,7 +234,7 @@ struct SimulationSetupView: View {
                 }
                 
                 // Debug Summary Section
-                Section("Debug Summary") {
+                Section("Assumptions Summary") {
                     HStack {
                         Text("Initial Portfolio Value")
                         Spacer()
@@ -328,15 +263,9 @@ struct SimulationSetupView: View {
                         }
                     }
                     HStack {
-                        Text("Stored Plan Total")
+                        Text("Fixed Income")
                         Spacer()
-                        Text(formatCurrency(storedPlanTotal))
-                            .foregroundColor(.secondary)
-                    }
-                    HStack {
-                        Text("Override for This Run")
-                        Spacer()
-                        Text(formatCurrency(parseFormattedNumber(fixedIncomeOverride) ?? 0))
+                        Text(formatCurrency(storedRealBucket + storedNominalBucket))
                             .foregroundColor(.secondary)
                     }
                     HStack {
@@ -348,8 +277,7 @@ struct SimulationSetupView: View {
                     HStack {
                         Text("First-Year Net Withdrawal")
                         Spacer()
-                        let income = parseFormattedNumber(fixedIncomeOverride) ?? 0
-                        Text(max(0, debugGrossWithdrawal - income).toCurrency())
+                        Text(max(0, debugGrossWithdrawal - storedRealBucket - storedNominalBucket).toCurrency())
                             .foregroundColor(.secondary)
                     }
                 }
@@ -623,12 +551,11 @@ struct SimulationSetupView: View {
         let settings = PersistenceService.shared.loadSettings()
         let useBootstrap = simulationVM.useCustomReturns ? false : settings.useHistoricalBootstrap
 
-        // Stamp the inflation rate into the config so Fixed Dollar nominal mode works.
+        // Stamp inflation rate and income buckets into the config.
         var config = withdrawalConfig
         config.inflationRate = inflationRate
-
-        // Use the per-run override value for this run.
-        config.fixedIncome = parseFormattedNumber(fixedIncomeOverride) ?? 0
+        config.fixedIncomeReal    = storedRealBucket    > 0 ? storedRealBucket    : nil
+        config.fixedIncomeNominal = storedNominalBucket > 0 ? storedNominalBucket : nil
         
         // Synchronize strategy-specific fields
         if config.strategy == .fixedDollar {
@@ -660,12 +587,6 @@ struct SimulationSetupView: View {
             
             print("✅ Simulation complete. Has result: \(simulationVM.hasResult)")
 
-            // Restore withdrawalConfiguration.fixedIncome to the stored plan total
-            // so the override doesn't persist beyond this single run.
-            var restoredConfig = simulationVM.withdrawalConfiguration
-            restoredConfig.fixedIncome = storedPlanTotal > 0 ? storedPlanTotal : nil
-            simulationVM.withdrawalConfiguration = restoredConfig
-            
             if simulationVM.hasResult {
                 print("📈 Opening results view...")
                 try? await Task.sleep(nanoseconds: 100_000_000)
