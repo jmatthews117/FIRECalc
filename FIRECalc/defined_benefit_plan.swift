@@ -168,13 +168,9 @@ struct SocialSecurityEstimator {
 // MARK: - Enhanced Simulation Parameters with Defined Benefits
 
 extension SimulationParameters {
-    var totalDefinedBenefitIncome: Double {
-        (socialSecurityIncome ?? 0) + (pensionIncome ?? 0) + (otherIncome ?? 0)
-    }
-    
-    func definedBenefitIncomeAt(age: Int, inflationRate: Double, yearsElapsed: Int) -> Double {
-        // This is simplified - would need more sophisticated logic for different start ages
-        return totalDefinedBenefitIncome * pow(1 + inflationRate, Double(yearsElapsed))
+    /// Total fixed income offset per year — single channel via withdrawalConfig.
+    var totalFixedIncome: Double {
+        withdrawalConfig.fixedIncome ?? 0
     }
 }
 
@@ -182,46 +178,58 @@ extension SimulationParameters {
 
 class DefinedBenefitManager: ObservableObject {
     @Published var plans: [DefinedBenefitPlan] = []
-    
+
+    private let persistence = PersistenceService.shared
+
+    init() {
+        plans = persistence.loadDefinedBenefitPlans()
+    }
+
     func addPlan(_ plan: DefinedBenefitPlan) {
         plans.append(plan)
         savePlans()
     }
-    
+
     func updatePlan(_ plan: DefinedBenefitPlan) {
         if let index = plans.firstIndex(where: { $0.id == plan.id }) {
             plans[index] = plan
             savePlans()
         }
     }
-    
+
     func deletePlan(_ plan: DefinedBenefitPlan) {
         plans.removeAll { $0.id == plan.id }
         savePlans()
     }
-    
+
+    // MARK: - Aggregates
+
+    /// Total annual income from plans that have already started at `age`.
     func totalAnnualBenefit(at age: Int) -> Double {
         plans
             .filter { age >= $0.startAge }
             .reduce(0) { $0 + $1.annualBenefit }
     }
-    
+
+    /// Sum of all plan benefits regardless of start age — used for simulation
+    /// planning where "retirement has started" and all income is assumed active.
+    var totalSimulationIncome: Double {
+        plans.reduce(0) { $0 + $1.annualBenefit }
+    }
+
     func totalPresentValue(currentAge: Int, lifeExpectancy: Int = 90) -> Double {
         plans.reduce(0) { $0 + $1.presentValue(currentAge: currentAge, lifeExpectancy: lifeExpectancy) }
     }
-    
+
+    // MARK: - Persistence
+
     private func savePlans() {
-        // Save to UserDefaults or PersistenceService
-        if let encoded = try? JSONEncoder().encode(plans) {
-            UserDefaults.standard.set(encoded, forKey: "defined_benefit_plans")
-        }
+        persistence.saveDefinedBenefitPlans(plans)
     }
-    
+
+    /// Kept for backward-compatibility; init() now calls the persisted version directly.
     func loadPlans() {
-        if let data = UserDefaults.standard.data(forKey: "defined_benefit_plans"),
-           let decoded = try? JSONDecoder().decode([DefinedBenefitPlan].self, from: data) {
-            plans = decoded
-        }
+        plans = persistence.loadDefinedBenefitPlans()
     }
 }
 

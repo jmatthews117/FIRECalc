@@ -32,7 +32,12 @@ struct SimulationSetupView: View {
     @State private var ceilingEnabled: Bool
     @State private var ceilingRate: Double
 
-    @State private var fixedIncome: String = "0"
+    @StateObject private var benefitManager = DefinedBenefitManager()
+
+    // Per-run override — pre-populated from stored plans, resets after run.
+    @State private var fixedIncomeOverride: String = "0"
+    // The total stored in plans at the time the sheet opened (used to restore).
+    private let storedPlanTotal: Double
 
     init(portfolioVM: PortfolioViewModel, simulationVM: SimulationViewModel, showingResults: Binding<Bool>) {
         self.portfolioVM = portfolioVM
@@ -53,6 +58,17 @@ struct SimulationSetupView: View {
         self._floorRate = State(initialValue: config.floorPercentage ?? 0.025)
         self._ceilingEnabled = State(initialValue: config.ceilingPercentage != nil)
         self._ceilingRate = State(initialValue: config.ceilingPercentage ?? 0.06)
+
+        // Seed the override from the persisted plan total.
+        let planTotal = PersistenceService.shared.loadDefinedBenefitPlans()
+            .reduce(0) { $0 + $1.annualBenefit }
+        self.storedPlanTotal = planTotal
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        formatter.groupingSize = 3
+        let formattedTotal = formatter.string(from: NSNumber(value: Int(planTotal))) ?? "0"
+        self._fixedIncomeOverride = State(initialValue: formattedTotal)
     }
     
     var body: some View {
@@ -126,30 +142,104 @@ struct SimulationSetupView: View {
                 strategyInputSection
 
                 // Fixed Income Section
-                Section("Fixed Income (Pension & Social Security)") {
-                    VStack(alignment: .leading, spacing: 8) {
+                Section {
+                    // Per-plan breakdown (read-only)
+                    if benefitManager.plans.isEmpty {
                         HStack {
-                            Text("Annual Fixed Income")
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.secondary)
+                            Text("No plans configured")
+                                .foregroundColor(.secondary)
+                                .font(.subheadline)
                             Spacer()
-                            TextField("$0", text: $fixedIncome)
+                            NavigationLink("Add in Settings") {
+                                DefinedBenefitPlansView()
+                            }
+                            .font(.subheadline)
+                        }
+                    } else {
+                        ForEach(benefitManager.plans) { plan in
+                            HStack {
+                                Image(systemName: plan.type.iconName)
+                                    .foregroundColor(.blue)
+                                    .frame(width: 24)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(plan.name)
+                                        .font(.subheadline)
+                                    HStack(spacing: 4) {
+                                        Text(plan.type.rawValue)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        if plan.inflationAdjusted {
+                                            Text("• COLA")
+                                                .font(.caption)
+                                                .foregroundColor(.green)
+                                        }
+                                    }
+                                }
+                                Spacer()
+                                Text(plan.annualBenefit.toCurrency())
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+                        }
+
+                        Divider()
+
+                        HStack {
+                            Text("Stored Total")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(storedPlanTotal.toCurrency())
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    // Editable override for this run only
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Override for this run")
+                                .font(.subheadline)
+                            Spacer()
+                            TextField("$0", text: $fixedIncomeOverride)
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 120)
+                                .onChange(of: fixedIncomeOverride) { _, newVal in
+                                    fixedIncomeOverride = formatNumberInput(newVal)
+                                }
                         }
-                        .onChange(of: fixedIncome) { _, newVal in
-                            fixedIncome = formatNumberInput(newVal)
-                        }
-                        
-                        if let income = parseFormattedNumber(fixedIncome), income > 0 {
-                            Text("This reduces required portfolio withdrawals by \(formatCurrency(income)) per year")
+
+                        if let income = parseFormattedNumber(fixedIncomeOverride), income > 0 {
+                            let overrideIsModified = abs(income - storedPlanTotal) > 0.5
+                            if overrideIsModified {
+                                Label(
+                                    "Modified from stored \(storedPlanTotal.toCurrency()) — resets after run",
+                                    systemImage: "arrow.uturn.backward.circle"
+                                )
                                 .font(.caption)
-                                .foregroundColor(.green)
+                                .foregroundColor(.orange)
+                            } else {
+                                Text("Reduces required withdrawals by \(formatCurrency(income))/yr")
+                                    .font(.caption)
+                                    .foregroundColor(.green)
+                            }
                         }
-                        
-                        Text("We treat pensions and Social Security as external income that offsets your spending needs. Each year, required withdrawals from the portfolio are reduced by this amount (but not below zero).")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
+                } header: {
+                    HStack {
+                        Text("Fixed Income")
+                        Spacer()
+                        NavigationLink("Manage") {
+                            DefinedBenefitPlansView()
+                        }
+                        .font(.caption)
+                    }
+                } footer: {
+                    Text("Pensions, Social Security, and annuities reduce required portfolio withdrawals each year. Manage your plans in Settings → Defined Benefits.")
                 }
                 
                 // Quick Presets
@@ -238,39 +328,15 @@ struct SimulationSetupView: View {
                         }
                     }
                     HStack {
-                        Text("Config Fixed Income")
+                        Text("Stored Plan Total")
                         Spacer()
-                        Text(formatCurrency(withdrawalConfig.fixedIncome ?? 0))
+                        Text(formatCurrency(storedPlanTotal))
                             .foregroundColor(.secondary)
                     }
                     HStack {
-                        Text("Param Social Security")
+                        Text("Override for This Run")
                         Spacer()
-                        Text(formatCurrency(simulationVM.parameters.socialSecurityIncome ?? 0))
-                            .foregroundColor(.secondary)
-                    }
-                    HStack {
-                        Text("Param Pension")
-                        Spacer()
-                        Text(formatCurrency(simulationVM.parameters.pensionIncome ?? 0))
-                            .foregroundColor(.secondary)
-                    }
-                    HStack {
-                        Text("Param Other Income")
-                        Spacer()
-                        Text(formatCurrency(simulationVM.parameters.otherIncome ?? 0))
-                            .foregroundColor(.secondary)
-                    }
-                    HStack {
-                        Text("Years Until Retirement")
-                        Spacer()
-                        Text("\(simulationVM.parameters.yearsUntilRetirement)")
-                            .foregroundColor(.secondary)
-                    }
-                    HStack {
-                        Text("Monthly Contribution")
-                        Spacer()
-                        Text(formatCurrency(simulationVM.parameters.monthlyContribution))
+                        Text(formatCurrency(parseFormattedNumber(fixedIncomeOverride) ?? 0))
                             .foregroundColor(.secondary)
                     }
                     HStack {
@@ -282,8 +348,8 @@ struct SimulationSetupView: View {
                     HStack {
                         Text("First-Year Net Withdrawal")
                         Spacer()
-                        let netWithdrawal = max(0, debugGrossWithdrawal - debugTotalIncome)
-                        Text(netWithdrawal.toCurrency())
+                        let income = parseFormattedNumber(fixedIncomeOverride) ?? 0
+                        Text(max(0, debugGrossWithdrawal - income).toCurrency())
                             .foregroundColor(.secondary)
                     }
                 }
@@ -560,7 +626,9 @@ struct SimulationSetupView: View {
         // Stamp the inflation rate into the config so Fixed Dollar nominal mode works.
         var config = withdrawalConfig
         config.inflationRate = inflationRate
-        config.fixedIncome = parseFormattedNumber(fixedIncome) ?? 0
+
+        // Use the per-run override value for this run.
+        config.fixedIncome = parseFormattedNumber(fixedIncomeOverride) ?? 0
         
         // Synchronize strategy-specific fields
         if config.strategy == .fixedDollar {
@@ -569,32 +637,8 @@ struct SimulationSetupView: View {
             config.withdrawalRate = withdrawalRate
         }
 
-        // DEBUG PRINT
-        let socialSecurity = simulationVM.parameters.socialSecurityIncome ?? 0
-        let pension = simulationVM.parameters.pensionIncome ?? 0
-        let otherIncome = simulationVM.parameters.otherIncome ?? 0
-        let yearsUntilRetirement = simulationVM.parameters.yearsUntilRetirement
-        let monthlyContribution = simulationVM.parameters.monthlyContribution
-        let grossWithdrawal = withdrawalConfig.strategy == .fixedDollar ? fixedDollarAmount : portfolioVM.totalValue * withdrawalRate
-        let totalIncome = (config.fixedIncome ?? 0) + socialSecurity + pension + otherIncome
-        let netWithdrawal = max(0, grossWithdrawal - totalIncome)
-
-        print("""
-        🧾 Simulation Debug Summary:
-        - Initial Portfolio Value: \(portfolioVM.totalValue)
-        - Strategy: \(withdrawalConfig.strategy.rawValue)
-        - Rate or Amount: \(withdrawalConfig.strategy == .fixedDollar ? "\(fixedDollarAmount)" : "\(withdrawalRate)")
-        - Config Fixed Income: \(config.fixedIncome ?? 0)
-        - Param Social Security: \(socialSecurity)
-        - Param Pension: \(pension)
-        - Param Other Income: \(otherIncome)
-        - Years Until Retirement: \(yearsUntilRetirement)
-        - Monthly Contribution: \(monthlyContribution)
-        - First-Year Gross Withdrawal: \(grossWithdrawal)
-        - First-Year Net Withdrawal: \(netWithdrawal)
-        """)
-
         // Persist the configuration back to the VM so it survives navigation.
+        // fixedIncome here carries the override — we'll restore the plan total below.
         simulationVM.withdrawalConfiguration = config
 
         simulationVM.updateWithdrawalRate(withdrawalRate)
@@ -615,6 +659,12 @@ struct SimulationSetupView: View {
             await simulationVM.runSimulation(portfolio: portfolioVM.portfolio)
             
             print("✅ Simulation complete. Has result: \(simulationVM.hasResult)")
+
+            // Restore withdrawalConfiguration.fixedIncome to the stored plan total
+            // so the override doesn't persist beyond this single run.
+            var restoredConfig = simulationVM.withdrawalConfiguration
+            restoredConfig.fixedIncome = storedPlanTotal > 0 ? storedPlanTotal : nil
+            simulationVM.withdrawalConfiguration = restoredConfig
             
             if simulationVM.hasResult {
                 print("📈 Opening results view...")
@@ -638,14 +688,6 @@ struct SimulationSetupView: View {
         } else {
             return portfolioVM.totalValue * withdrawalRate
         }
-    }
-    
-    private var debugTotalIncome: Double {
-        let fixedIncomeValue = withdrawalConfig.fixedIncome ?? 0
-        let socialSecurity = simulationVM.parameters.socialSecurityIncome ?? 0
-        let pension = simulationVM.parameters.pensionIncome ?? 0
-        let otherIncome = simulationVM.parameters.otherIncome ?? 0
-        return fixedIncomeValue + socialSecurity + pension + otherIncome
     }
 }
 

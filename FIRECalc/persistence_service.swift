@@ -178,6 +178,28 @@ class PersistenceService {
         return try decoder.decode(Portfolio.self, from: data)
     }
     
+    // MARK: - Defined Benefit Plans
+
+    private var definedBenefitPlansURL: URL {
+        documentsDirectory.appendingPathComponent("defined_benefit_plans.json")
+    }
+
+    func saveDefinedBenefitPlans(_ plans: [DefinedBenefitPlan]) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        if let data = try? encoder.encode(plans) {
+            try? data.write(to: definedBenefitPlansURL)
+        }
+    }
+
+    func loadDefinedBenefitPlans() -> [DefinedBenefitPlan] {
+        guard FileManager.default.fileExists(atPath: definedBenefitPlansURL.path),
+              let data = try? Data(contentsOf: definedBenefitPlansURL),
+              let plans = try? JSONDecoder().decode([DefinedBenefitPlan].self, from: data)
+        else { return [] }
+        return plans
+    }
+
     // MARK: - Withdrawal Configuration
 
     private let withdrawalConfigKey = "savedWithdrawalConfiguration"

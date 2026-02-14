@@ -21,8 +21,8 @@ struct SettingsView: View {
     @State private var hasRetirementDate: Bool = false
     @State private var expectedAnnualSpend: String = "40000"
     @State private var withdrawalPercentage: Double = 0.04
-    @State private var annualFixedIncome: String = "0"
-    
+    @StateObject private var benefitManager = DefinedBenefitManager()
+
     @State private var showingResetConfirmation = false
     @State private var showingExportSheet = false
     
@@ -94,25 +94,23 @@ struct SettingsView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Annual Fixed Income")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        TextField("Social Security, Pensions, etc.", text: $annualFixedIncome)
-                            .keyboardType(.numberPad)
-                            .onChange(of: annualFixedIncome) { _, newValue in
-                                annualFixedIncome = formatNumberInput(newValue)
+                        NavigationLink(destination: DefinedBenefitPlansView()) {
+                            HStack {
+                                Image(systemName: "building.columns.fill")
+                                    .foregroundColor(.blue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Defined Benefits")
+                                    Text("Pensions, Social Security, Annuities")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                // Show the current total inline
+                                Text(fixedIncomeSummary)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
-                        
-                        if let value = parseFormattedNumber(annualFixedIncome), value > 0 {
-                            Text("\(formatCurrency(value)) per year")
-                                .font(.caption)
-                                .foregroundColor(.green)
                         }
-                        
-                        Text("Include Social Security, pensions, annuities, and other guaranteed income")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
                 } header: {
                     Text("Retirement Planning")
@@ -220,7 +218,6 @@ struct SettingsView: View {
             .onChange(of: retirementDate) { _, _ in saveSettings() }
             .onChange(of: expectedAnnualSpend) { _, _ in saveSettings() }
             .onChange(of: withdrawalPercentage) { _, _ in saveSettings() }
-            .onChange(of: annualFixedIncome) { _, _ in saveSettings() }
             
             .confirmationDialog("Reset All Data", isPresented: $showingResetConfirmation) {
                 Button("Reset Everything", role: .destructive) {
@@ -236,6 +233,16 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: - Computed Properties
+
+    private var fixedIncomeSummary: String {
+        let total = benefitManager.plans.reduce(0) { $0 + $1.annualBenefit }
+        if total > 0 {
+            return formatCurrency(total) + "/yr"
+        }
+        return benefitManager.plans.isEmpty ? "None added" : "$0"
+    }
+
     // MARK: - Number Formatting Functions
     
     private func formatNumberInput(_ input: String) -> String {
@@ -294,11 +301,6 @@ struct SettingsView: View {
         if savedWithdrawalPct > 0 {
             withdrawalPercentage = savedWithdrawalPct
         }
-        
-        let savedIncome = UserDefaults.standard.double(forKey: "fixed_income")
-        if savedIncome > 0 {
-            annualFixedIncome = formatNumber(Int(savedIncome))
-        }
     }
     
     private func saveSettings() {
@@ -326,10 +328,6 @@ struct SettingsView: View {
         }
         
         UserDefaults.standard.set(withdrawalPercentage, forKey: "withdrawal_percentage")
-        
-        if let income = parseFormattedNumber(annualFixedIncome) {
-            UserDefaults.standard.set(income, forKey: "fixed_income")
-        }
     }
     
     private func resetAllData() {
@@ -346,7 +344,6 @@ struct SettingsView: View {
         hasRetirementDate = false
         expectedAnnualSpend = "40000"
         withdrawalPercentage = 0.04
-        annualFixedIncome = "0"
     }
 }
 

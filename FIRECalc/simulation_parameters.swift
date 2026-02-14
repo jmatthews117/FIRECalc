@@ -24,10 +24,7 @@ struct SimulationParameters: Codable {
     
     // Advanced options
     var taxRate: Double?  // Optional tax considerations
-    var socialSecurityIncome: Double?  // Annual SS income
-    var pensionIncome: Double?  // Annual pension
-    var otherIncome: Double?  // Other fixed income
-    
+
     // Reproducibility and bootstrap options
     var rngSeed: UInt64?  // Optional RNG seed for reproducible runs
     var bootstrapBlockLength: Int?  // Optional block length for historical bootstrap (>= 2 enables block sampling)
@@ -49,9 +46,6 @@ struct SimulationParameters: Codable {
         yearsUntilRetirement: Int = 0,
         withdrawalConfig: WithdrawalConfiguration = WithdrawalConfiguration(),
         taxRate: Double? = nil,
-        socialSecurityIncome: Double? = nil,
-        pensionIncome: Double? = nil,
-        otherIncome: Double? = nil,
         rngSeed: UInt64? = nil,
         bootstrapBlockLength: Int? = nil,
         customReturns: [AssetClass: Double]? = nil,
@@ -67,9 +61,6 @@ struct SimulationParameters: Codable {
         self.yearsUntilRetirement = yearsUntilRetirement
         self.withdrawalConfig = withdrawalConfig
         self.taxRate = taxRate
-        self.socialSecurityIncome = socialSecurityIncome
-        self.pensionIncome = pensionIncome
-        self.otherIncome = otherIncome
         self.rngSeed = rngSeed
         self.bootstrapBlockLength = bootstrapBlockLength
         self.customReturns = customReturns

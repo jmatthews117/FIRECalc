@@ -10,6 +10,7 @@ import SwiftUI
 struct DefinedBenefitPlansView: View {
     @StateObject private var manager = DefinedBenefitManager()
     @State private var showingAddPlan = false
+    @State private var planToEdit: DefinedBenefitPlan? = nil
     @State private var currentAge: Int = 35
     
     var body: some View {
@@ -21,10 +22,21 @@ struct DefinedBenefitPlansView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
-                    Text(totalCurrentBenefits.toCurrency())
+                    Text(manager.totalSimulationIncome.toCurrency())
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
-                    
+
+                    HStack(spacing: 16) {
+                        if futurePlansTotal > 0 {
+                            Label("\(activePlansTotal.toCurrency()) active now", systemImage: "checkmark.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                            Label("\(futurePlansTotal.toCurrency()) future", systemImage: "clock")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                    }
+
                     Text("Present Value: \(manager.totalPresentValue(currentAge: currentAge).toCurrency())")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -38,7 +50,12 @@ struct DefinedBenefitPlansView: View {
                     emptyState
                 } else {
                     ForEach(manager.plans) { plan in
-                        DefinedBenefitRow(plan: plan, currentAge: currentAge)
+                        Button {
+                            planToEdit = plan
+                        } label: {
+                            DefinedBenefitRow(plan: plan, currentAge: currentAge)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .onDelete(perform: deletePlans)
                 }
@@ -65,10 +82,10 @@ struct DefinedBenefitPlansView: View {
             }
         }
         .sheet(isPresented: $showingAddPlan) {
-            AddDefinedBenefitView(manager: manager, currentAge: currentAge)
+            EditDefinedBenefitView(manager: manager, currentAge: currentAge, existingPlan: nil)
         }
-        .onAppear {
-            manager.loadPlans()
+        .sheet(item: $planToEdit) { plan in
+            EditDefinedBenefitView(manager: manager, currentAge: currentAge, existingPlan: plan)
         }
     }
     
@@ -90,8 +107,12 @@ struct DefinedBenefitPlansView: View {
         .padding(.vertical, 32)
     }
     
-    private var totalCurrentBenefits: Double {
+    private var activePlansTotal: Double {
         manager.totalAnnualBenefit(at: currentAge)
+    }
+
+    private var futurePlansTotal: Double {
+        manager.totalSimulationIncome - activePlansTotal
     }
     
     private func deletePlans(at offsets: IndexSet) {
@@ -176,28 +197,52 @@ struct DefinedBenefitRow: View {
     }
 }
 
-// MARK: - Add Defined Benefit View
+// MARK: - Edit / Add Defined Benefit View
 
-struct AddDefinedBenefitView: View {
+/// Handles both adding a new plan (existingPlan == nil) and editing one
+/// (existingPlan != nil). All fields are seeded from the existing plan
+/// when editing so nothing is accidentally cleared.
+struct EditDefinedBenefitView: View {
     @ObservedObject var manager: DefinedBenefitManager
     let currentAge: Int
+    let existingPlan: DefinedBenefitPlan?
     @Environment(\.dismiss) private var dismiss
-    
-    @State private var name: String = ""
-    @State private var selectedType: DefinedBenefitPlan.PlanType = .pension
-    @State private var annualBenefit: String = ""
-    @State private var startAge: String = ""
-    @State private var inflationAdjusted: Bool = false
-    @State private var hasSurvivorBenefit: Bool = false
-    @State private var survivorPercentage: Double = 50
-    @State private var notes: String = ""
-    
+
+    @State private var name: String
+    @State private var selectedType: DefinedBenefitPlan.PlanType
+    @State private var annualBenefit: String
+    @State private var startAge: String
+    @State private var inflationAdjusted: Bool
+    @State private var hasSurvivorBenefit: Bool
+    @State private var survivorPercentage: Double
+    @State private var notes: String
+
+    @State private var showingDeleteConfirmation = false
+
+    init(manager: DefinedBenefitManager, currentAge: Int, existingPlan: DefinedBenefitPlan?) {
+        self.manager = manager
+        self.currentAge = currentAge
+        self.existingPlan = existingPlan
+
+        // Seed all fields from the existing plan, or use blank defaults for a new one.
+        _name               = State(initialValue: existingPlan?.name ?? "")
+        _selectedType       = State(initialValue: existingPlan?.type ?? .pension)
+        _annualBenefit      = State(initialValue: existingPlan.map { String($0.annualBenefit) } ?? "")
+        _startAge           = State(initialValue: existingPlan.map { String($0.startAge) } ?? "")
+        _inflationAdjusted  = State(initialValue: existingPlan?.inflationAdjusted ?? false)
+        _hasSurvivorBenefit = State(initialValue: existingPlan?.survivorBenefit != nil)
+        _survivorPercentage = State(initialValue: (existingPlan?.survivorBenefit ?? 0.5) * 100)
+        _notes              = State(initialValue: existingPlan?.notes ?? "")
+    }
+
+    private var isEditing: Bool { existingPlan != nil }
+
     var body: some View {
         NavigationView {
             Form {
                 Section("Benefit Details") {
                     TextField("Name", text: $name)
-                    
+
                     Picker("Type", selection: $selectedType) {
                         ForEach(DefinedBenefitPlan.PlanType.allCases) { type in
                             HStack {
@@ -208,14 +253,18 @@ struct AddDefinedBenefitView: View {
                         }
                     }
                     .onChange(of: selectedType) { _, newValue in
-                        inflationAdjusted = newValue.defaultInflationAdjusted
+                        // Only auto-set COLA when adding a new plan — don't
+                        // override an existing user preference when editing.
+                        if !isEditing {
+                            inflationAdjusted = newValue.defaultInflationAdjusted
+                        }
                     }
                 }
-                
+
                 Section("Annual Benefit") {
                     TextField("Annual Amount", text: $annualBenefit)
                         .keyboardType(.decimalPad)
-                    
+
                     if let amount = Double(annualBenefit) {
                         HStack {
                             Text("Monthly")
@@ -227,23 +276,29 @@ struct AddDefinedBenefitView: View {
                         .font(.caption)
                     }
                 }
-                
-                Section("Start Date") {
+
+                Section("Start Age") {
                     TextField("Start Age", text: $startAge)
                         .keyboardType(.numberPad)
-                    
-                    if let age = Int(startAge), age > currentAge {
-                        Text("Starts in \(age - currentAge) years")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+
+                    if let age = Int(startAge) {
+                        if age > currentAge {
+                            Text("Starts in \(age - currentAge) years")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Currently receiving")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
                     }
                 }
-                
+
                 Section("Options") {
                     Toggle("Inflation Adjusted (COLA)", isOn: $inflationAdjusted)
-                    
+
                     Toggle("Survivor Benefit", isOn: $hasSurvivorBenefit)
-                    
+
                     if hasSurvivorBenefit {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
@@ -252,44 +307,73 @@ struct AddDefinedBenefitView: View {
                                 Text("\(Int(survivorPercentage))%")
                                     .foregroundColor(.secondary)
                             }
-                            
                             Slider(value: $survivorPercentage, in: 0...100, step: 5)
                         }
                     }
                 }
-                
+
                 Section("Notes") {
                     TextEditor(text: $notes)
                         .frame(height: 100)
                 }
+
+                // Delete button — only shown when editing an existing plan
+                if isEditing {
+                    Section {
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Text("Delete Benefit")
+                                Spacer()
+                            }
+                        }
+                    }
+                }
             }
-            .navigationTitle("Add Benefit")
+            .navigationTitle(isEditing ? "Edit Benefit" : "Add Benefit")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        addPlan()
+                    Button(isEditing ? "Save" : "Add") {
+                        commitPlan()
                     }
                     .disabled(!isValid)
                 }
             }
+            .confirmationDialog(
+                "Delete \(existingPlan?.name ?? "this benefit")?",
+                isPresented: $showingDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let plan = existingPlan {
+                        manager.deletePlan(plan)
+                    }
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This cannot be undone.")
+            }
         }
     }
-    
+
+    // MARK: - Helpers
+
     private var isValid: Bool {
         !name.isEmpty &&
-        !annualBenefit.isEmpty &&
-        !startAge.isEmpty &&
         Double(annualBenefit) != nil &&
         Int(startAge) != nil
     }
-    
-    private func addPlan() {
+
+    private func commitPlan() {
         let plan = DefinedBenefitPlan(
+            id: existingPlan?.id ?? UUID(),   // preserve ID when editing
             name: name,
             type: selectedType,
             annualBenefit: Double(annualBenefit) ?? 0,
@@ -298,8 +382,12 @@ struct AddDefinedBenefitView: View {
             survivorBenefit: hasSurvivorBenefit ? (survivorPercentage / 100) : nil,
             notes: notes.isEmpty ? nil : notes
         )
-        
-        manager.addPlan(plan)
+
+        if isEditing {
+            manager.updatePlan(plan)
+        } else {
+            manager.addPlan(plan)
+        }
         dismiss()
     }
 }

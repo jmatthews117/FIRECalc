@@ -197,24 +197,13 @@ actor MonteCarloEngine {
                     baselineWithdrawal = withdrawal
                 }
                 
-                // Add any defined benefit income (also in real dollars)
-                let totalIncome = (parameters.socialSecurityIncome ?? 0) +
-                                 (parameters.pensionIncome ?? 0) +
-                                 (parameters.otherIncome ?? 0)
-                
-                let netWithdrawal = max(0, withdrawal - totalIncome)
-                
-                // Removed debug prints for total income and net withdrawal as per instructions
+                // Fixed income (pensions, Social Security) is already offset
+                // inside WithdrawalCalculator via config.fixedIncome — no
+                // second subtraction needed here.
+                let netWithdrawal = withdrawal
                 
                 // STEP 3: Subtract net withdrawal from balance
                 balance -= netWithdrawal
-                
-                // Removed debug print for ending balance after withdrawal as per instructions
-                
-                // If income exceeds withdrawal, surplus is reinvested
-                if netWithdrawal == 0 && totalIncome > withdrawal {
-                    balance += (totalIncome - withdrawal)
-                }
                 
                 yearlyWithdrawals.append(max(0, netWithdrawal))
                 
