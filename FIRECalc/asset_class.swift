@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum AssetClass: String, Codable, CaseIterable, Identifiable {
     case stocks = "Stocks"
@@ -66,17 +67,17 @@ enum AssetClass: String, Codable, CaseIterable, Identifiable {
     }
     
     // Color theme for charts
-    var color: String {
+    var color: Color {
         switch self {
-        case .stocks: return "blue"
-        case .bonds: return "green"
-        case .corporateBonds: return "teal"
-        case .reits: return "purple"
-        case .realEstate: return "orange"
-        case .preciousMetals: return "yellow"
-        case .crypto: return "pink"
-        case .cash: return "gray"
-        case .other: return "brown"
+        case .stocks:         return .blue
+        case .bonds:          return .green
+        case .corporateBonds: return .teal
+        case .reits:          return .purple
+        case .realEstate:     return .orange
+        case .preciousMetals: return .yellow.opacity(0.8)
+        case .crypto:         return .pink
+        case .cash:           return .gray
+        case .other:          return .brown
         }
     }
     

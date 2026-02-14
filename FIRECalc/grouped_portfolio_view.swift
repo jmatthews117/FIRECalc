@@ -240,17 +240,7 @@ struct GroupedPortfolioView: View {
     }
     
     private func colorForAssetClass(_ assetClass: AssetClass) -> Color {
-        switch assetClass {
-        case .stocks: return .blue
-        case .bonds: return .green
-        case .corporateBonds: return .teal
-        case .reits: return .purple
-        case .realEstate: return .orange
-        case .preciousMetals: return .yellow.opacity(0.8)
-        case .crypto: return .pink
-        case .cash: return .gray
-        case .other: return .brown
-        }
+        assetClass.color
     }
     
     // MARK: - Asset Group Sections

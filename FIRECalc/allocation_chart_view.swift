@@ -27,11 +27,11 @@ struct AllocationChartView: View {
                             innerRadius: .ratio(0.5),
                             angularInset: 1.5
                         )
-                        .foregroundStyle(by: .value("Class", item.assetClass.rawValue))
+                        .foregroundStyle(item.assetClass.color)
                         .opacity(0.8)
                     }
                     .frame(height: 200)
-                    .chartLegend(position: .trailing, spacing: 8)
+                    .chartLegend(.hidden)
                     
                     Spacer()
                 }
@@ -97,9 +97,13 @@ struct AllocationRow: View {
     
     var body: some View {
         HStack {
+            Circle()
+                .fill(assetClass.color)
+                .frame(width: 10, height: 10)
+            
             Image(systemName: assetClass.iconName)
                 .font(.caption)
-                .foregroundColor(.blue)
+                .foregroundColor(assetClass.color)
                 .frame(width: 20)
             
             Text(assetClass.rawValue)
