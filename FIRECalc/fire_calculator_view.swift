@@ -15,12 +15,56 @@ import Charts
 class FIRECalculatorViewModel: ObservableObject {
     @Published var currentAge: Int = 35
     @Published var currentSavings: String = ""
-    @Published var annualSavingsContribution: String = ""
-    @Published var annualExpenses: String = ""
     @Published var expectedReturn: Double = 0.07
     @Published var withdrawalRate: Double = 0.04
     @Published var inflationRate: Double = 0.025
     @Published var calculationResult: FIREResult?
+
+    /// The annual savings contribution, kept in sync with the shared
+    /// `"annual_savings"` UserDefaults key that Settings also reads/writes.
+    @Published var annualSavingsContribution: String = "" {
+        didSet {
+            let value = Double(annualSavingsContribution) ?? 0
+            UserDefaults.standard.set(value, forKey: "annual_savings")
+        }
+    }
+
+    /// Annual retirement expenses, kept in sync with the shared
+    /// `"expected_annual_spend"` UserDefaults key that Settings also reads/writes.
+    @Published var annualExpenses: String = "" {
+        didSet {
+            let value = Double(annualExpenses) ?? 0
+            UserDefaults.standard.set(value, forKey: "expected_annual_spend")
+        }
+    }
+
+    init() {
+        let savedSavings = UserDefaults.standard.double(forKey: "annual_savings")
+        if savedSavings > 0 {
+            annualSavingsContribution = String(format: "%.0f", savedSavings)
+        }
+
+        let savedExpenses = UserDefaults.standard.double(forKey: "expected_annual_spend")
+        if savedExpenses > 0 {
+            annualExpenses = String(format: "%.0f", savedExpenses)
+        }
+    }
+
+    /// Call this to pull the latest values from UserDefaults (e.g. when the
+    /// view appears after the user may have changed them in Settings).
+    func syncFromUserDefaults() {
+        let savedSavings = UserDefaults.standard.double(forKey: "annual_savings")
+        let currentSavingsContribution = Double(annualSavingsContribution) ?? 0
+        if savedSavings != currentSavingsContribution {
+            annualSavingsContribution = savedSavings > 0 ? String(format: "%.0f", savedSavings) : ""
+        }
+
+        let savedExpenses = UserDefaults.standard.double(forKey: "expected_annual_spend")
+        let currentExpenses = Double(annualExpenses) ?? 0
+        if savedExpenses != currentExpenses {
+            annualExpenses = savedExpenses > 0 ? String(format: "%.0f", savedExpenses) : ""
+        }
+    }
 }
 
 struct FIRECalculatorView: View {
@@ -55,6 +99,9 @@ struct FIRECalculatorView: View {
             if viewModel.currentSavings.isEmpty && portfolioVM.totalValue > 0 {
                 viewModel.currentSavings = String(format: "%.0f", portfolioVM.totalValue)
             }
+            // Pull in any change the user may have made in Settings since
+            // the last time this view was on screen.
+            viewModel.syncFromUserDefaults()
         }
         // Recalculate automatically whenever benefit plans change so the
         // results never show a stale projection.
