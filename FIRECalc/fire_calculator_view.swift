@@ -8,20 +8,25 @@
 import SwiftUI
 import Charts
 
+// MARK: - FIRE Calculator View Model
+
+/// Holds all mutable FIRE calculator state so it survives NavigationLink
+/// pushes and pops without being reset to defaults on every appearance.
+class FIRECalculatorViewModel: ObservableObject {
+    @Published var currentAge: Int = 35
+    @Published var currentSavings: String = ""
+    @Published var annualSavingsContribution: String = ""
+    @Published var annualExpenses: String = ""
+    @Published var expectedReturn: Double = 0.07
+    @Published var withdrawalRate: Double = 0.04
+    @Published var inflationRate: Double = 0.025
+    @Published var calculationResult: FIREResult?
+}
+
 struct FIRECalculatorView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
-
-    @State private var currentAge: Int = 35
-    @State private var currentSavings: String = ""
-    @State private var annualIncome: String = ""
-    @State private var annualExpenses: String = ""
-    @State private var savingsRate: Double = 0.20 // 20%
-    @State private var expectedReturn: Double = 0.07 // 7%
-    @State private var withdrawalRate: Double = 0.04 // 4%
-    @State private var inflationRate: Double = 0.025 // 2.5%
-    
-    @State private var calculationResult: FIREResult?
+    @ObservedObject var viewModel: FIRECalculatorViewModel
     
     var body: some View {
         ScrollView {
@@ -36,7 +41,7 @@ struct FIRECalculatorView: View {
                 calculateButton
                 
                 // Results Section
-                if let result = calculationResult {
+                if let result = viewModel.calculationResult {
                     resultsSection(result: result)
                     pathwayChart(result: result)
                     milestonesSection(result: result)
@@ -47,9 +52,14 @@ struct FIRECalculatorView: View {
         .navigationTitle("FIRE Calculator")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if currentSavings.isEmpty && portfolioVM.totalValue > 0 {
-                currentSavings = String(format: "%.0f", portfolioVM.totalValue)
+            if viewModel.currentSavings.isEmpty && portfolioVM.totalValue > 0 {
+                viewModel.currentSavings = String(format: "%.0f", portfolioVM.totalValue)
             }
+        }
+        // Recalculate automatically whenever benefit plans change so the
+        // results never show a stale projection.
+        .onChange(of: benefitManager.plans) {
+            if viewModel.calculationResult != nil { calculate() }
         }
     }
     
@@ -65,7 +75,7 @@ struct FIRECalculatorView: View {
                 HStack {
                     Text("Current Age")
                     Spacer()
-                    TextField("Age", value: $currentAge, format: .number)
+                    TextField("Age", value: $viewModel.currentAge, format: .number)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
@@ -76,34 +86,29 @@ struct FIRECalculatorView: View {
                     Text("Current Savings")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    TextField("$0", text: $currentSavings)
+                    TextField("$0", text: $viewModel.currentSavings)
                         .keyboardType(.decimalPad)
                 }
                 
-                // Annual Income
+                // Annual Savings Contribution
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Annual Income (Gross)")
+                    Text("Annual Savings Contribution")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    TextField("$0", text: $annualIncome)
+                    TextField("$0", text: $viewModel.annualSavingsContribution)
                         .keyboardType(.decimalPad)
+                    Text("Amount you add to your portfolio each year")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
                 // Annual Expenses
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Annual Expenses")
+                    Text("Annual Expenses in Retirement")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    TextField("$0", text: $annualExpenses)
+                    TextField("$0", text: $viewModel.annualExpenses)
                         .keyboardType(.decimalPad)
-                    
-                    if let income = Double(annualIncome),
-                       let expenses = Double(annualExpenses),
-                       income > 0 {
-                        Text("Savings Rate: \(((income - expenses) / income).toPercent())")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
                 }
                 
                 Divider()
@@ -118,30 +123,30 @@ struct FIRECalculatorView: View {
                         HStack {
                             Text("Expected Return")
                             Spacer()
-                            Text(expectedReturn.toPercent())
+                            Text(viewModel.expectedReturn.toPercent())
                                 .foregroundColor(.secondary)
                         }
-                        Slider(value: $expectedReturn, in: 0...0.15, step: 0.005)
+                        Slider(value: $viewModel.expectedReturn, in: 0...0.15, step: 0.005)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Withdrawal Rate")
                             Spacer()
-                            Text(withdrawalRate.toPercent())
+                            Text(viewModel.withdrawalRate.toPercent())
                                 .foregroundColor(.secondary)
                         }
-                        Slider(value: $withdrawalRate, in: 0.025...0.06, step: 0.005)
+                        Slider(value: $viewModel.withdrawalRate, in: 0.025...0.06, step: 0.005)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Inflation Rate")
                             Spacer()
-                            Text(inflationRate.toPercent())
+                            Text(viewModel.inflationRate.toPercent())
                                 .foregroundColor(.secondary)
                         }
-                        Slider(value: $inflationRate, in: 0...0.05, step: 0.005)
+                        Slider(value: $viewModel.inflationRate, in: 0...0.05, step: 0.005)
                     }
                 }
             }
@@ -253,6 +258,11 @@ struct FIRECalculatorView: View {
             .padding()
             .background(Color.blue.opacity(0.1))
             .cornerRadius(12)
+
+            // Guaranteed income breakdown (only shown when plans exist)
+            if result.benefitIncomeAtFIRE > 0 {
+                incomeBreakdownCard(result: result)
+            }
             
             Divider()
             
@@ -260,18 +270,32 @@ struct FIRECalculatorView: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 MetricCard(
                     title: "FIRE Number",
-                    value: result.fireNumber.toCurrency(),
-                    subtitle: "Target portfolio",
+                    value: result.effectiveFireNumber.toCurrency(),
+                    subtitle: result.benefitIncomeAtFIRE > 0
+                        ? "Portfolio target\n(after guaranteed income)"
+                        : "Target portfolio",
                     icon: "target",
                     color: .blue
+                )
+
+                MetricCard(
+                    title: result.benefitIncomeAtFIRE > 0 ? "Portfolio Draw" : "Annual Expenses",
+                    value: result.benefitIncomeAtFIRE > 0
+                        ? result.portfolioWithdrawalAtFIRE.toCurrency()
+                        : result.annualExpenses.toCurrency(),
+                    subtitle: result.benefitIncomeAtFIRE > 0
+                        ? "From portfolio per year"
+                        : "Total per year",
+                    icon: "arrow.down.circle",
+                    color: .green
                 )
                 
                 MetricCard(
                     title: "Annual Savings",
                     value: result.annualSavings.toCurrency(),
                     subtitle: "Per year",
-                    icon: "arrow.down.circle",
-                    color: .green
+                    icon: "banknote",
+                    color: .teal
                 )
                 
                 MetricCard(
@@ -289,12 +313,88 @@ struct FIRECalculatorView: View {
                     icon: "chart.line.uptrend.xyaxis",
                     color: .orange
                 )
+
+                if result.benefitIncomeAtFIRE > 0 {
+                    MetricCard(
+                        title: "Gross FIRE Number",
+                        value: result.grossFireNumber.toCurrency(),
+                        subtitle: "Without guaranteed income",
+                        icon: "number.circle",
+                        color: .gray
+                    )
+                }
             }
         }
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(AppConstants.UI.cornerRadius)
         .shadow(radius: AppConstants.UI.shadowRadius)
+    }
+
+    // MARK: - Income Breakdown Card
+
+    @ViewBuilder
+    private func incomeBreakdownCard(result: FIREResult) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundColor(.green)
+                Text("How Your Expenses Are Covered at \(result.fireAge)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+            }
+
+            // Expense bar showing portfolio vs. guaranteed income split
+            let totalExpenses = result.annualExpenses
+            let benefitFraction = min(1.0, result.benefitIncomeAtFIRE / totalExpenses)
+            let portfolioFraction = 1.0 - benefitFraction
+
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(width: geo.size.width * portfolioFraction)
+                    Rectangle()
+                        .fill(Color.green)
+                        .frame(width: geo.size.width * benefitFraction)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .frame(height: 14)
+
+            HStack {
+                Label(
+                    "\(result.portfolioWithdrawalAtFIRE.toCurrency())/yr from portfolio",
+                    systemImage: "chart.bar"
+                )
+                .font(.caption)
+                .foregroundColor(.blue)
+
+                Spacer()
+
+                Label(
+                    "\(result.benefitIncomeAtFIRE.toCurrency())/yr guaranteed",
+                    systemImage: "building.columns"
+                )
+                .font(.caption)
+                .foregroundColor(.green)
+            }
+
+            if result.fullyFundedByBenefits {
+                Text("🎉 Your guaranteed income fully covers your expenses — no portfolio withdrawal needed!")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                    .padding(.top, 2)
+            } else {
+                Text("Guaranteed income covers \(Int(benefitFraction * 100))% of expenses, reducing the portfolio you need to build.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 2)
+            }
+        }
+        .padding()
+        .background(Color.green.opacity(0.08))
+        .cornerRadius(12)
     }
     
     // MARK: - Pathway Chart
@@ -305,6 +405,7 @@ struct FIRECalculatorView: View {
                 .font(.headline)
             
             Chart {
+                // Portfolio growth line
                 ForEach(result.yearlyProjections, id: \.year) { projection in
                     LineMark(
                         x: .value("Age", projection.age),
@@ -319,18 +420,32 @@ struct FIRECalculatorView: View {
                     )
                     .foregroundStyle(.blue)
                 }
-                
-                // FIRE Number Line
-                RuleMark(y: .value("FIRE Number", result.fireNumber))
+
+                // Effective target line — steps down when a benefit plan kicks in.
+                // We draw it as a LineMark so the step-changes are visible.
+                ForEach(result.yearlyProjections, id: \.year) { projection in
+                    LineMark(
+                        x: .value("Age", projection.age),
+                        y: .value("Target", projection.effectiveTarget)
+                    )
                     .foregroundStyle(.green)
                     .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
-                    .annotation(position: .top, alignment: .trailing) {
-                        Text("FIRE Number")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                            .padding(.horizontal, 4)
-                            .background(Color(.systemBackground))
-                    }
+                    .interpolationMethod(.stepEnd)
+                }
+
+                // Gross (no-benefit) FIRE number shown as a faint reference.
+                if result.benefitIncomeAtFIRE > 0 {
+                    RuleMark(y: .value("Gross FIRE Number", result.grossFireNumber))
+                        .foregroundStyle(.gray.opacity(0.4))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
+                        .annotation(position: .top, alignment: .trailing) {
+                            Text("Without benefits")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 4)
+                                .background(Color(.systemBackground))
+                        }
+                }
             }
             .frame(height: 250)
             .chartYAxis {
@@ -340,6 +455,21 @@ struct FIRECalculatorView: View {
                             Text(formatChartValue(amount))
                         }
                     }
+                }
+            }
+
+            // Legend
+            HStack(spacing: 16) {
+                Label("Portfolio", systemImage: "line.diagonal")
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                Label(result.benefitIncomeAtFIRE > 0 ? "Target (benefit-adjusted)" : "FIRE Target", systemImage: "line.diagonal")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                if result.benefitIncomeAtFIRE > 0 {
+                    Label("Gross target", systemImage: "line.diagonal")
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
             }
         }
@@ -369,28 +499,27 @@ struct FIRECalculatorView: View {
     // MARK: - Helpers
     
     private var isValid: Bool {
-        !currentSavings.isEmpty &&
-        !annualIncome.isEmpty &&
-        !annualExpenses.isEmpty &&
-        Double(currentSavings) != nil &&
-        Double(annualIncome) != nil &&
-        Double(annualExpenses) != nil
+        !viewModel.currentSavings.isEmpty &&
+        !viewModel.annualExpenses.isEmpty &&
+        Double(viewModel.currentSavings) != nil &&
+        Double(viewModel.annualExpenses) != nil
     }
     
     private func calculate() {
-        guard let savings = Double(currentSavings),
-              let income = Double(annualIncome),
-              let expenses = Double(annualExpenses) else { return }
+        guard let savings = Double(viewModel.currentSavings),
+              let expenses = Double(viewModel.annualExpenses) else { return }
+        
+        let annualContribution = Double(viewModel.annualSavingsContribution) ?? 0
         
         let calculator = FIRECalculator()
-        calculationResult = calculator.calculate(
-            currentAge: currentAge,
+        viewModel.calculationResult = calculator.calculate(
+            currentAge: viewModel.currentAge,
             currentSavings: savings,
-            annualIncome: income,
+            annualSavings: annualContribution,
             annualExpenses: expenses,
-            expectedReturn: expectedReturn,
-            withdrawalRate: withdrawalRate,
-            inflationRate: inflationRate,
+            expectedReturn: viewModel.expectedReturn,
+            withdrawalRate: viewModel.withdrawalRate,
+            inflationRate: viewModel.inflationRate,
             benefitPlans: benefitManager.plans
         )
     }
@@ -412,123 +541,210 @@ struct FIRECalculator {
     func calculate(
         currentAge: Int,
         currentSavings: Double,
-        annualIncome: Double,
+        annualSavings: Double,
         annualExpenses: Double,
         expectedReturn: Double,
         withdrawalRate: Double,
         inflationRate: Double,
         benefitPlans: [DefinedBenefitPlan] = []
     ) -> FIREResult {
-        
-        // Calculate FIRE number (25x rule adjusted for withdrawal rate).
-        // Benefit income that starts *at* retirement reduces the required portfolio.
-        // For simplicity we use the plans' nominal benefit values here; the
-        // year-by-year accumulation loop below handles phased-in income.
-        let fireNumber = annualExpenses / withdrawalRate
-        
-        // Calculate annual savings
-        let annualSavings = max(0, annualIncome - annualExpenses)
-        
-        // Project year by year until reaching the *effective* target.
-        // As each benefit plan kicks in, the required portfolio shrinks by
-        // benefit / withdrawalRate (the capitalised value of that income stream).
+
+        // The GROSS FIRE number — what the portfolio would need to fund ALL
+        // expenses with zero guaranteed income.
+        let grossFireNumber = annualExpenses / withdrawalRate
+
+        // Project year by year until we reach the *effective* (benefit-adjusted)
+        // target for the current age.
+        //
+        // Logic: each benefit plan that is active at a given age reduces the
+        // portfolio burden by (benefit / withdrawalRate) — the capitalised value
+        // of that perpetual income stream.  FIRE is achieved when:
+        //
+        //   portfolio >= grossFireNumber − Σ(activeBenefits) / withdrawalRate
+        //
+        // This means a $20k/yr pension kicking in at 55 drops the target by
+        // $20k / 0.04 = $500k from age 55 onward.  If the portfolio is already
+        // ≥ the reduced target, FIRE is declared even if it's still below the
+        // gross number.
+
         var yearlyProjections: [FIREPathProjection] = []
         var balance = currentSavings
         var age = currentAge
         var year = 0
         var totalContributions = currentSavings
-        
+
+        let initialTarget = effectiveFireTarget(
+            grossTarget: grossFireNumber,
+            age: age,
+            benefitPlans: benefitPlans,
+            withdrawalRate: withdrawalRate
+        )
         yearlyProjections.append(FIREPathProjection(
             year: year,
             age: age,
             portfolioValue: balance,
             contributions: currentSavings,
-            investmentGains: 0
+            investmentGains: 0,
+            effectiveTarget: initialTarget
         ))
-        
+
+        // Check if FIRE is already achieved at the current age (e.g. a benefit
+        // that has already started fully covers expenses).
+        guard balance < initialTarget else {
+            // Already at FIRE — skip the accumulation loop entirely.
+            let benefitIncomeAtFIRE = benefitPlans
+                .filter { age >= $0.startAge }
+                .reduce(0.0) { $0 + $1.annualBenefit }
+            let milestones = calculateMilestones(
+                grossFireNumber: grossFireNumber,
+                projections: yearlyProjections,
+                currentAge: currentAge,
+                benefitPlans: benefitPlans,
+                withdrawalRate: withdrawalRate
+            )
+            return FIREResult(
+                fireAge: age,
+                yearsToFIRE: 0,
+                fireYear: Calendar.current.component(.year, from: Date()),
+                grossFireNumber: grossFireNumber,
+                effectiveFireNumber: initialTarget,
+                benefitIncomeAtFIRE: benefitIncomeAtFIRE,
+                annualSavings: annualSavings,
+                annualExpenses: annualExpenses,
+                withdrawalRate: withdrawalRate,
+                totalContributions: totalContributions,
+                investmentGains: 0,
+                yearlyProjections: yearlyProjections,
+                milestones: milestones
+            )
+        }
+
         while year < 50 { // Cap at 50 years
             year += 1
             age += 1
-            
-            // Add contributions (inflation-adjusted)
+
+            // Contributions grow with inflation each year.
             let inflationAdjustedSavings = annualSavings * pow(1 + inflationRate, Double(year))
             totalContributions += inflationAdjustedSavings
-            
-            // Apply investment return
+
+            // Portfolio grows, then receives this year's contribution.
             balance = balance * (1 + expectedReturn) + inflationAdjustedSavings
-            
-            // Benefits active this year reduce the amount the portfolio must fund.
-            let activeBenefitIncome = benefitPlans
-                .filter { age >= $0.startAge }
-                .reduce(0.0) { $0 + $1.annualBenefit }
-            let benefitPortfolioEquivalent = activeBenefitIncome / withdrawalRate
-            let effectiveTarget = max(0, fireNumber - benefitPortfolioEquivalent)
-            
+
+            let target = effectiveFireTarget(
+                grossTarget: grossFireNumber,
+                age: age,
+                benefitPlans: benefitPlans,
+                withdrawalRate: withdrawalRate
+            )
+
             yearlyProjections.append(FIREPathProjection(
                 year: year,
                 age: age,
                 portfolioValue: balance,
                 contributions: totalContributions,
-                investmentGains: balance - totalContributions
+                investmentGains: balance - totalContributions,
+                effectiveTarget: target
             ))
-            
-            if balance >= effectiveTarget { break }
+
+            if balance >= target { break }
         }
-        
-        // Calculate milestones
+
+        // The *effective* FIRE number is the target at the age FIRE was achieved —
+        // this is what the portfolio actually needed to reach, not the gross number.
+        let achievedTarget = effectiveFireTarget(
+            grossTarget: grossFireNumber,
+            age: age,
+            benefitPlans: benefitPlans,
+            withdrawalRate: withdrawalRate
+        )
+
+        // Active benefit income at FIRE age — used for the results summary.
+        let benefitIncomeAtFIRE = benefitPlans
+            .filter { age >= $0.startAge }
+            .reduce(0.0) { $0 + $1.annualBenefit }
+
+        // Calculate milestones against the gross number (so percentages are
+        // meaningful relative to the user's full expense target), but each
+        // milestone respects benefits that are active at the milestone age.
         let milestones = calculateMilestones(
-            fireNumber: fireNumber,
+            grossFireNumber: grossFireNumber,
             projections: yearlyProjections,
             currentAge: currentAge,
             benefitPlans: benefitPlans,
             withdrawalRate: withdrawalRate
         )
-        
+
         return FIREResult(
             fireAge: age,
             yearsToFIRE: year,
             fireYear: Calendar.current.component(.year, from: Date()) + year,
-            fireNumber: fireNumber,
+            grossFireNumber: grossFireNumber,
+            effectiveFireNumber: achievedTarget,
+            benefitIncomeAtFIRE: benefitIncomeAtFIRE,
             annualSavings: annualSavings,
+            annualExpenses: annualExpenses,
+            withdrawalRate: withdrawalRate,
             totalContributions: totalContributions,
             investmentGains: balance - totalContributions,
             yearlyProjections: yearlyProjections,
             milestones: milestones
         )
     }
-    
+
+    // MARK: - Effective Target
+
+    /// The portfolio value required at `age` after accounting for any guaranteed
+    /// income streams that are already active.  A plan with `startAge <= age`
+    /// reduces the required portfolio by `annualBenefit / withdrawalRate`.
+    private func effectiveFireTarget(
+        grossTarget: Double,
+        age: Int,
+        benefitPlans: [DefinedBenefitPlan],
+        withdrawalRate: Double
+    ) -> Double {
+        let activeBenefitIncome = benefitPlans
+            .filter { age >= $0.startAge }
+            .reduce(0.0) { $0 + $1.annualBenefit }
+        let benefitEquivalent = activeBenefitIncome / withdrawalRate
+        return max(0, grossTarget - benefitEquivalent)
+    }
+
+    // MARK: - Milestones
+
     private func calculateMilestones(
-        fireNumber: Double,
+        grossFireNumber: Double,
         projections: [FIREPathProjection],
         currentAge: Int,
-        benefitPlans: [DefinedBenefitPlan] = [],
-        withdrawalRate: Double = 0.04
+        benefitPlans: [DefinedBenefitPlan],
+        withdrawalRate: Double
     ) -> [Milestone] {
         let percentages = [0.25, 0.50, 0.75, 1.0]
         var milestones: [Milestone] = []
-        
+
         for percentage in percentages {
-            let baseTarget = fireNumber * percentage
-            
-            // Find the first projection where balance meets the benefit-adjusted target.
+            // The gross milestone target (e.g. 50% of the full FIRE number).
+            let grossMilestoneTarget = grossFireNumber * percentage
+
+            // Find the first year where the portfolio meets the benefit-adjusted
+            // version of this milestone target.
             let match = projections.first { proj in
                 let activeBenefits = benefitPlans
                     .filter { proj.age >= $0.startAge }
                     .reduce(0.0) { $0 + $1.annualBenefit }
-                let effective = max(0, baseTarget - activeBenefits / withdrawalRate)
-                return proj.portfolioValue >= effective
+                let effectiveMilestoneTarget = max(0, grossMilestoneTarget - activeBenefits / withdrawalRate)
+                return proj.portfolioValue >= effectiveMilestoneTarget
             }
 
             if let projection = match {
                 milestones.append(Milestone(
                     percentage: percentage,
-                    amount: baseTarget,
+                    amount: grossMilestoneTarget,
                     age: projection.age,
                     yearsFromNow: projection.age - currentAge
                 ))
             }
         }
-        
+
         return milestones
     }
 }
@@ -539,12 +755,30 @@ struct FIREResult {
     let fireAge: Int
     let yearsToFIRE: Int
     let fireYear: Int
-    let fireNumber: Double
+    /// Full portfolio needed if there were zero guaranteed income.
+    let grossFireNumber: Double
+    /// The actual portfolio target at the FIRE age after subtracting the
+    /// capitalised value of all active guaranteed income streams.
+    let effectiveFireNumber: Double
+    /// Total annual guaranteed income (pensions, SS, etc.) active at FIRE age.
+    let benefitIncomeAtFIRE: Double
     let annualSavings: Double
+    let annualExpenses: Double
+    let withdrawalRate: Double
     let totalContributions: Double
     let investmentGains: Double
     let yearlyProjections: [FIREPathProjection]
     let milestones: [Milestone]
+
+    /// Annual portfolio withdrawal needed at FIRE (expenses minus guaranteed income).
+    var portfolioWithdrawalAtFIRE: Double {
+        max(0, annualExpenses - benefitIncomeAtFIRE)
+    }
+
+    /// True when guaranteed income alone covers all expenses.
+    var fullyFundedByBenefits: Bool {
+        benefitIncomeAtFIRE >= annualExpenses
+    }
 }
 
 struct FIREPathProjection {
@@ -553,6 +787,8 @@ struct FIREPathProjection {
     let portfolioValue: Double
     let contributions: Double
     let investmentGains: Double
+    /// The benefit-adjusted portfolio target for this age.
+    let effectiveTarget: Double
 }
 
 struct Milestone {
@@ -636,6 +872,6 @@ struct MilestoneRow: View {
 
 #Preview {
     NavigationView {
-        FIRECalculatorView(portfolioVM: PortfolioViewModel(), benefitManager: DefinedBenefitManager())
+        FIRECalculatorView(portfolioVM: PortfolioViewModel(), benefitManager: DefinedBenefitManager(), viewModel: FIRECalculatorViewModel())
     }
 }

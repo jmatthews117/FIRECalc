@@ -192,12 +192,32 @@ struct SettingsView: View {
                                 Spacer()
 
                                 VStack(alignment: .trailing, spacing: 2) {
-                                    Text("FIRE Target")
+                                    Text("Portfolio Target")
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
                                     Text(projection.target.toCurrency())
                                         .font(.caption)
                                         .fontWeight(.semibold)
+                                }
+                            }
+
+                            // Show benefit reduction note when guaranteed income
+                            // is lowering the required portfolio.
+                            if !benefitManager.plans.isEmpty,
+                               let spend = parseFormattedNumber(expectedAnnualSpend),
+                               spend > 0 {
+                                let grossTarget = spend / withdrawalPercentage
+                                let reduction = grossTarget - projection.target
+                                if reduction > 0 {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "building.columns.fill")
+                                            .font(.caption2)
+                                            .foregroundColor(.green)
+                                        Text("Guaranteed income reduces your target by \(formatCurrency(reduction))")
+                                            .font(.caption2)
+                                            .foregroundColor(.green)
+                                    }
+                                    .padding(.top, 2)
                                 }
                             }
                         }
@@ -365,33 +385,58 @@ struct SettingsView: View {
     }
 
     /// Projects how many years until the current portfolio (plus annual savings,
-    /// compounded at the portfolio's weighted expected return) reaches the FIRE target.
-    /// Returns nil if any required input is missing or the portfolio is already funded.
+    /// compounded at the portfolio's weighted expected return) reaches the FIRE target,
+    /// accounting for guaranteed income streams that reduce the required portfolio
+    /// once they begin.
     private var fireProjection: FIREProjection? {
         guard let spend = parseFormattedNumber(expectedAnnualSpend),
-              spend > 0,
-              portfolioVM.hasAssets else { return nil }
+              spend > 0 else { return nil }
 
-        let target = spend / withdrawalPercentage
+        let grossTarget = spend / withdrawalPercentage
         let currentValue = portfolioVM.totalValue
         let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
         let savings = parseFormattedNumber(annualSavings) ?? 0
+        let startAge = Int(currentAge) ?? 0
 
-        guard annualReturn > 0 else { return nil }
+        // Check year 0 — benefits already active might already cover everything,
+        // even with a zero or empty portfolio.
+        let initialEffectiveTarget = effectiveTarget(
+            grossTarget: grossTarget,
+            age: startAge,
+            withdrawalRate: withdrawalPercentage
+        )
+        if currentValue >= initialEffectiveTarget {
+            return FIREProjection(years: 0, target: initialEffectiveTarget)
+        }
 
-        if currentValue >= target { return FIREProjection(years: 0, target: target) }
-
-        // Iterate year-by-year: V_{n+1} = V_n * (1 + r) + savings
+        // Allow annualReturn == 0 so pure-savings or pure-benefit scenarios still
+        // converge (a future benefit kicking in drops the target to 0).
         var value = currentValue
         for year in 1...100 {
             value = value * (1 + annualReturn) + savings
+
+            let age = startAge + year
+            let target = effectiveTarget(
+                grossTarget: grossTarget,
+                age: age,
+                withdrawalRate: withdrawalPercentage
+            )
+
             if value >= target {
                 return FIREProjection(years: year, target: target)
             }
         }
 
-        // Didn't converge within 100 years
         return nil
+    }
+
+    /// Reduces the gross FIRE target by the capitalised value of all benefit
+    /// plans that are active at the given age.
+    private func effectiveTarget(grossTarget: Double, age: Int, withdrawalRate: Double) -> Double {
+        let activeBenefitIncome = benefitManager.plans
+            .filter { age >= $0.startAge }
+            .reduce(0.0) { $0 + $1.annualBenefit }
+        return max(0, grossTarget - activeBenefitIncome / withdrawalRate)
     }
 
     // MARK: - Number Formatting Functions

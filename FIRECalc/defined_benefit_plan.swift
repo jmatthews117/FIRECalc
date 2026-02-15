@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - Defined Benefit Plan
 
-struct DefinedBenefitPlan: Identifiable, Codable {
+struct DefinedBenefitPlan: Identifiable, Codable, Equatable {
     let id: UUID
     var name: String
     var type: PlanType

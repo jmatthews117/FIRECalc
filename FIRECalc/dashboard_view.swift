@@ -11,6 +11,7 @@ struct DashboardView: View {
     @StateObject private var portfolioVM = PortfolioViewModel()
     @StateObject private var simulationVM = SimulationViewModel()
     @StateObject private var benefitManager = DefinedBenefitManager()
+    @StateObject private var fireCalcVM = FIRECalculatorViewModel()
     @State private var showingAddAsset = false
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
@@ -315,7 +316,7 @@ struct DashboardView: View {
             }
             .buttonStyle(.plain)
             
-            NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager)) {
+            NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager, viewModel: fireCalcVM)) {
                 HStack {
                     Image(systemName: "flag.checkered")
                         .font(.title2)

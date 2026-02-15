@@ -707,12 +707,13 @@ struct ToolsTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
+    @StateObject private var fireCalcVM = FIRECalculatorViewModel()
 
     var body: some View {
         NavigationView {
             List {
                 Section("Analysis Tools") {
-                    NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager)) {
+                    NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager, viewModel: fireCalcVM)) {
                         HStack {
                             Image(systemName: "flag.checkered")
                                 .foregroundColor(.orange)
