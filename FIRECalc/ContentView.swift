@@ -15,7 +15,7 @@ struct ContentView: View {
     var body: some View {
         TabView {
             // Dashboard Tab
-            DashboardTabView(portfolioVM: portfolioVM, simulationVM: simulationVM)
+            DashboardTabView(portfolioVM: portfolioVM, simulationVM: simulationVM, benefitManager: benefitManager)
                 .tabItem {
                     Label("Dashboard", systemImage: "chart.pie.fill")
                 }
@@ -33,7 +33,7 @@ struct ContentView: View {
                 }
             
             // Tools Tab
-            ToolsTabView(portfolioVM: portfolioVM, simulationVM: simulationVM)
+            ToolsTabView(portfolioVM: portfolioVM, simulationVM: simulationVM, benefitManager: benefitManager)
                 .tabItem {
                     Label("Tools", systemImage: "wrench.and.screwdriver.fill")
                 }
@@ -52,6 +52,7 @@ struct ContentView: View {
 struct DashboardTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
+    @ObservedObject var benefitManager: DefinedBenefitManager
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
     
@@ -153,20 +154,46 @@ struct DashboardTabView: View {
         UserDefaults.standard.double(forKey: "retirement_target")
     }
 
-    /// Years until portfolio (grown at weighted expected return + annual savings) hits the target.
+    /// Years until portfolio hits the retirement target, accounting for when
+    /// Social Security, pension, and other defined-benefit income kicks in.
+    /// Each active plan reduces the required portfolio by its annual benefit
+    /// divided by the withdrawal rate, so the effective target shrinks over
+    /// time as income streams come online.
     private var yearsToFIRE: Int? {
         let target = savedRetirementTarget
         guard target > 0, portfolioVM.hasAssets else { return nil }
         let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
         guard annualReturn > 0 else { return nil }
+        guard let startAge = savedCurrentAge else { return nil }
+
         let currentValue = portfolioVM.totalValue
         if currentValue >= target { return 0 }
+
+        let withdrawalRate = UserDefaults.standard.double(forKey: "withdrawal_rate")
+            .nonZeroOrDefault(0.04)
+
         var value = currentValue
         for year in 1...100 {
             value = value * (1 + annualReturn) + savedAnnualSavings
-            if value >= target { return year }
+
+            // Sum the annual benefit of every plan whose start age has been reached.
+            let activeBenefitIncome = benefitManager.plans
+                .filter { (startAge + year) >= $0.startAge }
+                .reduce(0.0) { $0 + $1.annualBenefit }
+
+            // Each dollar of perpetual income offsets portfolio need by 1/withdrawalRate.
+            let effectiveTarget = max(0, target - activeBenefitIncome / withdrawalRate)
+
+            if value >= effectiveTarget { return year }
         }
         return nil
+    }
+
+    /// Summary of defined-benefit income plans, shown in the progress card.
+    private var benefitIncomeDescription: String? {
+        guard !benefitManager.plans.isEmpty else { return nil }
+        let total = benefitManager.plans.reduce(0.0) { $0 + $1.annualBenefit }
+        return total.toCurrency() + "/yr in benefits"
     }
 
     private var retirementProgressCard: some View {
@@ -212,6 +239,12 @@ struct DashboardTabView: View {
                                     Text("Retire at age ~\(age + years)")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
+                                }
+
+                                if let benefitNote = benefitIncomeDescription {
+                                    Label(benefitNote, systemImage: "building.columns")
+                                        .font(.caption2)
+                                        .foregroundColor(.blue)
                                 }
                             }
                         }
@@ -673,12 +706,13 @@ struct SimulationsTab: View {
 struct ToolsTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
+    @ObservedObject var benefitManager: DefinedBenefitManager
 
     var body: some View {
         NavigationView {
             List {
                 Section("Analysis Tools") {
-                    NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM)) {
+                    NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager)) {
                         HStack {
                             Image(systemName: "flag.checkered")
                                 .foregroundColor(.orange)
@@ -1004,3 +1038,4 @@ struct EditAssetView: View {
 #Preview {
     ContentView()
 }
+

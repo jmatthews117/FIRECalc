@@ -214,6 +214,11 @@ extension Double {
     func toDecimal() -> String {
         AppConstants.Format.decimalFormatter.string(from: NSNumber(value: self)) ?? "0"
     }
+
+    /// Returns `self` if non-zero, otherwise returns `default`.
+    func nonZeroOrDefault(_ default: Double) -> Double {
+        self == 0 ? `default` : self
+    }
 }
 
 extension Date {

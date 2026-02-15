@@ -10,6 +10,7 @@ import Charts
 
 struct FIRECalculatorView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
+    @ObservedObject var benefitManager: DefinedBenefitManager
 
     @State private var currentAge: Int = 35
     @State private var currentSavings: String = ""
@@ -27,7 +28,10 @@ struct FIRECalculatorView: View {
             VStack(spacing: 24) {
                 // Input Section
                 inputSection
-                
+
+                // Guaranteed income from pensions / Social Security
+                benefitIncomeCard
+
                 // Calculate Button
                 calculateButton
                 
@@ -148,6 +152,63 @@ struct FIRECalculatorView: View {
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
     
+    // MARK: - Benefit Income Card
+
+    @ViewBuilder
+    private var benefitIncomeCard: some View {
+        if !benefitManager.plans.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: "building.columns")
+                        .foregroundColor(.blue)
+                    Text("Guaranteed Income")
+                        .font(.headline)
+                    Spacer()
+                }
+
+                ForEach(benefitManager.plans) { plan in
+                    HStack {
+                        Image(systemName: plan.type.iconName)
+                            .foregroundColor(.secondary)
+                            .frame(width: 20)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(plan.name)
+                                .font(.subheadline)
+                            Text("Starts age \(plan.startAge)\(plan.inflationAdjusted ? " · COLA" : "")")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Text(plan.annualBenefit.toCurrency() + "/yr")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.green)
+                    }
+                }
+
+                Divider()
+
+                HStack {
+                    Text("Total Benefit Income")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(benefitManager.plans.reduce(0, { $0 + $1.annualBenefit }).toCurrency() + "/yr")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+                }
+
+                Text("These income streams reduce the portfolio size you need to hit FIRE.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color.blue.opacity(0.05))
+            .cornerRadius(AppConstants.UI.cornerRadius)
+        }
+    }
+
     // MARK: - Calculate Button
     
     private var calculateButton: some View {
@@ -329,7 +390,8 @@ struct FIRECalculatorView: View {
             annualExpenses: expenses,
             expectedReturn: expectedReturn,
             withdrawalRate: withdrawalRate,
-            inflationRate: inflationRate
+            inflationRate: inflationRate,
+            benefitPlans: benefitManager.plans
         )
     }
     
@@ -354,16 +416,22 @@ struct FIRECalculator {
         annualExpenses: Double,
         expectedReturn: Double,
         withdrawalRate: Double,
-        inflationRate: Double
+        inflationRate: Double,
+        benefitPlans: [DefinedBenefitPlan] = []
     ) -> FIREResult {
         
-        // Calculate FIRE number (25x rule adjusted for withdrawal rate)
+        // Calculate FIRE number (25x rule adjusted for withdrawal rate).
+        // Benefit income that starts *at* retirement reduces the required portfolio.
+        // For simplicity we use the plans' nominal benefit values here; the
+        // year-by-year accumulation loop below handles phased-in income.
         let fireNumber = annualExpenses / withdrawalRate
         
         // Calculate annual savings
         let annualSavings = max(0, annualIncome - annualExpenses)
         
-        // Project year by year until reaching FIRE number
+        // Project year by year until reaching the *effective* target.
+        // As each benefit plan kicks in, the required portfolio shrinks by
+        // benefit / withdrawalRate (the capitalised value of that income stream).
         var yearlyProjections: [FIREPathProjection] = []
         var balance = currentSavings
         var age = currentAge
@@ -378,16 +446,23 @@ struct FIRECalculator {
             investmentGains: 0
         ))
         
-        while balance < fireNumber && year < 50 { // Cap at 50 years
+        while year < 50 { // Cap at 50 years
             year += 1
             age += 1
             
-            // Add contributions
+            // Add contributions (inflation-adjusted)
             let inflationAdjustedSavings = annualSavings * pow(1 + inflationRate, Double(year))
             totalContributions += inflationAdjustedSavings
             
             // Apply investment return
             balance = balance * (1 + expectedReturn) + inflationAdjustedSavings
+            
+            // Benefits active this year reduce the amount the portfolio must fund.
+            let activeBenefitIncome = benefitPlans
+                .filter { age >= $0.startAge }
+                .reduce(0.0) { $0 + $1.annualBenefit }
+            let benefitPortfolioEquivalent = activeBenefitIncome / withdrawalRate
+            let effectiveTarget = max(0, fireNumber - benefitPortfolioEquivalent)
             
             yearlyProjections.append(FIREPathProjection(
                 year: year,
@@ -396,13 +471,17 @@ struct FIRECalculator {
                 contributions: totalContributions,
                 investmentGains: balance - totalContributions
             ))
+            
+            if balance >= effectiveTarget { break }
         }
         
         // Calculate milestones
         let milestones = calculateMilestones(
             fireNumber: fireNumber,
             projections: yearlyProjections,
-            currentAge: currentAge
+            currentAge: currentAge,
+            benefitPlans: benefitPlans,
+            withdrawalRate: withdrawalRate
         )
         
         return FIREResult(
@@ -421,18 +500,29 @@ struct FIRECalculator {
     private func calculateMilestones(
         fireNumber: Double,
         projections: [FIREPathProjection],
-        currentAge: Int
+        currentAge: Int,
+        benefitPlans: [DefinedBenefitPlan] = [],
+        withdrawalRate: Double = 0.04
     ) -> [Milestone] {
         let percentages = [0.25, 0.50, 0.75, 1.0]
         var milestones: [Milestone] = []
         
         for percentage in percentages {
-            let targetAmount = fireNumber * percentage
+            let baseTarget = fireNumber * percentage
             
-            if let projection = projections.first(where: { $0.portfolioValue >= targetAmount }) {
+            // Find the first projection where balance meets the benefit-adjusted target.
+            let match = projections.first { proj in
+                let activeBenefits = benefitPlans
+                    .filter { proj.age >= $0.startAge }
+                    .reduce(0.0) { $0 + $1.annualBenefit }
+                let effective = max(0, baseTarget - activeBenefits / withdrawalRate)
+                return proj.portfolioValue >= effective
+            }
+
+            if let projection = match {
                 milestones.append(Milestone(
                     percentage: percentage,
-                    amount: targetAmount,
+                    amount: baseTarget,
                     age: projection.age,
                     yearsFromNow: projection.age - currentAge
                 ))
@@ -546,6 +636,6 @@ struct MilestoneRow: View {
 
 #Preview {
     NavigationView {
-        FIRECalculatorView(portfolioVM: PortfolioViewModel())
+        FIRECalculatorView(portfolioVM: PortfolioViewModel(), benefitManager: DefinedBenefitManager())
     }
 }

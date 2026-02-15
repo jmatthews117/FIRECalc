@@ -30,8 +30,7 @@ struct SettingsView: View {
     private let persistence = PersistenceService.shared
     
     var body: some View {
-        NavigationView {
-            Form {
+        Form {
                 // Retirement Planning Section
                 Section {
                     // Current Age
@@ -343,7 +342,6 @@ struct SettingsView: View {
                 ExportView()
             }
         }
-    }
     
     // MARK: - Computed Properties
 

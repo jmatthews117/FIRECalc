@@ -10,6 +10,7 @@ import SwiftUI
 struct DashboardView: View {
     @StateObject private var portfolioVM = PortfolioViewModel()
     @StateObject private var simulationVM = SimulationViewModel()
+    @StateObject private var benefitManager = DefinedBenefitManager()
     @State private var showingAddAsset = false
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
@@ -314,7 +315,7 @@ struct DashboardView: View {
             }
             .buttonStyle(.plain)
             
-            NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM)) {
+            NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager)) {
                 HStack {
                     Image(systemName: "flag.checkered")
                         .font(.title2)
