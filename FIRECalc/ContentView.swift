@@ -705,7 +705,7 @@ struct SimulationsTab: View {
                 }
             }
             
-            Text("Run on \(result.runDate.formatted())")
+            Text("Run on \(result.runDate.mediumFormatted())")
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -998,7 +998,7 @@ struct AssetDetailView: View {
                         HStack {
                             Text("Last Updated")
                             Spacer()
-                            Text(updated.formatted())
+                            Text(updated.mediumFormatted())
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }

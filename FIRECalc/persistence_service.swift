@@ -219,14 +219,14 @@ class PersistenceService {
 
     // MARK: - UserDefaults (Settings)
     
+    // NOTE: Yahoo Finance requires no API key. These stubs are retained only for
+    // backward-compatibility with any call sites that haven't been cleaned up yet.
     func saveAPIKey(_ key: String) {
-        UserDefaults.standard.set(key, forKey: AppConstants.UserDefaultsKeys.apiKey)
-        print("💾 API key saved (not used with Yahoo Finance)")
+        // No-op — Yahoo Finance needs no API key.
     }
     
     func loadAPIKey() -> String? {
-        let key = UserDefaults.standard.string(forKey: AppConstants.UserDefaultsKeys.apiKey)
-        return key
+        return nil
     }
     
     func saveSettings(

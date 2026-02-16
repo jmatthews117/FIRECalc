@@ -13,6 +13,16 @@ struct GroupedPortfolioView: View {
     @State private var showingBondCalculator = false
     @State private var selectedAsset: Asset?
     @State private var showingAssetDetail = false
+
+    @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.withdrawalPercentage) private var storedWithdrawalRate: Double = 0
+
+    /// Gross FIRE target derived from Settings values, or 0 if not configured.
+    private var retirementTarget: Double {
+        guard storedAnnualSpend > 0 else { return 0 }
+        let rate = storedWithdrawalRate > 0 ? storedWithdrawalRate : 0.04
+        return storedAnnualSpend / rate
+    }
     
     var body: some View {
         ScrollView {
@@ -79,7 +89,7 @@ struct GroupedPortfolioView: View {
                 .foregroundColor(.primary)
             
             // Retirement Progress
-            if portfolioVM.targetRetirementValue > 0 {
+            if retirementTarget > 0 {
                 HStack {
                     Text("Retirement Progress:")
                         .font(.subheadline)
@@ -87,7 +97,7 @@ struct GroupedPortfolioView: View {
                     
                     Spacer()
                     
-                    Text(String(format: "%.1f%%", (portfolioVM.totalValue / portfolioVM.targetRetirementValue) * 100))
+                    Text(String(format: "%.1f%%", (portfolioVM.totalValue / retirementTarget) * 100))
                         .font(.headline)
                         .foregroundColor(.orange)
                 }

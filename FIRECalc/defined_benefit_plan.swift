@@ -126,18 +126,16 @@ struct SocialSecurityEstimator {
         return monthlyBenefit * 12 // Annual benefit
     }
     
-    /// Full Retirement Age based on birth year
+    /// Full Retirement Age based on birth year.
+    /// Simplified to whole years; SSA uses 2-month increments for 1955–1959
+    /// but rounding to 67 for that cohort is conservative and acceptable here.
     static func fullRetirementAge(for birthYear: Int) -> Int {
-        if birthYear <= 1937 {
-            return 65
-        } else if birthYear <= 1942 {
-            return 66
-        } else if birthYear <= 1954 {
-            return 66
-        } else if birthYear <= 1959 {
-            return 66
-        } else {
-            return 67
+        switch birthYear {
+        case ...1937:       return 65
+        case 1938...1942:   return 66  // Technically 65+2mo through 65+10mo
+        case 1943...1954:   return 66
+        case 1955...1959:   return 67  // Technically 66+2mo through 66+10mo
+        default:            return 67
         }
     }
     
@@ -168,6 +166,7 @@ extension SimulationParameters {
 
 // MARK: - Defined Benefit Manager
 
+@MainActor
 class DefinedBenefitManager: ObservableObject {
     @Published var plans: [DefinedBenefitPlan] = []
 

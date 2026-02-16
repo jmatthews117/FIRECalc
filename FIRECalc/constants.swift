@@ -33,17 +33,15 @@ enum AppConstants {
         static let detailedSimulationRuns = 10000
     }
     
-    // MARK: - Alpha Vantage API
+    // MARK: - Price Data API
     enum API {
-        static let alphaVantageBaseURL = "https://www.alphavantage.co/query"
-        static let freeTierDailyLimit = 500  // 500/day for free tier
+        static let priceDataBaseURL = "https://query1.finance.yahoo.com/v8/finance/chart/"
         static let refreshInterval: TimeInterval = 3600  // 1 hour in seconds
-        static let cacheExpiration: TimeInterval = 300  // 5 minutes
+        static let cacheExpiration: TimeInterval = 300   // 5 minutes
     }
     
     // MARK: - User Defaults Keys
     enum UserDefaultsKeys {
-        static let apiKey = "iex_api_key"
         static let lastSyncDate = "last_sync_date"
         static let hasCompletedOnboarding = "has_completed_onboarding"
         static let preferredCurrency = "preferred_currency"
@@ -53,6 +51,13 @@ enum AppConstants {
         static let useHistoricalBootstrap = "use_historical_bootstrap"
         static let autoRefreshPrices = "auto_refresh_prices"
         static let priceRefreshInterval = "price_refresh_interval"
+
+        // Retirement planning — kept in sync with @AppStorage keys in DashboardTabView
+        static let currentAge = "current_age"
+        static let annualSavings = "annual_savings"
+        static let expectedAnnualSpend = "expected_annual_spend"
+        static let withdrawalPercentage = "withdrawal_percentage"
+        static let retirementTarget = "retirement_target"
     }
     
     // MARK: - File Storage
@@ -137,6 +142,26 @@ enum AppConstants {
         static let chartColors: [Color] = [
             .blue, .green, .purple, .orange, .yellow, .pink, .cyan, .brown
         ]
+        
+        /// Returns the canonical traffic-light colour for a Monte Carlo success rate.
+        static func successRateColor(for rate: Double) -> Color {
+            if rate >= 0.9 { return success }
+            if rate >= 0.75 { return warning }
+            return danger
+        }
+    }
+    
+    // MARK: - Simulation Interpretation
+    enum SimulationInterpretation {
+        /// Human-readable verdict for a Monte Carlo success rate.
+        static func summary(for rate: Double) -> String {
+            switch rate {
+            case 0.95...: return "Excellent! Very high confidence your retirement plan will succeed."
+            case 0.85...: return "Good. Strong likelihood of success with some risk of shortfall."
+            case 0.75...: return "Moderate. Consider increasing savings or reducing withdrawal rate."
+            default:      return "Concerning. High risk of running out of money. Review your plan."
+            }
+        }
     }
     
     // MARK: - Validation Rules
@@ -222,7 +247,9 @@ extension Double {
 }
 
 extension Date {
-    func formatted() -> String {
+    /// Medium date + short time, e.g. "Jan 1, 2025, 3:00 PM".
+    /// Named `mediumFormatted()` to avoid shadowing the system `formatted()` API.
+    func mediumFormatted() -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short

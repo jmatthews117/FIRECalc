@@ -288,7 +288,7 @@ struct SnapshotRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(snapshot.date.formatted())
+                Text(snapshot.date.mediumFormatted())
                     .font(.subheadline)
                     .fontWeight(.medium)
                 

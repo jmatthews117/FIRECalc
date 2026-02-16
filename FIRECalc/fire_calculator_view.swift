@@ -96,12 +96,22 @@ struct FIRECalculatorView: View {
         .navigationTitle("FIRE Calculator")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            if viewModel.currentSavings.isEmpty && portfolioVM.totalValue > 0 {
+            // Always sync the current savings from the live portfolio value
+            // so changes made outside this view (price refreshes, new assets,
+            // edits, deletions) are reflected every time the view appears.
+            if portfolioVM.totalValue > 0 {
                 viewModel.currentSavings = String(format: "%.0f", portfolioVM.totalValue)
             }
             // Pull in any change the user may have made in Settings since
             // the last time this view was on screen.
             viewModel.syncFromUserDefaults()
+        }
+        // Keep current savings in sync while the view is visible — e.g. if a
+        // price refresh completes or the user edits an asset in another tab.
+        .onChange(of: portfolioVM.totalValue) { _, newValue in
+            if newValue > 0 {
+                viewModel.currentSavings = String(format: "%.0f", newValue)
+            }
         }
         // Recalculate automatically whenever benefit plans change so the
         // results never show a stale projection.
@@ -445,78 +455,162 @@ struct FIRECalculatorView: View {
     }
     
     // MARK: - Pathway Chart
-    
+
     private func pathwayChart(result: FIREResult) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        // X axis = age, starting at the user's current age.
+        let startAge = result.yearlyProjections.first?.age ?? viewModel.currentAge
+        let endAge   = result.yearlyProjections.last?.age  ?? result.fireAge
+        let xCeiling = endAge + max(2, (endAge - startAge) / 10)
+
+        // Y axis = portfolio value ($), starting at $0 so the exponential
+        // shape of compound growth is fully visible from the origin.
+        let maxPortfolioValue = result.yearlyProjections.map(\.portfolioValue).max() ?? 0
+        let yCeiling = max(result.grossFireNumber, maxPortfolioValue) * 1.1
+
+        return VStack(alignment: .leading, spacing: 12) {
             Text("Path to FIRE")
                 .font(.headline)
-            
+
             Chart {
-                // Portfolio growth line
+                // Smooth portfolio growth curve — X = age, Y = $ value.
+                // Compound growth produces the classic upward-accelerating
+                // (exponential) shape when time runs left-to-right.
                 ForEach(result.yearlyProjections, id: \.year) { projection in
                     LineMark(
                         x: .value("Age", projection.age),
-                        y: .value("Savings", projection.portfolioValue)
+                        y: .value("Portfolio Value", projection.portfolioValue)
                     )
-                    .foregroundStyle(.blue.gradient)
+                    .foregroundStyle(Color.blue)
                     .lineStyle(StrokeStyle(lineWidth: 3))
-                    
-                    PointMark(
-                        x: .value("Age", projection.age),
-                        y: .value("Savings", projection.portfolioValue)
-                    )
-                    .foregroundStyle(.blue)
+                    .interpolationMethod(.catmullRom)
                 }
 
-                // Effective target line — steps down when a benefit plan kicks in.
-                // We draw it as a LineMark so the step-changes are visible.
+                // Area fill beneath the curve for visual depth.
                 ForEach(result.yearlyProjections, id: \.year) { projection in
-                    LineMark(
+                    AreaMark(
                         x: .value("Age", projection.age),
-                        y: .value("Target", projection.effectiveTarget)
+                        yStart: .value("$0", 0),
+                        yEnd: .value("Portfolio Value", projection.portfolioValue)
                     )
-                    .foregroundStyle(.green)
-                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
-                    .interpolationMethod(.stepEnd)
+                    .foregroundStyle(Color.blue.opacity(0.12))
+                    .interpolationMethod(.catmullRom)
                 }
 
-                // Gross (no-benefit) FIRE number shown as a faint reference.
-                if result.benefitIncomeAtFIRE > 0 {
-                    RuleMark(y: .value("Gross FIRE Number", result.grossFireNumber))
-                        .foregroundStyle(.gray.opacity(0.4))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
-                        .annotation(position: .top, alignment: .trailing) {
-                            Text("Without benefits")
+                // Flat horizontal green FIRE target line — zero slope, sits at
+                // the constant effective FIRE number across all ages.
+                RuleMark(y: .value("FIRE Target", result.effectiveFireNumber))
+                    .foregroundStyle(Color.green)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+
+                // Faint grey reference at the gross (no-benefit) target.
+                if result.benefitIncomeAtFIRE > 0,
+                   result.grossFireNumber > result.effectiveFireNumber {
+                    RuleMark(y: .value("Gross FIRE Target", result.grossFireNumber))
+                        .foregroundStyle(Color.gray.opacity(0.4))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                }
+
+                // Vertical dashed marker at the FIRE age crossover point.
+                RuleMark(x: .value("FIRE Age", result.fireAge))
+                    .foregroundStyle(Color.green.opacity(0.3))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    .annotation(position: .top, alignment: .center) {
+                        Text("Age \(result.fireAge)")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color(.systemBackground).opacity(0.9))
+                            .cornerRadius(4)
+                    }
+            }
+            .chartXScale(domain: startAge...xCeiling)
+            .chartYScale(domain: 0...yCeiling)
+            .frame(height: 260)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 6)) { value in
+                    AxisGridLine()
+                    AxisValueLabel {
+                        if let age = value.as(Int.self) {
+                            Text("\(age)")
                                 .font(.caption2)
-                                .foregroundColor(.gray)
-                                .padding(.horizontal, 4)
-                                .background(Color(.systemBackground))
                         }
+                    }
                 }
             }
-            .frame(height: 250)
+            .chartXAxisLabel("Age", alignment: .center)
             .chartYAxis {
-                AxisMarks(position: .leading) { value in
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
+                    AxisGridLine()
                     AxisValueLabel {
                         if let amount = value.as(Double.self) {
                             Text(formatChartValue(amount))
+                                .font(.caption2)
                         }
                     }
                 }
             }
 
+            // Labels for the two horizontal rules (cleaner than in-chart annotations).
+            HStack {
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(result.effectiveFireNumber.toCurrency())
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.green)
+                        Text(result.benefitIncomeAtFIRE > 0 ? "FIRE target (adjusted)" : "FIRE target")
+                            .font(.caption2)
+                            .foregroundColor(.green)
+                    }
+                    if result.benefitIncomeAtFIRE > 0,
+                       result.grossFireNumber > result.effectiveFireNumber {
+                        HStack(spacing: 4) {
+                            Text(result.grossFireNumber.toCurrency())
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                            Text("without benefits")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .padding(.top, 2)
+
             // Legend
-            HStack(spacing: 16) {
-                Label("Portfolio", systemImage: "line.diagonal")
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                Label(result.benefitIncomeAtFIRE > 0 ? "Target (benefit-adjusted)" : "FIRE Target", systemImage: "line.diagonal")
-                    .font(.caption)
-                    .foregroundColor(.green)
-                if result.benefitIncomeAtFIRE > 0 {
-                    Label("Gross target", systemImage: "line.diagonal")
+            HStack(spacing: 20) {
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.blue)
+                        .frame(width: 20, height: 3)
+                    Text("Portfolio Value")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
+                }
+
+                HStack(spacing: 6) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.green)
+                        .frame(width: 20, height: 3)
+                    Text(result.benefitIncomeAtFIRE > 0 ? "FIRE Target (adjusted)" : "FIRE Target")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                if result.benefitIncomeAtFIRE > 0,
+                   result.grossFireNumber > result.effectiveFireNumber {
+                    HStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color.gray.opacity(0.6))
+                            .frame(width: 20, height: 3)
+                        Text("Gross Target")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }

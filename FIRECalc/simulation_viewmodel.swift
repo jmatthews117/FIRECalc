@@ -2,7 +2,7 @@
 //  simulation_viewmodel.swift
 //  FIRECalc
 //
-//  MODIFIED - Added custom returns support
+//  Controls Monte Carlo simulation state and parameter management.
 //
 
 import Foundation
@@ -99,83 +99,35 @@ class SimulationViewModel: ObservableObject {
     }
     
     func runQuickSimulation(portfolio: Portfolio) async {
+        // Temporarily swap to a reduced run count, restore afterwards.
         let originalRuns = parameters.numberOfRuns
-        parameters = SimulationParameters(
-            numberOfRuns: AppConstants.Simulation.quickSimulationRuns,
-            timeHorizonYears: parameters.timeHorizonYears,
-            inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: !useCustomReturns,
-            initialPortfolioValue: portfolio.totalValue,
-            monthlyContribution: parameters.monthlyContribution,
-            yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig,
-            customReturns: useCustomReturns ? customReturns : nil,
-            customVolatility: useCustomReturns ? customVolatility : nil
-        )
+        parameters.numberOfRuns = AppConstants.Simulation.quickSimulationRuns
+        parameters.useHistoricalBootstrap = !useCustomReturns
+        if useCustomReturns {
+            parameters.customReturns = customReturns
+            parameters.customVolatility = customVolatility
+        }
         
         await runSimulation(portfolio: portfolio)
         
-        parameters = SimulationParameters(
-            numberOfRuns: originalRuns,
-            timeHorizonYears: parameters.timeHorizonYears,
-            inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: !useCustomReturns,
-            initialPortfolioValue: portfolio.totalValue,
-            monthlyContribution: parameters.monthlyContribution,
-            yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig,
-            customReturns: useCustomReturns ? customReturns : nil,
-            customVolatility: useCustomReturns ? customVolatility : nil
-        )
+        // Restore original run count (other fields were set correctly by runSimulation).
+        parameters.numberOfRuns = originalRuns
     }
     
     // MARK: - Parameter Updates
-    
+
     func updateWithdrawalRate(_ rate: Double) {
         var config = parameters.withdrawalConfig
         config.withdrawalRate = rate
-        parameters = SimulationParameters(
-            numberOfRuns: parameters.numberOfRuns,
-            timeHorizonYears: parameters.timeHorizonYears,
-            inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: !useCustomReturns,
-            initialPortfolioValue: parameters.initialPortfolioValue,
-            monthlyContribution: parameters.monthlyContribution,
-            yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: config,
-            customReturns: useCustomReturns ? customReturns : nil,
-            customVolatility: useCustomReturns ? customVolatility : nil
-        )
+        parameters.withdrawalConfig = config
     }
     
     func updateTimeHorizon(_ years: Int) {
-        parameters = SimulationParameters(
-            numberOfRuns: parameters.numberOfRuns,
-            timeHorizonYears: years,
-            inflationRate: parameters.inflationRate,
-            useHistoricalBootstrap: !useCustomReturns,
-            initialPortfolioValue: parameters.initialPortfolioValue,
-            monthlyContribution: parameters.monthlyContribution,
-            yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig,
-            customReturns: useCustomReturns ? customReturns : nil,
-            customVolatility: useCustomReturns ? customVolatility : nil
-        )
+        parameters.timeHorizonYears = years
     }
     
     func updateInflationRate(_ rate: Double) {
-        parameters = SimulationParameters(
-            numberOfRuns: parameters.numberOfRuns,
-            timeHorizonYears: parameters.timeHorizonYears,
-            inflationRate: rate,
-            useHistoricalBootstrap: !useCustomReturns,
-            initialPortfolioValue: parameters.initialPortfolioValue,
-            monthlyContribution: parameters.monthlyContribution,
-            yearsUntilRetirement: parameters.yearsUntilRetirement,
-            withdrawalConfig: parameters.withdrawalConfig,
-            customReturns: useCustomReturns ? customReturns : nil,
-            customVolatility: useCustomReturns ? customVolatility : nil
-        )
+        parameters.inflationRate = rate
     }
     
     // MARK: - Computed Properties
@@ -186,14 +138,7 @@ class SimulationViewModel: ObservableObject {
     
     var successRateColor: Color {
         guard let result = currentResult else { return .gray }
-        
-        if result.successRate >= 0.9 {
-            return AppConstants.Colors.success
-        } else if result.successRate >= 0.75 {
-            return AppConstants.Colors.warning
-        } else {
-            return AppConstants.Colors.danger
-        }
+        return AppConstants.Colors.successRateColor(for: result.successRate)
     }
     
     var successRateText: String {

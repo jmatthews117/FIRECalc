@@ -400,25 +400,11 @@ struct SimulationResultsView: View {
     // MARK: - Helper Properties & Functions
     
     private var successRateColor: Color {
-        if result.successRate >= 0.9 {
-            return .green
-        } else if result.successRate >= 0.75 {
-            return .orange
-        } else {
-            return .red
-        }
+        AppConstants.Colors.successRateColor(for: result.successRate)
     }
     
     private var successInterpretation: String {
-        if result.successRate >= 0.95 {
-            return "Excellent! Very high confidence your retirement plan will succeed."
-        } else if result.successRate >= 0.85 {
-            return "Good. Strong likelihood of success with some risk of shortfall."
-        } else if result.successRate >= 0.75 {
-            return "Moderate. Consider increasing savings or reducing withdrawal rate."
-        } else {
-            return "Concerning. High risk of running out of money. Review your plan."
-        }
+        AppConstants.SimulationInterpretation.summary(for: result.successRate)
     }
     
     // FIXED: Improved histogram bucketing algorithm with $0 bucket at x-axis origin

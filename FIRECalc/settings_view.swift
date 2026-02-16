@@ -483,22 +483,22 @@ struct SettingsView: View {
         useHistoricalBootstrap = settings.useHistoricalBootstrap
         
         // Load retirement settings
-        let savedAge = UserDefaults.standard.integer(forKey: "current_age")
+        let savedAge = UserDefaults.standard.integer(forKey: AppConstants.UserDefaultsKeys.currentAge)
         if savedAge > 0 {
             currentAge = String(savedAge)
         }
 
-        let savedSavings = UserDefaults.standard.double(forKey: "annual_savings")
+        let savedSavings = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.annualSavings)
         if savedSavings > 0 {
             annualSavings = formatNumber(Int(savedSavings))
         }
         
-        let savedSpend = UserDefaults.standard.double(forKey: "expected_annual_spend")
+        let savedSpend = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.expectedAnnualSpend)
         if savedSpend > 0 {
             expectedAnnualSpend = formatNumber(Int(savedSpend))
         }
         
-        let savedWithdrawalPct = UserDefaults.standard.double(forKey: "withdrawal_percentage")
+        let savedWithdrawalPct = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.withdrawalPercentage)
         if savedWithdrawalPct > 0 {
             withdrawalPercentage = savedWithdrawalPct
         }
@@ -515,22 +515,22 @@ struct SettingsView: View {
         
         // Save retirement settings
         if let age = Int(currentAge), age > 0 {
-            UserDefaults.standard.set(age, forKey: "current_age")
+            UserDefaults.standard.set(age, forKey: AppConstants.UserDefaultsKeys.currentAge)
         } else {
-            UserDefaults.standard.removeObject(forKey: "current_age")
+            UserDefaults.standard.removeObject(forKey: AppConstants.UserDefaultsKeys.currentAge)
         }
 
         let savingsValue = parseFormattedNumber(annualSavings) ?? 0
-        UserDefaults.standard.set(savingsValue, forKey: "annual_savings")
+        UserDefaults.standard.set(savingsValue, forKey: AppConstants.UserDefaultsKeys.annualSavings)
 
         if let spend = parseFormattedNumber(expectedAnnualSpend) {
-            UserDefaults.standard.set(spend, forKey: "expected_annual_spend")
+            UserDefaults.standard.set(spend, forKey: AppConstants.UserDefaultsKeys.expectedAnnualSpend)
 
             let target = spend / withdrawalPercentage
-            UserDefaults.standard.set(target, forKey: "retirement_target")
+            UserDefaults.standard.set(target, forKey: AppConstants.UserDefaultsKeys.retirementTarget)
         }
         
-        UserDefaults.standard.set(withdrawalPercentage, forKey: "withdrawal_percentage")
+        UserDefaults.standard.set(withdrawalPercentage, forKey: AppConstants.UserDefaultsKeys.withdrawalPercentage)
     }
     
     private func resetAllData() {
