@@ -73,25 +73,35 @@ struct FIRECalculatorView: View {
     @ObservedObject var viewModel: FIRECalculatorViewModel
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Input Section
-                inputSection
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Input Section
+                    inputSection
 
-                // Guaranteed income from pensions / Social Security
-                benefitIncomeCard
+                    // Guaranteed income from pensions / Social Security
+                    benefitIncomeCard
 
-                // Calculate Button
-                calculateButton
-                
-                // Results Section
-                if let result = viewModel.calculationResult {
-                    resultsSection(result: result)
-                    pathwayChart(result: result)
-                    milestonesSection(result: result)
+                    // Calculate Button
+                    calculateButton
+                        .id("calculateButton")
+
+                    // Results Section
+                    if let result = viewModel.calculationResult {
+                        resultsSection(result: result)
+                        pathwayChart(result: result)
+                        milestonesSection(result: result)
+                    }
+                }
+                .padding()
+            }
+            .onChange(of: viewModel.calculationResult?.fireYear) { _, newValue in
+                if newValue != nil {
+                    withAnimation {
+                        proxy.scrollTo("calculateButton", anchor: .top)
+                    }
                 }
             }
-            .padding()
         }
         .navigationTitle("FIRE Calculator")
         .navigationBarTitleDisplayMode(.inline)
