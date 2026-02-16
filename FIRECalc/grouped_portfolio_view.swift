@@ -32,6 +32,9 @@ struct GroupedPortfolioView: View {
             }
             .padding()
         }
+        .refreshable {
+            await portfolioVM.refreshPrices()
+        }
         .navigationTitle("Portfolio")
         .toolbar {
             if selectedAssetClass != nil {
@@ -58,9 +61,18 @@ struct GroupedPortfolioView: View {
     
     private var portfolioSummaryCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Total Value")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            HStack {
+                Text("Total Value")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                if portfolioVM.isUpdatingPrices {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                }
+            }
             
             Text(portfolioVM.totalValue.toCurrency())
                 .font(.system(size: 40, weight: .bold, design: .rounded))
@@ -104,6 +116,12 @@ struct GroupedPortfolioView: View {
                         .font(.headline)
                         .foregroundColor(.orange)
                 }
+            }
+
+            if portfolioVM.hasAssets {
+                Text("Pull to refresh")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .padding()
