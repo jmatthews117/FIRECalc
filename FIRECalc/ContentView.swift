@@ -55,6 +55,14 @@ struct DashboardTabView: View {
     @ObservedObject var benefitManager: DefinedBenefitManager
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
+
+    // @AppStorage gives SwiftUI a live dependency on these UserDefaults keys,
+    // so the dashboard re-renders automatically whenever Settings writes new values.
+    @AppStorage("current_age") private var storedCurrentAge: Int = 0
+    @AppStorage("annual_savings") private var storedAnnualSavings: Double = 0
+    @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double = 0
+    @AppStorage("withdrawal_percentage") private var storedWithdrawalRate: Double = 0
+    @AppStorage("retirement_target") private var storedRetirementTarget: Double = 0
     
     var body: some View {
         NavigationView {
@@ -62,7 +70,7 @@ struct DashboardTabView: View {
                 VStack(spacing: 24) {
                     portfolioOverviewCard
                     
-                    if savedRetirementTarget > 0 && portfolioVM.hasAssets {
+                    if grossRetirementTarget > 0 && portfolioVM.hasAssets {
                         retirementProgressCard
                     }
                     
@@ -139,127 +147,222 @@ struct DashboardTabView: View {
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
     
-    // MARK: - FIRE Helpers (reads persisted settings)
+    // MARK: - FIRE Helpers (backed by @AppStorage for live reactivity)
 
     private var savedCurrentAge: Int? {
-        let age = UserDefaults.standard.integer(forKey: "current_age")
-        return age > 0 ? age : nil
+        storedCurrentAge > 0 ? storedCurrentAge : nil
     }
 
     private var savedAnnualSavings: Double {
-        UserDefaults.standard.double(forKey: "annual_savings")
+        storedAnnualSavings
     }
 
-    private var savedRetirementTarget: Double {
-        UserDefaults.standard.double(forKey: "retirement_target")
+    private var savedWithdrawalRate: Double {
+        storedWithdrawalRate > 0 ? storedWithdrawalRate : 0.04
     }
 
-    /// Years until portfolio hits the retirement target, accounting for when
-    /// Social Security, pension, and other defined-benefit income kicks in.
-    /// Each active plan reduces the required portfolio by its annual benefit
-    /// divided by the withdrawal rate, so the effective target shrinks over
-    /// time as income streams come online.
-    private var yearsToFIRE: Int? {
-        let target = savedRetirementTarget
-        guard target > 0, portfolioVM.hasAssets else { return nil }
-        let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
-        guard annualReturn > 0 else { return nil }
+    private var savedAnnualSpend: Double {
+        storedAnnualSpend
+    }
+
+    /// Gross FIRE target (spend ÷ withdrawal rate), before any benefit reduction.
+    private var grossRetirementTarget: Double {
+        guard storedAnnualSpend > 0 else {
+            // Fall back to the legacy key written by older Settings versions.
+            return storedRetirementTarget
+        }
+        return storedAnnualSpend / savedWithdrawalRate
+    }
+
+    // MARK: - FIRE Projection (mirrors SettingsView.fireProjection exactly)
+
+    struct FIREProjection {
+        let years: Int
+        let target: Double
+
+        var yearsLabel: String {
+            years == 1 ? "1 year" : "\(years) years"
+        }
+    }
+
+    /// Reduces the gross FIRE target by the capitalised value of all benefit
+    /// plans that are already active at `age`.
+    private func effectiveTarget(grossTarget: Double, age: Int) -> Double {
+        let activeBenefitIncome = benefitManager.plans
+            .filter { age >= $0.startAge }
+            .reduce(0.0) { $0 + $1.annualBenefit }
+        return max(0, grossTarget - activeBenefitIncome / savedWithdrawalRate)
+    }
+
+    /// Projects how many years until the current portfolio (plus annual savings,
+    /// compounded at the portfolio's weighted expected return) reaches the FIRE
+    /// target, accounting for guaranteed income streams that reduce the required
+    /// portfolio once they begin.  Mirrors SettingsView.fireProjection.
+    private var fireProjection: FIREProjection? {
+        let gross = grossRetirementTarget
+        guard gross > 0, portfolioVM.hasAssets else { return nil }
         guard let startAge = savedCurrentAge else { return nil }
 
         let currentValue = portfolioVM.totalValue
-        if currentValue >= target { return 0 }
+        let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
+        let savings = savedAnnualSavings
 
-        let withdrawalRate = UserDefaults.standard.double(forKey: "withdrawal_rate")
-            .nonZeroOrDefault(0.04)
+        // Year-0 check: benefits that are already active may already cover everything.
+        let initialEffective = effectiveTarget(grossTarget: gross, age: startAge)
+        if currentValue >= initialEffective {
+            return FIREProjection(years: 0, target: initialEffective)
+        }
 
         var value = currentValue
         for year in 1...100 {
-            value = value * (1 + annualReturn) + savedAnnualSavings
-
-            // Sum the annual benefit of every plan whose start age has been reached.
-            let activeBenefitIncome = benefitManager.plans
-                .filter { (startAge + year) >= $0.startAge }
-                .reduce(0.0) { $0 + $1.annualBenefit }
-
-            // Each dollar of perpetual income offsets portfolio need by 1/withdrawalRate.
-            let effectiveTarget = max(0, target - activeBenefitIncome / withdrawalRate)
-
-            if value >= effectiveTarget { return year }
+            value = value * (1 + annualReturn) + savings
+            let age = startAge + year
+            let target = effectiveTarget(grossTarget: gross, age: age)
+            if value >= target {
+                return FIREProjection(years: year, target: target)
+            }
         }
         return nil
     }
 
-    /// Summary of defined-benefit income plans, shown in the progress card.
-    private var benefitIncomeDescription: String? {
-        guard !benefitManager.plans.isEmpty else { return nil }
-        let total = benefitManager.plans.reduce(0.0) { $0 + $1.annualBenefit }
-        return total.toCurrency() + "/yr in benefits"
-    }
+    // MARK: - Retirement Progress Card
 
     private var retirementProgressCard: some View {
-        let target = savedRetirementTarget
-        let progress = target > 0 ? min(1.0, max(0.0, portfolioVM.totalValue / target)) : 0
+        let gross = grossRetirementTarget
+        // Use the benefit-adjusted target at the projected FIRE age for the
+        // progress bar, so it matches what Settings shows as the portfolio goal.
+        let displayTarget = fireProjection?.target ?? gross
+        let progress = displayTarget > 0
+            ? min(1.0, max(0.0, portfolioVM.totalValue / displayTarget))
+            : 0.0
 
         return VStack(alignment: .leading, spacing: 12) {
+            // Header
             HStack {
                 Image(systemName: "flag.checkered")
                     .font(.title2)
                     .foregroundColor(.orange)
-
-                Text("Retirement Progress")
+                Text("Projected FIRE Timeline")
                     .font(.headline)
-
+                    .fontWeight(.semibold)
                 Spacer()
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("\(Int(progress * 100))%")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(.orange)
+            if let projection = fireProjection {
+                // Years-to-FIRE + Retirement Age row (mirrors Settings layout)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Years to FIRE")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(projection.yearsLabel)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.orange)
+                    }
 
                     Spacer()
 
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("Goal: \(target.toCurrency())")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        if let years = yearsToFIRE {
-                            if years == 0 {
-                                Text("Already funded! 🎉")
-                                    .font(.caption)
-                                    .foregroundColor(.green)
-                            } else {
-                                Text("~\(years) yr\(years == 1 ? "" : "s") to FIRE")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-
-                                if let age = savedCurrentAge {
-                                    Text("Retire at age ~\(age + years)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                if let benefitNote = benefitIncomeDescription {
-                                    Label(benefitNote, systemImage: "building.columns")
-                                        .font(.caption2)
-                                        .foregroundColor(.blue)
-                                }
-                            }
+                    if let age = savedCurrentAge {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("Retirement Age")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("\(age + projection.years)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.orange)
                         }
                     }
                 }
 
-                ProgressView(value: progress)
-                    .tint(.orange)
-                    .scaleEffect(x: 1, y: 2, anchor: .center)
+                // Three-column detail row (mirrors Settings layout)
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Current Portfolio")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(portfolioVM.totalValue.toCurrency())
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .center, spacing: 2) {
+                        Text("Expected Return")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(portfolioVM.portfolio.weightedExpectedReturn.toPercent())
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.green)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Portfolio Target")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(projection.target.toCurrency())
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                }
+
+                // Benefit-reduction note (mirrors Settings layout)
+                if !benefitManager.plans.isEmpty, savedAnnualSpend > 0 {
+                    let reduction = gross - projection.target
+                    if reduction > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "building.columns.fill")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                            Text("Guaranteed income reduces your target by \(reduction.toCurrency())")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+            } else {
+                Text(portfolioVM.hasAssets
+                     ? "Set your age and annual spending in Settings to see your FIRE timeline."
+                     : "Add assets and configure Settings to see your projected FIRE timeline.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // Progress bar — always shown when there is a gross target
+            if gross > 0 {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("\(Int(progress * 100))% funded")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("Goal: \(displayTarget.toCurrency())")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.orange.opacity(0.2))
+                                .frame(height: 8)
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.orange)
+                                .frame(width: geo.size.width * progress, height: 8)
+                        }
+                    }
+                    .frame(height: 8)
+                }
+                .padding(.top, 4)
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.orange.opacity(0.08))
         .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
     }
     
     private var quickActionsCard: some View {
