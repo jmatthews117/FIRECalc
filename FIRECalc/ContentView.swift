@@ -99,7 +99,7 @@ struct DashboardTabView: View {
             }
             .sheet(isPresented: $showingResults) {
                 if let result = simulationVM.currentResult {
-                    SimulationResultsView(result: result)
+                    SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
                 }
             }
         }
@@ -569,7 +569,7 @@ struct SimulationsTab: View {
             }
             .sheet(isPresented: $showingResults) {
                 if let result = simulationVM.currentResult {
-                    SimulationResultsView(result: result)
+                    SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
                 }
             }
             .sheet(isPresented: $showingManualReturns) {

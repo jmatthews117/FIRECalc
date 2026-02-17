@@ -10,6 +10,11 @@ import Charts
 
 struct SimulationResultsView: View {
     let result: SimulationResult
+    /// Pass the live portfolio so the strategy-comparison engine can re-run
+    /// simulations against the real asset weights.  When nil (e.g. history
+    /// results loaded from disk) the comparison section is hidden.
+    var portfolio: Portfolio?
+
     @Environment(\.dismiss) private var dismiss
     @State private var showHistogramFullScreen = false
     @State private var showSpaghettiFullScreen = false
@@ -40,7 +45,32 @@ struct SimulationResultsView: View {
                     // Spaghetti Chart of All Paths
                     spaghettiChartSection
                         .onTapGesture { showSpaghettiFullScreen = true }
-                    
+
+                    // ── NEW: Sequence of Returns Risk ─────────────────────
+                    if !result.allSimulationRuns.isEmpty {
+                        SequenceOfReturnsView(
+                            runs: result.allSimulationRuns,
+                            initialPortfolioValue: result.parameters.initialPortfolioValue,
+                            timeHorizonYears: result.parameters.timeHorizonYears
+                        )
+                    }
+
+                    // ── NEW: Ruin Year Distribution ───────────────────────
+                    if !result.allSimulationRuns.isEmpty {
+                        RuinYearDistributionView(
+                            runs: result.allSimulationRuns,
+                            timeHorizonYears: result.parameters.timeHorizonYears
+                        )
+                    }
+
+                    // ── NEW: Strategy Comparison ──────────────────────────
+                    if let portfolio {
+                        StrategyComparisonView(
+                            baseResult: result,
+                            portfolio: portfolio
+                        )
+                    }
+
                     // Detailed Statistics
                     detailedStats
                 }
@@ -587,6 +617,6 @@ struct ImprovedHistogramBucket: Identifiable {
 }
 
 #Preview {
-    SimulationResultsView(result: .sample)
+    SimulationResultsView(result: .sample, portfolio: Portfolio(name: "Preview"))
 }
 
