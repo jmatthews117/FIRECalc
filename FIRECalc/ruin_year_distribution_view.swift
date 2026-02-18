@@ -15,8 +15,8 @@ import Charts
 
 private struct RuinBucket: Identifiable {
     let id = UUID()
-    let yearLabel: String   // e.g. "Year 18"
-    let midYear: Int        // for x-axis positioning
+    let startYear: Int      // first year of this band (e.g. 1, 6, 11…)
+    let midYear: Int        // for x-axis bar placement
     let count: Int          // number of failed runs in this bucket
     let fraction: Double    // count / totalFailed
 }
@@ -96,6 +96,11 @@ struct RuinYearDistributionView: View {
 
     // MARK: - Histogram chart
 
+    /// Tick positions: 0, 5, 10, … timeHorizonYears
+    private var xAxisTicks: [Int] {
+        stride(from: 0, through: timeHorizonYears, by: bucketSize).map { $0 }
+    }
+
     private var chart: some View {
         Chart(buckets) { bucket in
             BarMark(
@@ -105,29 +110,23 @@ struct RuinYearDistributionView: View {
             )
             .foregroundStyle(barColor(for: bucket.midYear).gradient)
             .cornerRadius(4)
-
-            // Annotate bars that hold ≥ 10 % of total failures
-            if bucket.fraction >= 0.10 {
-                BarMark(
-                    x: .value("Year Band", bucket.midYear),
-                    y: .value("Failed Runs", bucket.count),
-                    width: .fixed(barWidth)
-                )
-                .annotation(position: .top, alignment: .center) {
+            .annotation(position: .top, alignment: bucket.startYear == 1 ? .leading : .center, spacing: 2) {
+                if bucket.fraction >= 0.10 {
                     Text("\(Int(bucket.fraction * 100))%")
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                 }
-                .foregroundStyle(.clear)
             }
         }
+        // Anchor the x-axis to 0…timeHorizonYears so ticks always cover the full period.
+        .chartXScale(domain: 0...timeHorizonYears)
         .chartXAxis {
-            AxisMarks(values: buckets.map(\.midYear)) { value in
+            AxisMarks(values: xAxisTicks) { value in
                 AxisGridLine()
                 AxisValueLabel {
                     if let y = value.as(Int.self) {
-                        Text("Yr \(y)")
+                        Text("\(y)")
                             .font(.caption2)
                     }
                 }
@@ -255,7 +254,8 @@ struct RuinYearDistributionView: View {
         let earlyRuinCount = ruinYears.filter { $0 <= halfHorizon }.count
         let lateRuinCount  = total - earlyRuinCount
 
-        // Build 5-year buckets
+        // Build 5-year buckets across the full horizon (including zero-count bands
+        // so the caller can decide whether to skip them when rendering bar marks).
         var buckets: [RuinBucket] = []
         var low = 1
         while low <= timeHorizonYears {
@@ -264,7 +264,7 @@ struct RuinYearDistributionView: View {
             let count = ruinYears.filter { $0 >= low && $0 <= high }.count
             if count > 0 {
                 buckets.append(RuinBucket(
-                    yearLabel: "Yr \(low)–\(high)",
+                    startYear: low,
                     midYear: midYear,
                     count: count,
                     fraction: Double(count) / Double(total)
