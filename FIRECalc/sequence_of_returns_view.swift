@@ -133,20 +133,10 @@ struct SequenceOfReturnsView: View {
                         .foregroundColor(.secondary)
                 }
 
-            // ── Danger zone label ─────────────────────────────────────────
+            // ── Danger zone boundary line ─────────────────────────────────
             RuleMark(x: .value("Danger End", dangerZoneYears))
                 .foregroundStyle(Color.red.opacity(0.4))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                .annotation(position: .top, alignment: .center) {
-                    Text("⚠︎ Danger\nZone")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.red)
-                        .padding(.horizontal, 4)
-                        .background(Color(.systemBackground).opacity(0.85))
-                        .cornerRadius(4)
-                }
         }
         .chartForegroundStyleScale([
             ReturnCohort.poorStart.rawValue: ReturnCohort.poorStart.color,
@@ -168,6 +158,22 @@ struct SequenceOfReturnsView: View {
         }
         .frame(height: 240)
         .chartLegend(position: .bottom, alignment: .leading, spacing: 8)
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                if let xPos = proxy.position(forX: dangerZoneYears / 2) {
+                    Text("⚠︎ Danger Zone")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color(.systemBackground).opacity(0.85))
+                        .cornerRadius(4)
+                        .position(x: xPos + geo[proxy.plotFrame!].minX,
+                                  y: geo[proxy.plotFrame!].minY + 16)
+                }
+            }
+        }
     }
 
     // MARK: - Success-rate pills
