@@ -26,6 +26,7 @@ struct SettingsView: View {
 
     @State private var showingResetConfirmation = false
     @State private var showingExportSheet = false
+    @State private var showingDisclaimer = false
     
     private let persistence = PersistenceService.shared
     
@@ -330,6 +331,11 @@ struct SettingsView: View {
                         Text("\(AppConstants.appVersion) (\(AppConstants.buildNumber))")
                             .foregroundColor(.secondary)
                     }
+                    Button {
+                        showingDisclaimer = true
+                    } label: {
+                        Label("Legal Disclaimer", systemImage: "exclamationmark.shield")
+                    }
                 } header: {
                     Text("About")
                 }
@@ -359,6 +365,9 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showingExportSheet) {
                 ExportView()
+            }
+            .sheet(isPresented: $showingDisclaimer) {
+                LegalDisclaimerView()
             }
         }
     
@@ -710,6 +719,48 @@ struct ExportView: View {
     }
 }
 
+// MARK: - Legal Disclaimer View
+
+struct LegalDisclaimerView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Important Notice").font(.headline)
+                    Text("This app and its contents are provided for informational and educational purposes only. Nothing in this app constitutes financial, investment, tax, accounting, or legal advice.")
+                    Text("No Professional Advice").font(.subheadline).fontWeight(.semibold)
+                    Text("All calculations, simulations, and projections are estimates based on user-provided inputs and assumptions. They are not guarantees of future results. Past performance is not indicative of future returns.")
+                    Text("No Fiduciary Relationship").font(.subheadline).fontWeight(.semibold)
+                    Text("Use of this app does not create a fiduciary or advisory relationship. You should consult a qualified financial professional before making decisions.")
+                    Text("Assumptions and Data").font(.subheadline).fontWeight(.semibold)
+                    Text("Results depend on assumptions that may be inaccurate or change over time, including market returns, inflation, taxes, and personal circumstances. Data may be delayed or contain errors.")
+                    Text("Limitation of Liability").font(.subheadline).fontWeight(.semibold)
+                    Text("To the maximum extent permitted by law, the developer and contributors disclaim all liability for any loss or damage arising from the use of or reliance on this app. You use the app at your own risk.")
+                    Text("No Endorsements").font(.subheadline).fontWeight(.semibold)
+                    Text("References to third-party data providers or links are provided for convenience and do not constitute endorsement or warranty.")
+                    Text("By using this app, you acknowledge and agree to these terms.")
+                }
+                .padding()
+            }
+            .navigationTitle("Legal Disclaimer")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
 #Preview {
     SettingsView(portfolioVM: PortfolioViewModel(), benefitManager: DefinedBenefitManager())
 }
+#Preview {
+    LegalDisclaimerView()
+}
+
