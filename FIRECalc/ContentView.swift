@@ -11,38 +11,44 @@ struct ContentView: View {
     @StateObject private var portfolioVM = PortfolioViewModel()
     @StateObject private var simulationVM = SimulationViewModel()
     @StateObject private var benefitManager = DefinedBenefitManager()
+    @State private var selectedTab: Int = 0
     
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             // Dashboard Tab
-            DashboardTabView(portfolioVM: portfolioVM, simulationVM: simulationVM, benefitManager: benefitManager)
+            DashboardTabView(portfolioVM: portfolioVM, simulationVM: simulationVM, benefitManager: benefitManager, selectedTab: $selectedTab)
                 .tabItem {
                     Label("Dashboard", systemImage: "chart.pie.fill")
                 }
+                .tag(0)
             
             // Portfolio Tab
             PortfolioTabView(portfolioVM: portfolioVM)
                 .tabItem {
                     Label("Portfolio", systemImage: "briefcase.fill")
                 }
+                .tag(1)
             
-            // Simulations Tab
-            SimulationsTab(portfolioVM: portfolioVM, simulationVM: simulationVM)
+            // FIRE Calculator Tab
+            FIRECalculatorTabView(portfolioVM: portfolioVM, simulationVM: simulationVM, benefitManager: benefitManager)
                 .tabItem {
-                    Label("Simulations", systemImage: "waveform.path.ecg")
+                    Label("FIRE Calc", systemImage: "flag.checkered")
                 }
+                .tag(2)
             
             // Tools Tab
             ToolsTabView(portfolioVM: portfolioVM, simulationVM: simulationVM, benefitManager: benefitManager)
                 .tabItem {
                     Label("Tools", systemImage: "wrench.and.screwdriver.fill")
                 }
+                .tag(3)
             
             // Settings Tab
             SettingsTabView(portfolioVM: portfolioVM, benefitManager: benefitManager)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
+                .tag(4)
         }
     }
 }
@@ -53,15 +59,12 @@ struct DashboardTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
+    @Binding var selectedTab: Int
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
 
-    // @AppStorage gives SwiftUI a live dependency on these UserDefaults keys,
-    // so the dashboard re-renders automatically whenever Settings writes new values.
-    @AppStorage("current_age") private var storedCurrentAge: Int = 0
-    @AppStorage("annual_savings") private var storedAnnualSavings: Double = 0
+    // Used only to decide whether to show the FIRE timeline card.
     @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double = 0
-    @AppStorage("withdrawal_percentage") private var storedWithdrawalRate: Double = 0
     @AppStorage("retirement_target") private var storedRetirementTarget: Double = 0
     
     var body: some View {
@@ -70,7 +73,7 @@ struct DashboardTabView: View {
                 VStack(spacing: 24) {
                     portfolioOverviewCard
                     
-                    if grossRetirementTarget > 0 && portfolioVM.hasAssets {
+                    if (storedAnnualSpend > 0 || storedRetirementTarget > 0) && portfolioVM.hasAssets {
                         retirementProgressCard
                     }
                     
@@ -147,222 +150,19 @@ struct DashboardTabView: View {
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
     
-    // MARK: - FIRE Helpers (backed by @AppStorage for live reactivity)
-
-    private var savedCurrentAge: Int? {
-        storedCurrentAge > 0 ? storedCurrentAge : nil
-    }
-
-    private var savedAnnualSavings: Double {
-        storedAnnualSavings
-    }
-
-    private var savedWithdrawalRate: Double {
-        storedWithdrawalRate > 0 ? storedWithdrawalRate : 0.04
-    }
-
-    private var savedAnnualSpend: Double {
-        storedAnnualSpend
-    }
-
-    /// Gross FIRE target (spend ÷ withdrawal rate), before any benefit reduction.
-    private var grossRetirementTarget: Double {
-        guard storedAnnualSpend > 0 else {
-            // Fall back to the legacy key written by older Settings versions.
-            return storedRetirementTarget
-        }
-        return storedAnnualSpend / savedWithdrawalRate
-    }
-
-    // MARK: - FIRE Projection (mirrors SettingsView.fireProjection exactly)
-
-    struct FIREProjection {
-        let years: Int
-        let target: Double
-
-        var yearsLabel: String {
-            years == 1 ? "1 year" : "\(years) years"
-        }
-    }
-
-    /// Reduces the gross FIRE target by the capitalised value of all benefit
-    /// plans that are already active at `age`.
-    private func effectiveTarget(grossTarget: Double, age: Int) -> Double {
-        let activeBenefitIncome = benefitManager.plans
-            .filter { age >= $0.startAge }
-            .reduce(0.0) { $0 + $1.annualBenefit }
-        return max(0, grossTarget - activeBenefitIncome / savedWithdrawalRate)
-    }
-
-    /// Projects how many years until the current portfolio (plus annual savings,
-    /// compounded at the portfolio's weighted expected return) reaches the FIRE
-    /// target, accounting for guaranteed income streams that reduce the required
-    /// portfolio once they begin.  Mirrors SettingsView.fireProjection.
-    private var fireProjection: FIREProjection? {
-        let gross = grossRetirementTarget
-        guard gross > 0, portfolioVM.hasAssets else { return nil }
-        guard let startAge = savedCurrentAge else { return nil }
-
-        let currentValue = portfolioVM.totalValue
-        let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
-        let savings = savedAnnualSavings
-
-        // Year-0 check: benefits that are already active may already cover everything.
-        let initialEffective = effectiveTarget(grossTarget: gross, age: startAge)
-        if currentValue >= initialEffective {
-            return FIREProjection(years: 0, target: initialEffective)
-        }
-
-        var value = currentValue
-        for year in 1...100 {
-            value = value * (1 + annualReturn) + savings
-            let age = startAge + year
-            let target = effectiveTarget(grossTarget: gross, age: age)
-            if value >= target {
-                return FIREProjection(years: year, target: target)
-            }
-        }
-        return nil
-    }
-
     // MARK: - Retirement Progress Card
 
     private var retirementProgressCard: some View {
-        let gross = grossRetirementTarget
-        // Use the benefit-adjusted target at the projected FIRE age for the
-        // progress bar, so it matches what Settings shows as the portfolio goal.
-        let displayTarget = fireProjection?.target ?? gross
-        let progress = displayTarget > 0
-            ? min(1.0, max(0.0, portfolioVM.totalValue / displayTarget))
-            : 0.0
-
-        return VStack(alignment: .leading, spacing: 12) {
-            // Header
-            HStack {
-                Image(systemName: "flag.checkered")
-                    .font(.title2)
-                    .foregroundColor(.orange)
-                Text("Projected FIRE Timeline")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-            }
-
-            if let projection = fireProjection {
-                // Years-to-FIRE + Retirement Age row (mirrors Settings layout)
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Years to FIRE")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text(projection.yearsLabel)
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.orange)
-                    }
-
-                    Spacer()
-
-                    if let age = savedCurrentAge {
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("Retirement Age")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("\(age + projection.years)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.orange)
-                        }
-                    }
-                }
-
-                // Three-column detail row (mirrors Settings layout)
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Current Portfolio")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(portfolioVM.totalValue.toCurrency())
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .center, spacing: 2) {
-                        Text("Expected Return")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(portfolioVM.portfolio.weightedExpectedReturn.toPercent())
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.green)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("Portfolio Target")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text(projection.target.toCurrency())
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                }
-
-                // Benefit-reduction note (mirrors Settings layout)
-                if !benefitManager.plans.isEmpty, savedAnnualSpend > 0 {
-                    let reduction = gross - projection.target
-                    if reduction > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "building.columns.fill")
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                            Text("Guaranteed income reduces your target by \(reduction.toCurrency())")
-                                .font(.caption2)
-                                .foregroundColor(.green)
-                        }
-                    }
-                }
-            } else {
-                Text(portfolioVM.hasAssets
-                     ? "Set your age and annual spending in Settings to see your FIRE timeline."
-                     : "Add assets and configure Settings to see your projected FIRE timeline.")
+        Button(action: { selectedTab = 2 }) {
+            ZStack(alignment: .topTrailing) {
+                FIRETimelineCard(portfolioVM: portfolioVM, benefitManager: benefitManager)
+                Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundColor(.secondary)
-            }
-
-            // Progress bar — always shown when there is a gross target
-            if gross > 0 {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("\(Int(progress * 100))% funded")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("Goal: \(displayTarget.toCurrency())")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.orange.opacity(0.2))
-                                .frame(height: 8)
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.orange)
-                                .frame(width: geo.size.width * progress, height: 8)
-                        }
-                    }
-                    .frame(height: 8)
-                }
-                .padding(.top, 4)
+                    .padding(12)
             }
         }
-        .padding()
-        .background(Color.orange.opacity(0.08))
-        .cornerRadius(AppConstants.UI.cornerRadius)
+        .buttonStyle(.plain)
     }
     
     private var quickActionsCard: some View {
@@ -537,47 +337,45 @@ struct SimulationsTab: View {
     @State private var selectedHistoryResult: SimulationResult?
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Portfolio Summary
-                    portfolioSummaryCard
-                    
-                    // Custom Returns Card
-                    customReturnsCard
-                    
-                    // Latest Results
-                    if let result = simulationVM.currentResult {
-                        latestResultCard(result: result)
-                    }
-                    
-                    // Run Simulation Button
-                    runSimulationButton
-                    
-                    // Simulation History
-                    simulationHistoryCard
-                }
-                .padding()
-            }
-            .navigationTitle("Simulations")
-            .sheet(isPresented: $showingSetup) {
-                SimulationSetupView(
-                    portfolioVM: portfolioVM,
-                    simulationVM: simulationVM,
-                    showingResults: $showingResults
-                )
-            }
-            .sheet(isPresented: $showingResults) {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Portfolio Summary
+                portfolioSummaryCard
+                
+                // Custom Returns Card
+                customReturnsCard
+                
+                // Latest Results
                 if let result = simulationVM.currentResult {
-                    SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
+                    latestResultCard(result: result)
                 }
+                
+                // Run Simulation Button
+                runSimulationButton
+                
+                // Simulation History
+                simulationHistoryCard
             }
-            .sheet(isPresented: $showingManualReturns) {
-                ManualReturnsView(
-                    simulationVM: simulationVM,
-                    portfolioVM: portfolioVM
-                )
+            .padding()
+        }
+        .navigationTitle("Simulations")
+        .sheet(isPresented: $showingSetup) {
+            SimulationSetupView(
+                portfolioVM: portfolioVM,
+                simulationVM: simulationVM,
+                showingResults: $showingResults
+            )
+        }
+        .sheet(isPresented: $showingResults) {
+            if let result = simulationVM.currentResult {
+                SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
             }
+        }
+        .sheet(isPresented: $showingManualReturns) {
+            ManualReturnsView(
+                simulationVM: simulationVM,
+                portfolioVM: portfolioVM
+            )
         }
     }
     
@@ -804,9 +602,9 @@ struct SimulationsTab: View {
     }
 }
 
-// MARK: - Tools Tab
+// MARK: - FIRE Calculator Tab
 
-struct ToolsTabView: View {
+struct FIRECalculatorTabView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
@@ -814,23 +612,39 @@ struct ToolsTabView: View {
 
     var body: some View {
         NavigationView {
+            FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager, viewModel: fireCalcVM)
+        }
+    }
+}
+
+// MARK: - Tools Tab
+
+struct ToolsTabView: View {
+    @ObservedObject var portfolioVM: PortfolioViewModel
+    @ObservedObject var simulationVM: SimulationViewModel
+    @ObservedObject var benefitManager: DefinedBenefitManager
+
+    var body: some View {
+        NavigationView {
             List {
-                Section("Analysis Tools") {
-                    NavigationLink(destination: FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager, viewModel: fireCalcVM)) {
+                Section("Simulations") {
+                    NavigationLink(destination: SimulationsTab(portfolioVM: portfolioVM, simulationVM: simulationVM)) {
                         HStack {
-                            Image(systemName: "flag.checkered")
-                                .foregroundColor(.orange)
+                            Image(systemName: "waveform.path.ecg")
+                                .foregroundColor(.blue)
                                 .frame(width: 30)
                             VStack(alignment: .leading) {
-                                Text("FIRE Calculator")
+                                Text("Monte Carlo Simulations")
                                     .font(.headline)
-                                Text("Calculate your retirement date")
+                                Text("Run and review retirement simulations")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                         }
                     }
+                }
 
+                Section("Analysis Tools") {
                     NavigationLink(destination: SensitivityAnalysisView(portfolioVM: portfolioVM)) {
                         HStack {
                             Image(systemName: "chart.xyaxis.line")
@@ -1177,6 +991,201 @@ struct EditAssetView: View {
         
         portfolioVM.updateAsset(updatedAsset)
         dismiss()
+    }
+}
+
+// MARK: - FIRE Timeline Card
+// A self-contained summary card showing the projected FIRE timeline.
+// Used on the Dashboard (as a tab-switch shortcut) and at the top of
+// FIRECalculatorView so users always see their live projection.
+
+struct FIRETimelineCard: View {
+    @ObservedObject var portfolioVM: PortfolioViewModel
+    @ObservedObject var benefitManager: DefinedBenefitManager
+
+    @AppStorage("current_age") private var storedCurrentAge: Int = 0
+    @AppStorage("annual_savings") private var storedAnnualSavings: Double = 0
+    @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double = 0
+    @AppStorage("withdrawal_percentage") private var storedWithdrawalRate: Double = 0
+    @AppStorage("retirement_target") private var storedRetirementTarget: Double = 0
+
+    // MARK: - Helpers
+
+    private var savedCurrentAge: Int? { storedCurrentAge > 0 ? storedCurrentAge : nil }
+    private var savedWithdrawalRate: Double { storedWithdrawalRate > 0 ? storedWithdrawalRate : 0.04 }
+
+    private var grossRetirementTarget: Double {
+        guard storedAnnualSpend > 0 else { return storedRetirementTarget }
+        return storedAnnualSpend / savedWithdrawalRate
+    }
+
+    private func effectiveTarget(grossTarget: Double, age: Int) -> Double {
+        let activeBenefitIncome = benefitManager.plans
+            .filter { age >= $0.startAge }
+            .reduce(0.0) { $0 + $1.annualBenefit }
+        return max(0, grossTarget - activeBenefitIncome / savedWithdrawalRate)
+    }
+
+    private struct FIREProjection {
+        let years: Int
+        let target: Double
+        var yearsLabel: String { years == 1 ? "1 year" : "\(years) years" }
+    }
+
+    private var fireProjection: FIREProjection? {
+        let gross = grossRetirementTarget
+        guard gross > 0, portfolioVM.hasAssets else { return nil }
+        guard let startAge = savedCurrentAge else { return nil }
+
+        let currentValue = portfolioVM.totalValue
+        let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
+        let savings = storedAnnualSavings
+
+        let initialEffective = effectiveTarget(grossTarget: gross, age: startAge)
+        if currentValue >= initialEffective {
+            return FIREProjection(years: 0, target: initialEffective)
+        }
+
+        var value = currentValue
+        for year in 1...100 {
+            value = value * (1 + annualReturn) + savings
+            let age = startAge + year
+            let target = effectiveTarget(grossTarget: gross, age: age)
+            if value >= target {
+                return FIREProjection(years: year, target: target)
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Body
+
+    var body: some View {
+        let gross = grossRetirementTarget
+        guard gross > 0 else { return AnyView(EmptyView()) }
+
+        let displayTarget = fireProjection?.target ?? gross
+        let progress = displayTarget > 0
+            ? min(1.0, max(0.0, portfolioVM.totalValue / displayTarget))
+            : 0.0
+
+        return AnyView(
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "flag.checkered")
+                        .font(.title2)
+                        .foregroundColor(.orange)
+                    Text("Projected FIRE Timeline")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    Spacer()
+                }
+
+                if let projection = fireProjection {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Years to FIRE")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(projection.yearsLabel)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.orange)
+                        }
+                        Spacer()
+                        if let age = savedCurrentAge {
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("Retirement Age")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(age + projection.years)")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                    }
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Current Portfolio")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(portfolioVM.totalValue.toCurrency())
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                        }
+                        Spacer()
+                        VStack(alignment: .center, spacing: 2) {
+                            Text("Expected Return")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(portfolioVM.portfolio.weightedExpectedReturn.toPercent())
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.green)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("Portfolio Target")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            Text(projection.target.toCurrency())
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                        }
+                    }
+
+                    if !benefitManager.plans.isEmpty, storedAnnualSpend > 0 {
+                        let reduction = gross - projection.target
+                        if reduction > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "building.columns.fill")
+                                    .font(.caption2)
+                                    .foregroundColor(.green)
+                                Text("Guaranteed income reduces your target by \(reduction.toCurrency())")
+                                    .font(.caption2)
+                                    .foregroundColor(.green)
+                            }
+                        }
+                    }
+                } else {
+                    Text(portfolioVM.hasAssets
+                         ? "Set your age and annual spending in Settings to see your FIRE timeline."
+                         : "Add assets and configure Settings to see your projected FIRE timeline.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                // Progress bar
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("\(Int(progress * 100))% funded")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("Goal: \(displayTarget.toCurrency())")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.orange.opacity(0.2))
+                                .frame(height: 8)
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.orange)
+                                .frame(width: geo.size.width * progress, height: 8)
+                        }
+                    }
+                    .frame(height: 8)
+                }
+                .padding(.top, 4)
+            }
+            .padding()
+            .background(Color.orange.opacity(0.08))
+            .cornerRadius(AppConstants.UI.cornerRadius)
+        )
     }
 }
 

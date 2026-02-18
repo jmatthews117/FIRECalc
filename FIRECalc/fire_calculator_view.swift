@@ -76,6 +76,9 @@ struct FIRECalculatorView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(spacing: 24) {
+                    // Projected FIRE Timeline summary
+                    FIRETimelineCard(portfolioVM: portfolioVM, benefitManager: benefitManager)
+
                     // Input Section
                     inputSection
 
