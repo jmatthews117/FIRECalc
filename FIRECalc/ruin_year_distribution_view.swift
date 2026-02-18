@@ -111,11 +111,13 @@ struct RuinYearDistributionView: View {
             .foregroundStyle(barColor(for: bucket.midYear).gradient)
             .cornerRadius(4)
             .annotation(position: .top, alignment: bucket.startYear == 1 ? .leading : .center, spacing: 2) {
-                if bucket.fraction >= 0.10 {
+                if bucket.fraction >= 0.0 {
+                    // Nudge the first bucket's label slightly right so it's not clipped
                     Text("\(Int(bucket.fraction * 100))%")
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
+                        .offset(x: bucket.startYear == 1 ? 8 : 0)
                 }
             }
         }
@@ -301,3 +303,4 @@ struct RuinYearDistributionView: View {
         .padding()
     }
 }
+
