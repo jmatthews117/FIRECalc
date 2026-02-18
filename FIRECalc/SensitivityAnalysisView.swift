@@ -196,12 +196,16 @@ struct SensitivityAnalysisView: View {
             }
 
             let points = sweepPoints.filter { $0.years != nil }
+            let allPoints = sweepPoints
 
             if points.isEmpty {
                 Text("No achievable FIRE dates in range — try adjusting your settings.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             } else {
+                let xMin = allPoints.map(\.xValue).min() ?? 0
+                let xMax = allPoints.map(\.xValue).max() ?? 1
+
                 Chart {
                     ForEach(points) { pt in
                         LineMark(
@@ -226,13 +230,12 @@ struct SensitivityAnalysisView: View {
                             .foregroundStyle(Color.secondary.opacity(0.5))
                     }
                 }
+                .chartXScale(domain: xMin...xMax)
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 5)) { val in
                         AxisValueLabel {
                             if let d = val.as(Double.self) {
-                                Text(sweepVariable == .spending
-                                     ? compactCurrency(d)
-                                     : compactCurrency(d))
+                                Text(compactCurrency(d))
                                     .font(.caption2)
                             }
                         }
