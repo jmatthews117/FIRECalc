@@ -831,6 +831,36 @@ struct ToolsTabView: View {
                         }
                     }
 
+                    NavigationLink(destination: SensitivityAnalysisView(portfolioVM: portfolioVM)) {
+                        HStack {
+                            Image(systemName: "chart.xyaxis.line")
+                                .foregroundColor(.orange)
+                                .frame(width: 30)
+                            VStack(alignment: .leading) {
+                                Text("Sensitivity Analysis")
+                                    .font(.headline)
+                                Text("See how spending & savings shift your FIRE date")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    NavigationLink(destination: RebalancingAdvisorView(portfolioVM: portfolioVM)) {
+                        HStack {
+                            Image(systemName: "slider.horizontal.3")
+                                .foregroundColor(.purple)
+                                .frame(width: 30)
+                            VStack(alignment: .leading) {
+                                Text("Rebalancing Advisor")
+                                    .font(.headline)
+                                Text("Set targets, get buy/sell amounts")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
                     NavigationLink(destination: HistoricalReturnsView()) {
                         HStack {
                             Image(systemName: "chart.bar.xaxis")
