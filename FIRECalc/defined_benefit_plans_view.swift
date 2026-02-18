@@ -271,8 +271,20 @@ struct EditDefinedBenefitView: View {
                 Section("Annual Benefit") {
                     TextField("Annual Amount", text: $annualBenefit)
                         .keyboardType(.decimalPad)
+                        .onChange(of: annualBenefit) { oldValue, newValue in
+                            let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                            if let number = Double(cleaned) {
+                                let formatter = NumberFormatter()
+                                formatter.numberStyle = .decimal
+                                formatter.groupingSeparator = ","
+                                formatter.maximumFractionDigits = 2
+                                annualBenefit = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                            } else {
+                                annualBenefit = cleaned
+                            }
+                        }
 
-                    if let amount = Double(annualBenefit) {
+                    if let amount = Double(annualBenefit.replacingOccurrences(of: ",", with: "")) {
                         HStack {
                             Text("Monthly")
                                 .foregroundColor(.secondary)
@@ -371,7 +383,7 @@ struct EditDefinedBenefitView: View {
 
     private var isValid: Bool {
         !name.isEmpty &&
-        Double(annualBenefit) != nil &&
+        Double(annualBenefit.replacingOccurrences(of: ",", with: "")) != nil &&
         Int(startAge) != nil
     }
 
@@ -380,7 +392,7 @@ struct EditDefinedBenefitView: View {
             id: existingPlan?.id ?? UUID(),
             name: name,
             type: selectedType,
-            annualBenefit: Double(annualBenefit) ?? 0,
+            annualBenefit: Double(annualBenefit.replacingOccurrences(of: ",", with: "")) ?? 0,
             startAge: Int(startAge) ?? 65,
             inflationAdjusted: inflationAdjusted
         )

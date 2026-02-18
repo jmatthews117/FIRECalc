@@ -71,7 +71,7 @@ struct FIRECalculatorView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
     @ObservedObject var viewModel: FIRECalculatorViewModel
-    
+
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -113,7 +113,12 @@ struct FIRECalculatorView: View {
             // so changes made outside this view (price refreshes, new assets,
             // edits, deletions) are reflected every time the view appears.
             if portfolioVM.totalValue > 0 {
-                viewModel.currentSavings = String(format: "%.0f", portfolioVM.totalValue)
+                let raw = String(format: "%.0f", portfolioVM.totalValue)
+                let nf = NumberFormatter()
+                nf.numberStyle = .decimal
+                nf.groupingSeparator = ","
+                nf.maximumFractionDigits = 0
+                viewModel.currentSavings = nf.string(from: NSNumber(value: Double(raw) ?? 0)) ?? raw
             }
             // Pull in any change the user may have made in Settings since
             // the last time this view was on screen.
@@ -123,7 +128,12 @@ struct FIRECalculatorView: View {
         // price refresh completes or the user edits an asset in another tab.
         .onChange(of: portfolioVM.totalValue) { _, newValue in
             if newValue > 0 {
-                viewModel.currentSavings = String(format: "%.0f", newValue)
+                let raw = String(format: "%.0f", newValue)
+                let nf = NumberFormatter()
+                nf.numberStyle = .decimal
+                nf.groupingSeparator = ","
+                nf.maximumFractionDigits = 0
+                viewModel.currentSavings = nf.string(from: NSNumber(value: Double(raw) ?? 0)) ?? raw
             }
         }
         // Recalculate automatically whenever benefit plans change so the
@@ -132,14 +142,14 @@ struct FIRECalculatorView: View {
             if viewModel.calculationResult != nil { calculate() }
         }
     }
-    
+
     // MARK: - Input Section
-    
+
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Your Information")
                 .font(.headline)
-            
+
             VStack(spacing: 16) {
                 // Age
                 HStack {
@@ -150,7 +160,7 @@ struct FIRECalculatorView: View {
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
                 }
-                
+
                 // Current Savings
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Current Savings")
@@ -158,37 +168,81 @@ struct FIRECalculatorView: View {
                         .foregroundColor(.secondary)
                     TextField("$0", text: $viewModel.currentSavings)
                         .keyboardType(.decimalPad)
+                        .onChange(of: viewModel.currentSavings) { oldValue, newValue in
+                            let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                            if let number = Double(cleaned) {
+                                let formatter = NumberFormatter()
+                                formatter.numberStyle = .decimal
+                                formatter.groupingSeparator = ","
+                                formatter.maximumFractionDigits = 2
+                                viewModel.currentSavings = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                            } else {
+                                viewModel.currentSavings = cleaned
+                            }
+                        }
                 }
-                
+
                 // Annual Savings Contribution
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Annual Savings Contribution")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    TextField("$0", text: $viewModel.annualSavingsContribution)
-                        .keyboardType(.decimalPad)
+                    HStack {
+                        Text("$")
+                            .foregroundColor(.secondary)
+                        TextField("0", text: $viewModel.annualSavingsContribution)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: viewModel.annualSavingsContribution) { oldValue, newValue in
+                                let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                                if let number = Double(cleaned) {
+                                    let formatter = NumberFormatter()
+                                    formatter.numberStyle = .decimal
+                                    formatter.groupingSeparator = ","
+                                    formatter.maximumFractionDigits = 2
+                                    viewModel.annualSavingsContribution = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                                } else {
+                                    viewModel.annualSavingsContribution = cleaned
+                                }
+                            }
+                    }
                     Text("Amount you add to your portfolio each year")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
+
                 // Annual Expenses
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Annual Expenses in Retirement")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    TextField("$0", text: $viewModel.annualExpenses)
-                        .keyboardType(.decimalPad)
+                    HStack {
+                        Text("$")
+                            .foregroundColor(.secondary)
+                        TextField("0", text: $viewModel.annualExpenses)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: viewModel.annualExpenses) { oldValue, newValue in
+                                let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                                if let number = Double(cleaned) {
+                                    let formatter = NumberFormatter()
+                                    formatter.numberStyle = .decimal
+                                    formatter.groupingSeparator = ","
+                                    formatter.maximumFractionDigits = 2
+                                    viewModel.annualExpenses = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                                } else {
+                                    viewModel.annualExpenses = cleaned
+                                }
+                            }
+                    }
                 }
-                
+
                 Divider()
-                
+
                 // Advanced Settings
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Assumptions")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Expected Return")
@@ -198,7 +252,7 @@ struct FIRECalculatorView: View {
                         }
                         Slider(value: $viewModel.expectedReturn, in: 0...0.15, step: 0.005)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Withdrawal Rate")
@@ -208,7 +262,7 @@ struct FIRECalculatorView: View {
                         }
                         Slider(value: $viewModel.withdrawalRate, in: 0.025...0.06, step: 0.005)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Inflation Rate")
@@ -226,7 +280,7 @@ struct FIRECalculatorView: View {
         .cornerRadius(AppConstants.UI.cornerRadius)
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
-    
+
     // MARK: - Benefit Income Card
 
     @ViewBuilder
@@ -285,7 +339,7 @@ struct FIRECalculatorView: View {
     }
 
     // MARK: - Calculate Button
-    
+
     private var calculateButton: some View {
         Button(action: calculate) {
             HStack {
@@ -302,24 +356,24 @@ struct FIRECalculatorView: View {
         }
         .disabled(!isValid)
     }
-    
+
     // MARK: - Results Section
-    
+
     private func resultsSection(result: FIREResult) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Your FIRE Journey")
                 .font(.headline)
-            
+
             // FIRE Date
             VStack(spacing: 8) {
                 Text("You Can Retire At")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
+
                 Text("Age \(result.fireAge)")
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundColor(.blue)
-                
+
                 Text("In \(result.yearsToFIRE) years (\(result.fireYear))")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -333,9 +387,9 @@ struct FIRECalculatorView: View {
             if result.benefitIncomeAtFIRE > 0 {
                 incomeBreakdownCard(result: result)
             }
-            
+
             Divider()
-            
+
             // Key Metrics Grid
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 MetricCard(
@@ -359,7 +413,7 @@ struct FIRECalculatorView: View {
                     icon: "arrow.down.circle",
                     color: .green
                 )
-                
+
                 MetricCard(
                     title: "Annual Savings",
                     value: result.annualSavings.toCurrency(),
@@ -367,7 +421,7 @@ struct FIRECalculatorView: View {
                     icon: "banknote",
                     color: .teal
                 )
-                
+
                 MetricCard(
                     title: "Total Saved",
                     value: result.totalContributions.toCurrency(),
@@ -375,7 +429,7 @@ struct FIRECalculatorView: View {
                     icon: "dollarsign.circle",
                     color: .purple
                 )
-                
+
                 MetricCard(
                     title: "Investment Gains",
                     value: result.investmentGains.toCurrency(),
@@ -466,7 +520,7 @@ struct FIRECalculatorView: View {
         .background(Color.green.opacity(0.08))
         .cornerRadius(12)
     }
-    
+
     // MARK: - Pathway Chart
 
     private func pathwayChart(result: FIREResult) -> some View {
@@ -632,14 +686,14 @@ struct FIRECalculatorView: View {
         .cornerRadius(AppConstants.UI.cornerRadius)
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
-    
+
     // MARK: - Milestones Section
-    
+
     private func milestonesSection(result: FIREResult) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Milestones")
                 .font(.headline)
-            
+
             ForEach(result.milestones, id: \.percentage) { milestone in
                 MilestoneRow(milestone: milestone)
             }
@@ -649,22 +703,22 @@ struct FIRECalculatorView: View {
         .cornerRadius(AppConstants.UI.cornerRadius)
         .shadow(radius: AppConstants.UI.shadowRadius)
     }
-    
+
     // MARK: - Helpers
-    
+
     private var isValid: Bool {
         !viewModel.currentSavings.isEmpty &&
         !viewModel.annualExpenses.isEmpty &&
-        Double(viewModel.currentSavings) != nil &&
-        Double(viewModel.annualExpenses) != nil
+        Double(viewModel.currentSavings.replacingOccurrences(of: ",", with: "")) != nil &&
+        Double(viewModel.annualExpenses.replacingOccurrences(of: ",", with: "")) != nil
     }
-    
+
     private func calculate() {
-        guard let savings = Double(viewModel.currentSavings),
-              let expenses = Double(viewModel.annualExpenses) else { return }
-        
-        let annualContribution = Double(viewModel.annualSavingsContribution) ?? 0
-        
+        guard let savings = Double(viewModel.currentSavings.replacingOccurrences(of: ",", with: "")),
+              let expenses = Double(viewModel.annualExpenses.replacingOccurrences(of: ",", with: "")) else { return }
+
+        let annualContribution = Double(viewModel.annualSavingsContribution.replacingOccurrences(of: ",", with: "")) ?? 0
+
         let calculator = FIRECalculator()
         viewModel.calculationResult = calculator.calculate(
             currentAge: viewModel.currentAge,
@@ -677,7 +731,7 @@ struct FIRECalculatorView: View {
             benefitPlans: benefitManager.plans
         )
     }
-    
+
     private func formatChartValue(_ value: Double) -> String {
         if value >= 1_000_000 {
             return String(format: "$%.1fM", value / 1_000_000)
@@ -950,7 +1004,7 @@ struct Milestone {
     let amount: Double
     let age: Int
     let yearsFromNow: Int
-    
+
     var title: String {
         switch percentage {
         case 0.25: return "Coast FIRE"
@@ -960,7 +1014,7 @@ struct Milestone {
         default: return "\(Int(percentage * 100))%"
         }
     }
-    
+
     var description: String {
         switch percentage {
         case 0.25: return "Can stop contributing and let investments grow"
@@ -976,34 +1030,34 @@ struct Milestone {
 
 struct MilestoneRow: View {
     let milestone: Milestone
-    
+
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
                     .fill(color.opacity(0.2))
                     .frame(width: 60, height: 60)
-                
+
                 Text("\(Int(milestone.percentage * 100))%")
                     .font(.headline)
                     .foregroundColor(color)
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(milestone.title)
                     .font(.headline)
-                
+
                 Text(milestone.description)
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
+
                 Text("Age \(milestone.age) • \(milestone.yearsFromNow) years")
                     .font(.caption2)
                     .foregroundColor(.blue)
             }
-            
+
             Spacer()
-            
+
             Text(milestone.amount.toCurrency())
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -1012,7 +1066,7 @@ struct MilestoneRow: View {
         .background(color.opacity(0.05))
         .cornerRadius(12)
     }
-    
+
     private var color: Color {
         switch milestone.percentage {
         case 0.25: return .orange
@@ -1029,3 +1083,4 @@ struct MilestoneRow: View {
         FIRECalculatorView(portfolioVM: PortfolioViewModel(), benefitManager: DefinedBenefitManager(), viewModel: FIRECalculatorViewModel())
     }
 }
+

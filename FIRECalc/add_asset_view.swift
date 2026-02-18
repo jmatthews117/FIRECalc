@@ -123,6 +123,18 @@ struct AddAssetView: View {
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 100)
                                 .focused($focusedField, equals: .quantity)
+                                .onChange(of: quantity) { oldValue, newValue in
+                                    let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                                    if let number = Double(cleaned) {
+                                        let formatter = NumberFormatter()
+                                        formatter.numberStyle = .decimal
+                                        formatter.groupingSeparator = ","
+                                        formatter.maximumFractionDigits = 6
+                                        quantity = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                                    } else {
+                                        quantity = cleaned
+                                    }
+                                }
                         }
                         
                         HStack {
@@ -133,6 +145,18 @@ struct AddAssetView: View {
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 100)
                                 .focused($focusedField, equals: .unitValue)
+                                .onChange(of: unitValue) { oldValue, newValue in
+                                    let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                                    if let number = Double(cleaned) {
+                                        let formatter = NumberFormatter()
+                                        formatter.numberStyle = .decimal
+                                        formatter.groupingSeparator = ","
+                                        formatter.maximumFractionDigits = 6
+                                        unitValue = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                                    } else {
+                                        unitValue = cleaned
+                                    }
+                                }
                         }
                         
                         if let total = totalValue {
@@ -153,6 +177,18 @@ struct AddAssetView: View {
                             TextField("Total Value", text: $unitValue)
                                 .keyboardType(.decimalPad)
                                 .focused($focusedField, equals: .unitValue)
+                                .onChange(of: unitValue) { oldValue, newValue in
+                                    let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                                    if let number = Double(cleaned) {
+                                        let formatter = NumberFormatter()
+                                        formatter.numberStyle = .decimal
+                                        formatter.groupingSeparator = ","
+                                        formatter.maximumFractionDigits = 6
+                                        unitValue = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                                    } else {
+                                        unitValue = cleaned
+                                    }
+                                }
                             
                             if !selectedAssetClass.supportsTicker && assetName.isEmpty {
                                 TextField("Asset Name (optional)", text: $assetName)
@@ -278,11 +314,11 @@ struct AddAssetView: View {
     
     private var totalValue: Double? {
         if needsQuantityAndPrice {
-            let qty = Double(quantity) ?? 0
-            let price = Double(unitValue) ?? autoLoadedPrice ?? 0
+            let qty = Double(quantity.replacingOccurrences(of: ",", with: "")) ?? 0
+            let price = Double(unitValue.replacingOccurrences(of: ",", with: "")) ?? autoLoadedPrice ?? 0
             return qty > 0 && price > 0 ? qty * price : nil
         } else {
-            return Double(unitValue)
+            return Double(unitValue.replacingOccurrences(of: ",", with: ""))
         }
     }
     
@@ -393,10 +429,10 @@ struct AddAssetView: View {
         let finalQuantity: Double
         
         if needsQuantityAndPrice {
-            finalPrice = Double(unitValue) ?? autoLoadedPrice ?? 0
-            finalQuantity = Double(quantity) ?? 1
+            finalPrice = Double(unitValue.replacingOccurrences(of: ",", with: "")) ?? autoLoadedPrice ?? 0
+            finalQuantity = Double(quantity.replacingOccurrences(of: ",", with: "")) ?? 1
         } else {
-            finalPrice = Double(unitValue) ?? 0
+            finalPrice = Double(unitValue.replacingOccurrences(of: ",", with: "")) ?? 0
             finalQuantity = 1
         }
         

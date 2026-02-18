@@ -76,11 +76,15 @@ struct SettingsView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
 
-                        TextField("Amount saved per year", text: $annualSavings)
-                            .keyboardType(.numberPad)
-                            .onChange(of: annualSavings) { _, newValue in
-                                annualSavings = formatNumberInput(newValue)
-                            }
+                        HStack {
+                            Text("$")
+                                .foregroundColor(.secondary)
+                            TextField("0", text: $annualSavings)
+                                .keyboardType(.numberPad)
+                                .onChange(of: annualSavings) { _, newValue in
+                                    annualSavings = formatNumberInput(newValue)
+                                }
+                        }
 
                         if let savings = parseFormattedNumber(annualSavings), savings > 0 {
                             Text("\(formatCurrency(savings)) added to portfolio each year before retirement")
@@ -95,11 +99,15 @@ struct SettingsView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
 
-                        TextField("Annual spending in retirement", text: $expectedAnnualSpend)
-                            .keyboardType(.numberPad)
-                            .onChange(of: expectedAnnualSpend) { _, newValue in
-                                expectedAnnualSpend = formatNumberInput(newValue)
-                            }
+                        HStack {
+                            Text("$")
+                                .foregroundColor(.secondary)
+                            TextField("0", text: $expectedAnnualSpend)
+                                .keyboardType(.numberPad)
+                                .onChange(of: expectedAnnualSpend) { _, newValue in
+                                    expectedAnnualSpend = formatNumberInput(newValue)
+                                }
+                        }
 
                         if let value = parseFormattedNumber(expectedAnnualSpend) {
                             Text("Goal: \(formatCurrency(value)) per year")

@@ -174,8 +174,8 @@ struct BulkAssetUploadView: View {
                 name: draft.name,
                 assetClass: draft.assetClass,
                 ticker: draft.ticker.isEmpty ? nil : draft.ticker.uppercased(),
-                quantity: Double(draft.quantity) ?? 1,
-                unitValue: Double(draft.price) ?? 0
+                quantity: Double(draft.quantity.replacingOccurrences(of: ",", with: "")) ?? 1,
+                unitValue: Double(draft.price.replacingOccurrences(of: ",", with: "")) ?? 0
             )
             
             portfolioVM.addAsset(asset)
@@ -197,7 +197,9 @@ struct DraftAsset: Identifiable {
     var loadedPrice: Double?
     
     var isValid: Bool {
-        !name.isEmpty && !price.isEmpty && Double(price) != nil && Double(quantity) != nil
+        !name.isEmpty && !price.isEmpty &&
+        Double(price.replacingOccurrences(of: ",", with: "")) != nil &&
+        Double(quantity.replacingOccurrences(of: ",", with: "")) != nil
     }
 }
 
@@ -313,6 +315,18 @@ struct AssetEntryCard: View {
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .quantity)
+                        .onChange(of: asset.quantity) { newValue in
+                            let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                            if let number = Double(cleaned) {
+                                let formatter = NumberFormatter()
+                                formatter.numberStyle = .decimal
+                                formatter.groupingSeparator = ","
+                                formatter.maximumFractionDigits = 6
+                                asset.quantity = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                            } else {
+                                asset.quantity = cleaned
+                            }
+                        }
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -323,11 +337,24 @@ struct AssetEntryCard: View {
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .price)
+                        .onChange(of: asset.price) { newValue in
+                            let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                            if let number = Double(cleaned) {
+                                let formatter = NumberFormatter()
+                                formatter.numberStyle = .decimal
+                                formatter.groupingSeparator = ","
+                                formatter.maximumFractionDigits = 6
+                                asset.price = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                            } else {
+                                asset.price = cleaned
+                            }
+                        }
                 }
             }
             
             // Total Value Preview
-            if let qty = Double(asset.quantity), let price = Double(asset.price) {
+            if let qty = Double(asset.quantity.replacingOccurrences(of: ",", with: "")),
+               let price = Double(asset.price.replacingOccurrences(of: ",", with: "")) {
                 HStack {
                     Text("Total Value:")
                         .font(.caption)
