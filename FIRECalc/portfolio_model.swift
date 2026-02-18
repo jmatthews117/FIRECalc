@@ -135,3 +135,50 @@ extension Portfolio {
         assets: []
     )
 }
+
+// MARK: - Custom Allocation Support
+
+extension Portfolio {
+    /// Returns a new Portfolio whose asset values reflect `weights` (fractional,
+    /// must sum to ≈ 1.0) while preserving the real per-class return/volatility
+    /// assumptions of the original assets.  Classes absent from the original
+    /// portfolio fall back to `AssetClass` defaults.
+    ///
+    /// The engine only cares about proportional weights (it normalises them
+    /// internally), so we represent each class as a single notional asset
+    /// worth `totalValue * weight`.
+    func applyingAllocationWeights(_ weights: [AssetClass: Double]) -> Portfolio {
+        let baseValue = max(totalValue, 1) // avoid zero division
+
+        // Build a representative asset for each class in the weight map.
+        let syntheticAssets: [Asset] = weights.compactMap { (ac, weight) in
+            guard weight > 0 else { return nil }
+            let notionalValue = baseValue * weight
+
+            // Prefer return/volatility from the first matching real asset;
+            // fall back to class defaults.
+            let template = assets.first { $0.assetClass == ac }
+            let expectedReturn = template?.expectedReturn ?? ac.defaultReturn
+            let volatility     = template?.volatility     ?? ac.defaultVolatility
+
+            return Asset(
+                name: ac.rawValue,
+                assetClass: ac,
+                quantity: notionalValue,
+                unitValue: 1.0,
+                purchaseDate: Date(),
+                customExpectedReturn: expectedReturn,
+                customVolatility: volatility
+            )
+        }
+
+        return Portfolio(
+            id: id,
+            name: name,
+            assets: syntheticAssets,
+            createdDate: createdDate,
+            lastModified: lastModified
+        )
+    }
+}
+

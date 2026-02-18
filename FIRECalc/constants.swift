@@ -262,3 +262,24 @@ extension Date {
         return formatter.string(from: self)
     }
 }
+// MARK: - Keyboard Dismiss Helper
+
+extension View {
+    /// Adds a **Done** button above the software keyboard that dismisses it.
+    /// Apply this once to a `Form` or `ScrollView` that contains text fields.
+    func keyboardDoneButton() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil, from: nil, for: nil
+                    )
+                }
+                .fontWeight(.semibold)
+            }
+        }
+    }
+}
+

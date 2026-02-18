@@ -424,10 +424,8 @@ struct StrategyComparisonView: View {
                 historicalData: historicalData
             )
 
-            // Extract year-by-year medians (retirement years only)
-            let retirementOffset = params.yearsUntilRetirement
+            // Extract year-by-year medians (all years are retirement years)
             let medians: [Double] = simResult.yearlyBalances
-                .filter { $0.year >= retirementOffset }
                 .sorted { $0.year < $1.year }
                 .map(\.medianBalance)
 

@@ -63,14 +63,26 @@ class SimulationViewModel: ObservableObject {
         progress = 0
         errorMessage = nil
         
-        // MODIFIED: Apply custom returns if enabled
+        // Apply custom returns if enabled.
         var simulationParams = parameters
-        simulationParams.initialPortfolioValue = portfolio.totalValue
-        
+        // Use targetPortfolioValue as the effective starting balance when set;
+        // otherwise fall back to the live portfolio value.
+        simulationParams.initialPortfolioValue = simulationParams.targetPortfolioValue ?? portfolio.totalValue
+
         if useCustomReturns {
             simulationParams.customReturns = customReturns
             simulationParams.customVolatility = customVolatility
             simulationParams.useHistoricalBootstrap = false
+        }
+
+        // If custom allocation weights are provided, build a synthetic portfolio
+        // that uses those weights while preserving per-class return assumptions.
+        let effectivePortfolio: Portfolio
+        if let weights = simulationParams.customAllocationWeights,
+           simulationParams.customAllocationWeightsAreValid {
+            effectivePortfolio = portfolio.applyingAllocationWeights(weights)
+        } else {
+            effectivePortfolio = portfolio
         }
         
         do {
@@ -78,7 +90,7 @@ class SimulationViewModel: ObservableObject {
             let historicalData = try HistoricalDataService.shared.loadHistoricalData()
             
             let result = try await engine.runSimulation(
-                portfolio: portfolio,
+                portfolio: effectivePortfolio,
                 parameters: simulationParams,
                 historicalData: historicalData
             )

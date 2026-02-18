@@ -336,8 +336,7 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
-            //.toolbar { }  <-- Removed Done button toolbar item
-            
+            .keyboardDoneButton()
             .onAppear {
                 loadSettings()
             }

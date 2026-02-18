@@ -101,11 +101,11 @@ actor MonteCarloEngine {
     ) -> SimulationRun {
         
         // All balances are in REAL (today's) dollars
-        var balance = parameters.initialPortfolioValue
+        var balance = parameters.effectiveInitialValue
         var yearlyBalances: [Double] = [balance]
         var yearlyWithdrawals: [Double] = []
         
-        let totalYears = parameters.yearsUntilRetirement + parameters.timeHorizonYears
+        let totalYears = parameters.timeHorizonYears
         let withdrawalCalc = WithdrawalCalculator()
         
         // Determine bootstrap start index for block bootstrap, if enabled
@@ -127,106 +127,67 @@ actor MonteCarloEngine {
         var failed = false
         
         for year in 1...totalYears {
-            let isAccumulation = year <= parameters.yearsUntilRetirement
-            
-            if isAccumulation {
-                // ============================================
-                // ACCUMULATION PHASE
-                // ============================================
-                
-                // Add contributions FIRST (in real dollars)
-                let annualContribution = parameters.monthlyContribution * 12
-                balance += annualContribution
-                
-                // Generate REAL return (nominal minus inflation)
-                let realReturn = generateRealReturn(
-                    portfolio: portfolio,
-                    parameters: parameters,
-                    historicalData: historicalData,
-                    year: year,
-                    runNumber: runNumber,
-                    bootstrapStartIndex: bootstrapStartIndex,
-                    blockLength: blockLength
-                )
-                
-                // Apply real return to total balance (including new contributions)
-                balance *= (1 + realReturn)
-                
-                yearlyWithdrawals.append(0)
-                yearlyBalances.append(balance)
-                
-            } else {
-                // ============================================
-                // RETIREMENT/WITHDRAWAL PHASE
-                // ============================================
-                
-                let yearsIntoRetirement = year - parameters.yearsUntilRetirement
-                
-                // STEP 1: Apply returns FIRST (to full beginning-of-year balance)
-                let realReturn = generateRealReturn(
-                    portfolio: portfolio,
-                    parameters: parameters,
-                    historicalData: historicalData,
-                    year: year,
-                    runNumber: runNumber,
-                    bootstrapStartIndex: bootstrapStartIndex,
-                    blockLength: blockLength
-                )
-                
-                balance *= (1 + realReturn)
-                
-                // Removed debug prints as per instructions
-                
-                // STEP 2: Calculate withdrawal (from grown balance)
-                // Withdrawal is in REAL dollars (today's purchasing power)
-                let withdrawal = withdrawalCalc.calculateWithdrawal(
-                    currentBalance: balance,
-                    year: yearsIntoRetirement,
-                    baselineWithdrawal: baselineWithdrawal,
-                    initialBalance: parameters.initialPortfolioValue,
-                    config: parameters.withdrawalConfig
-                )
-                
-                // Removed debug print for withdrawal as per instructions
-                
-                // Always track the actual withdrawal taken so strategies like
-                // Guardrails correctly compound their year-over-year adjustments.
-                // For fixedPercentage the baseline is set once and never changes
-                // anyway, so updating it every year is harmless there too.
-                if yearsIntoRetirement == 1 || parameters.withdrawalConfig.strategy != .fixedPercentage {
-                    baselineWithdrawal = withdrawal
-                }
-                
-                // Fixed income (pensions, Social Security) is already offset
-                // inside WithdrawalCalculator via config.fixedIncome — no
-                // second subtraction needed here.
-                let netWithdrawal = withdrawal
-                
-                // STEP 3: Subtract net withdrawal from balance
-                balance -= netWithdrawal
-                
-                yearlyWithdrawals.append(max(0, netWithdrawal))
-                
-                // Check for failure
-                if balance <= 0 {
-                    balance = 0
-                    yearlyBalances.append(0)
-                    yearsLasted = yearsIntoRetirement
-                    failed = true
-                    
-                    // Fill remaining years with zeros
-                    if year < totalYears {
-                        for _ in (year + 1)...totalYears {
-                            yearlyWithdrawals.append(0)
-                            yearlyBalances.append(0)
-                        }
-                    }
-                    break
-                }
-                
-                yearlyBalances.append(balance)
-                yearsLasted = yearsIntoRetirement
+            // ============================================
+            // WITHDRAWAL PHASE
+            // ============================================
+
+            // STEP 1: Apply returns FIRST (to full beginning-of-year balance)
+            let realReturn = generateRealReturn(
+                portfolio: portfolio,
+                parameters: parameters,
+                historicalData: historicalData,
+                year: year,
+                runNumber: runNumber,
+                bootstrapStartIndex: bootstrapStartIndex,
+                blockLength: blockLength
+            )
+
+            balance *= (1 + realReturn)
+
+            // STEP 2: Calculate withdrawal (from grown balance)
+            // Withdrawal is in REAL dollars (today's purchasing power)
+            let withdrawal = withdrawalCalc.calculateWithdrawal(
+                currentBalance: balance,
+                year: year,
+                baselineWithdrawal: baselineWithdrawal,
+                initialBalance: parameters.initialPortfolioValue,
+                config: parameters.withdrawalConfig
+            )
+
+            // Always track the actual withdrawal taken so strategies like
+            // Guardrails correctly compound their year-over-year adjustments.
+            if year == 1 || parameters.withdrawalConfig.strategy != .fixedPercentage {
+                baselineWithdrawal = withdrawal
             }
+
+            // Fixed income (pensions, Social Security) is already offset
+            // inside WithdrawalCalculator via config.fixedIncome — no
+            // second subtraction needed here.
+
+            // STEP 3: Subtract withdrawal from balance
+            balance -= withdrawal
+
+            yearlyWithdrawals.append(max(0, withdrawal))
+
+            // Check for failure
+            if balance <= 0 {
+                balance = 0
+                yearlyBalances.append(0)
+                yearsLasted = year
+                failed = true
+
+                // Fill remaining years with zeros
+                if year < totalYears {
+                    for _ in (year + 1)...totalYears {
+                        yearlyWithdrawals.append(0)
+                        yearlyBalances.append(0)
+                    }
+                }
+                break
+            }
+
+            yearlyBalances.append(balance)
+            yearsLasted = year
         }
         
         // If we made it through all years without failing
@@ -314,13 +275,16 @@ actor MonteCarloEngine {
             yearIndex = Int.random(in: 0..<historicalInflation.count)
         }
         
-        // Calculate nominal portfolio return for that year
+        // Calculate nominal portfolio return for that year using the portfolio's
+        // actual holdings. Custom allocation weights are applied upstream by
+        // Portfolio.applyingAllocationWeights(_:) before the engine is called,
+        // so the portfolio here already reflects the desired weights.
         var nominalPortfolioReturn: Double = 0
-        
+
         for asset in portfolio.assets {
             let weight = asset.totalValue / totalValue
             let assetReturns = historicalData.returns(for: asset.assetClass)
-            
+
             let assetReturn: Double
             if yearIndex < assetReturns.count {
                 assetReturn = assetReturns[yearIndex]
@@ -328,7 +292,7 @@ actor MonteCarloEngine {
                 // Fallback if index out of range
                 assetReturn = assetReturns.randomElement() ?? asset.assetClass.defaultReturn
             }
-            
+
             nominalPortfolioReturn += weight * assetReturn
         }
         
@@ -384,27 +348,47 @@ actor MonteCarloEngine {
 
         var nominalReturn = 0.0
 
-        for asset in portfolio.assets {
-            let weight = asset.totalValue / totalValue
+        if let customWeights = parameters.customAllocationWeights {
+            // Custom allocation: build synthetic "assets" from the weight map
+            for (assetClass, weight) in customWeights {
+                guard weight > 0 else { continue }
+                let mu  = parameters.customReturns?[assetClass]    ?? assetClass.defaultReturn
+                let vol = parameters.customVolatility?[assetClass] ?? assetClass.defaultVolatility
 
-            // Prefer user-supplied custom values; fall back to asset-class defaults.
-            let mu  = parameters.customReturns?[asset.assetClass]    ?? asset.assetClass.defaultReturn
-            let vol = parameters.customVolatility?[asset.assetClass] ?? asset.assetClass.defaultVolatility
+                let idioZ = generateStudentT(seed: rng.next())
+                let rho = marketCorrelation(for: assetClass)
+                let combinedZ = rho * marketZ + sqrt(1 - rho * rho) * idioZ
 
-            // ── Per-asset idiosyncratic shock ────────────────────────────────
-            let idioZ = generateStudentT(seed: rng.next())
+                let sigmaLnSq = log(1 + pow(vol / (1 + mu), 2))
+                let sigmaLn   = sqrt(sigmaLnSq)
+                let muLn      = log(1 + mu) - sigmaLnSq / 2
 
-            // ── Correlation factor ───────────────────────────────────────────
-            let rho = marketCorrelation(for: asset.assetClass)
-            let combinedZ = rho * marketZ + sqrt(1 - rho * rho) * idioZ
+                let assetReturn = exp(muLn + sigmaLn * combinedZ) - 1
+                nominalReturn  += weight * assetReturn
+            }
+        } else {
+            for asset in portfolio.assets {
+                let weight = asset.totalValue / totalValue
 
-            // ── Log-normal conversion ────────────────────────────────────────
-            let sigmaLnSq = log(1 + pow(vol / (1 + mu), 2))
-            let sigmaLn   = sqrt(sigmaLnSq)
-            let muLn      = log(1 + mu) - sigmaLnSq / 2
+                // Prefer user-supplied custom values; fall back to asset-class defaults.
+                let mu  = parameters.customReturns?[asset.assetClass]    ?? asset.assetClass.defaultReturn
+                let vol = parameters.customVolatility?[asset.assetClass] ?? asset.assetClass.defaultVolatility
 
-            let assetReturn = exp(muLn + sigmaLn * combinedZ) - 1
-            nominalReturn  += weight * assetReturn
+                // ── Per-asset idiosyncratic shock ────────────────────────────────
+                let idioZ = generateStudentT(seed: rng.next())
+
+                // ── Correlation factor ───────────────────────────────────────────
+                let rho = marketCorrelation(for: asset.assetClass)
+                let combinedZ = rho * marketZ + sqrt(1 - rho * rho) * idioZ
+
+                // ── Log-normal conversion ────────────────────────────────────────
+                let sigmaLnSq = log(1 + pow(vol / (1 + mu), 2))
+                let sigmaLn   = sqrt(sigmaLnSq)
+                let muLn      = log(1 + mu) - sigmaLnSq / 2
+
+                let assetReturn = exp(muLn + sigmaLn * combinedZ) - 1
+                nominalReturn  += weight * assetReturn
+            }
         }
 
         // Fisher equation — consistent with the bootstrap path.
@@ -562,7 +546,7 @@ actor MonteCarloEngine {
         parameters: SimulationParameters
     ) -> [YearlyProjection] {
         
-        let totalYears = parameters.yearsUntilRetirement + parameters.timeHorizonYears
+        let totalYears = parameters.timeHorizonYears
         var projections: [YearlyProjection] = []
         
         for year in 0...totalYears {

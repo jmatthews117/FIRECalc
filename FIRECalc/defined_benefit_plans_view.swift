@@ -338,6 +338,16 @@ struct EditDefinedBenefitView: View {
                     }
                     .disabled(!isValid)
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
+                    }
+                    .fontWeight(.semibold)
+                }
             }
             .confirmationDialog(
                 "Delete \(existingPlan?.name ?? "this benefit")?",
@@ -455,6 +465,7 @@ struct SocialSecurityCalculatorView: View {
         }
         .navigationTitle("Social Security")
         .navigationBarTitleDisplayMode(.inline)
+        .keyboardDoneButton()
     }
     
     private var isValid: Bool {

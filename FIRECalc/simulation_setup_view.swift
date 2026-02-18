@@ -12,10 +12,20 @@ struct SimulationSetupView: View {
     @ObservedObject var simulationVM: SimulationViewModel
     @Binding var showingResults: Bool
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var numberOfRuns: Double
     @State private var timeHorizon: Double
     @State private var inflationRate: Double
+
+    // MARK: - New parameters
+
+    /// Whether to use a custom (user-typed) target rather than the live portfolio value.
+    @State private var useTargetPortfolioValue: Bool
+    @State private var targetPortfolioValue: Double
+    /// Whether to override the portfolio's existing allocation with custom weights.
+    @State private var useCustomAllocation: Bool
+    /// Live-editable custom weights keyed by AssetClass, expressed as percentages (0-100).
+    @State private var customAllocationPercents: [AssetClass: Double]
 
     // Single source of truth for the entire withdrawal configuration.
     // Strategy-specific controls below mutate this directly so nothing
@@ -47,6 +57,32 @@ struct SimulationSetupView: View {
         self._timeHorizon = State(initialValue: Double(simulationVM.parameters.timeHorizonYears))
         self._inflationRate = State(initialValue: simulationVM.parameters.inflationRate)
 
+        // Restore previously saved new parameters (fall back to sensible defaults).
+        let params = simulationVM.parameters
+        self._useTargetPortfolioValue = State(initialValue: params.targetPortfolioValue != nil)
+        self._targetPortfolioValue = State(initialValue: params.targetPortfolioValue ?? portfolioVM.totalValue)
+
+        let hasCustomAlloc = params.customAllocationWeights != nil
+        self._useCustomAllocation = State(initialValue: hasCustomAlloc)
+
+        // Seed the per-class sliders from saved weights, or from the live portfolio.
+        var initialPercents: [AssetClass: Double] = [:]
+        if let saved = params.customAllocationWeights {
+            for (ac, w) in saved { initialPercents[ac] = w * 100 }
+        } else {
+            let totalValue = portfolioVM.portfolio.totalValue
+            if totalValue > 0 {
+                for ac in AssetClass.allCases {
+                    let classValue = portfolioVM.portfolio.assets
+                        .filter { $0.assetClass == ac }
+                        .reduce(0) { $0 + $1.totalValue }
+                    let pct = (classValue / totalValue) * 100
+                    if pct > 0 { initialPercents[ac] = pct }
+                }
+            }
+        }
+        self._customAllocationPercents = State(initialValue: initialPercents)
+
         let config = simulationVM.withdrawalConfiguration
         self._withdrawalConfig = State(initialValue: config)
         self._withdrawalRate = State(initialValue: config.withdrawalRate)
@@ -77,7 +113,7 @@ struct SimulationSetupView: View {
                         Text(portfolioVM.totalValue.toCurrency())
                             .fontWeight(.semibold)
                     }
-                    
+
                     HStack {
                         Text("Expected Return")
                         Spacer()
@@ -85,7 +121,86 @@ struct SimulationSetupView: View {
                             .fontWeight(.semibold)
                     }
                 }
-                
+
+                // MARK: Starting Portfolio Value
+                Section {
+                    Picker("Starting Value", selection: $useTargetPortfolioValue) {
+                        Text("Current Portfolio").tag(false)
+                        Text("Custom Target").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+
+                    if useTargetPortfolioValue {
+                        HStack {
+                            Text("Target Value")
+                            Spacer()
+                            TextField("$1,000,000", value: $targetPortfolioValue, format: .currency(code: "USD"))
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 150)
+                        }
+                        Text("Simulates what happens if you start with this balance — useful for \"what-if\" scenarios.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        HStack {
+                            Text("Current Portfolio")
+                            Spacer()
+                            Text(portfolioVM.totalValue.toCurrency())
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Starting Portfolio Value")
+                } footer: {
+                    Text("\"Custom Target\" lets you model a future scenario without changing your actual portfolio.")
+                }
+
+                // MARK: Asset Allocation
+                Section {
+                    Picker("Allocation", selection: $useCustomAllocation) {
+                        Text("Existing Portfolio").tag(false)
+                        Text("Custom Weights").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+
+                    if useCustomAllocation {
+                        allocationSliders
+                    } else {
+                        // Show a read-only summary of the current allocation.
+                        let totalValue = portfolioVM.portfolio.totalValue
+                        ForEach(AssetClass.allCases) { ac in
+                            let classValue = portfolioVM.portfolio.assets
+                                .filter { $0.assetClass == ac }
+                                .reduce(0.0) { $0 + $1.totalValue }
+                            if classValue > 0 {
+                                HStack {
+                                    Circle()
+                                        .fill(ac.color)
+                                        .frame(width: 8, height: 8)
+                                    Text(ac.rawValue)
+                                        .font(.subheadline)
+                                    Spacer()
+                                    Text(totalValue > 0
+                                         ? (classValue / totalValue).toPercent()
+                                         : "—")
+                                        .foregroundColor(.secondary)
+                                        .monospacedDigit()
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Asset Allocation")
+                } footer: {
+                    if useCustomAllocation {
+                        Text("Weights must sum to 100%. Current total: \(Int(customAllocationTotal.rounded()))%")
+                            .foregroundColor(allocationIsValid ? .secondary : .red)
+                    } else {
+                        Text("Uses the weighted return and volatility of your existing holdings.")
+                    }
+                }
+
                 // Simulation Parameters
                 Section("Simulation Settings") {
                     HStack {
@@ -236,9 +351,15 @@ struct SimulationSetupView: View {
                 // Debug Summary Section
                 Section("Assumptions Summary") {
                     HStack {
-                        Text("Initial Portfolio Value")
+                        Text("Starting Portfolio")
                         Spacer()
-                        Text(portfolioVM.totalValue.toCurrency())
+                        Text((useTargetPortfolioValue ? targetPortfolioValue : portfolioVM.totalValue).toCurrency())
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("Allocation")
+                        Spacer()
+                        Text(useCustomAllocation ? "Custom" : "Portfolio Weights")
                             .foregroundColor(.secondary)
                     }
                     HStack {
@@ -565,19 +686,24 @@ struct SimulationSetupView: View {
         }
 
         // Persist the configuration back to the VM so it survives navigation.
-        // fixedIncome here carries the override — we'll restore the plan total below.
         simulationVM.withdrawalConfiguration = config
-
         simulationVM.updateWithdrawalRate(withdrawalRate)
         simulationVM.updateTimeHorizon(Int(timeHorizon))
         simulationVM.updateInflationRate(inflationRate)
-        
+
+        // Build custom allocation weights (fractional) from the per-class percents.
+        let resolvedAllocation: [AssetClass: Double]? = useCustomAllocation && allocationIsValid
+            ? customAllocationPercents.mapValues { $0 / 100.0 }
+            : nil
+
         simulationVM.parameters = SimulationParameters(
             numberOfRuns: Int(numberOfRuns),
             timeHorizonYears: Int(timeHorizon),
             inflationRate: inflationRate,
             useHistoricalBootstrap: useBootstrap,
             initialPortfolioValue: portfolioVM.totalValue,
+            targetPortfolioValue: useTargetPortfolioValue ? targetPortfolioValue : nil,
+            customAllocationWeights: resolvedAllocation,
             withdrawalConfig: config
         )
         
@@ -609,6 +735,62 @@ struct SimulationSetupView: View {
         } else {
             return portfolioVM.totalValue * withdrawalRate
         }
+    }
+
+    // MARK: - Custom Allocation Helpers
+
+    /// Sum of all custom allocation percents (should equal 100 when valid).
+    private var customAllocationTotal: Double {
+        customAllocationPercents.values.reduce(0, +)
+    }
+
+    /// True when custom weights are either unused or sum to 100 ± 1.
+    private var allocationIsValid: Bool {
+        guard useCustomAllocation else { return true }
+        return (99.0...101.0).contains(customAllocationTotal)
+    }
+
+    /// Sliders for each asset class weight, with a running total indicator.
+    @ViewBuilder
+    private var allocationSliders: some View {
+        ForEach(AssetClass.allCases) { ac in
+            VStack(spacing: 2) {
+                HStack {
+                    Circle()
+                        .fill(ac.color)
+                        .frame(width: 8, height: 8)
+                    Text(ac.rawValue)
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(Int((customAllocationPercents[ac] ?? 0).rounded()))%")
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundColor(.secondary)
+                }
+                Slider(
+                    value: Binding(
+                        get: { customAllocationPercents[ac] ?? 0 },
+                        set: { customAllocationPercents[ac] = $0 }
+                    ),
+                    in: 0...100,
+                    step: 1
+                )
+            }
+        }
+
+        // Running total
+        HStack {
+            Text("Total")
+                .font(.subheadline)
+                .fontWeight(.medium)
+            Spacer()
+            Text("\(Int(customAllocationTotal.rounded()))%")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(allocationIsValid ? .green : .red)
+                .monospacedDigit()
+        }
+        .padding(.top, 4)
     }
 }
 
