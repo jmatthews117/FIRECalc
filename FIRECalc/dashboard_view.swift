@@ -21,7 +21,7 @@ struct DashboardView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 24) {
+                LazyVStack(spacing: 24) {
                     // Portfolio Overview Card
                     portfolioOverviewCard
                     

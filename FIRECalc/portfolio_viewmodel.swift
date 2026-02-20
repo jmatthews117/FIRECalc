@@ -21,6 +21,13 @@ class PortfolioViewModel: ObservableObject {
     private let persistence = PersistenceService.shared
     /// Kept so that rapid successive operations cancel the previous auto-dismiss.
     private var clearMessageTask: Task<Void, Never>?
+    /// Debounce saves to reduce I/O
+    private var saveTask: Task<Void, Never>?
+    
+    // MARK: - Computed Property Caching
+    
+    private var cachedAllocation: [(AssetClass, Double)]?
+    private var lastPortfolioHash: Int?
     
     init(portfolio: Portfolio? = nil) {
         if let savedPortfolio = try? persistence.loadPortfolio() {
@@ -60,33 +67,44 @@ class PortfolioViewModel: ObservableObject {
     
     func addAsset(_ asset: Asset) {
         portfolio.addAsset(asset)
+        invalidateCache()
         savePortfolio()
         show(success: "Asset added successfully")
     }
     
     func updateAsset(_ asset: Asset) {
         portfolio.updateAsset(asset)
+        invalidateCache()
         savePortfolio()
         show(success: "Asset updated successfully")
     }
     
     func deleteAsset(_ asset: Asset) {
         portfolio.removeAsset(asset)
+        invalidateCache()
         savePortfolio()
         show(success: "Asset deleted")
     }
     
     func deleteAssets(at offsets: IndexSet) {
         portfolio.removeAssets(at: offsets)
+        invalidateCache()
         savePortfolio()
         show(success: "Assets deleted")
     }
     
     private func savePortfolio() {
-        do {
-            try persistence.savePortfolio(portfolio)
-        } catch {
-            show(error: "Failed to save: \(error.localizedDescription)")
+        // Cancel any pending save and debounce
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(for: .seconds(0.5))
+            guard !Task.isCancelled else { return }
+            
+            do {
+                try persistence.savePortfolio(portfolio)
+            } catch {
+                show(error: "Failed to save: \(error.localizedDescription)")
+            }
         }
     }
     
@@ -125,9 +143,19 @@ class PortfolioViewModel: ObservableObject {
     }
     
     var allocationPercentages: [(AssetClass, Double)] {
-        portfolio.allocationPercentages
+        let currentHash = portfolio.assets.map { $0.id }.hashValue
+        
+        if let cached = cachedAllocation, lastPortfolioHash == currentHash {
+            return cached
+        }
+        
+        let result = portfolio.allocationPercentages
             .sorted { $0.value > $1.value }
             .map { ($0.key, $0.value) }
+        
+        cachedAllocation = result
+        lastPortfolioHash = currentHash
+        return result
     }
     
     var hasAssets: Bool {
@@ -178,6 +206,11 @@ class PortfolioViewModel: ObservableObject {
     }
     
     // MARK: - Private Helpers
+    
+    private func invalidateCache() {
+        cachedAllocation = nil
+        lastPortfolioHash = nil
+    }
     
     func clearMessages() {
         successMessage = nil

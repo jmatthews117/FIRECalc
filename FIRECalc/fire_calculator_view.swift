@@ -75,7 +75,7 @@ struct FIRECalculatorView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: 24) {
+                LazyVStack(spacing: 24) {
                     // Projected FIRE Timeline summary
                     FIRETimelineCard(portfolioVM: portfolioVM, benefitManager: benefitManager)
 
@@ -172,18 +172,6 @@ struct FIRECalculatorView: View {
                             .foregroundColor(.secondary)
                         TextField("0", text: $viewModel.currentSavings)
                             .keyboardType(.decimalPad)
-                            .onChange(of: viewModel.currentSavings) { oldValue, newValue in
-                                let cleaned = newValue.replacingOccurrences(of: ",", with: "")
-                                if let number = Double(cleaned) {
-                                    let formatter = NumberFormatter()
-                                    formatter.numberStyle = .decimal
-                                    formatter.groupingSeparator = ","
-                                    formatter.maximumFractionDigits = 2
-                                    viewModel.currentSavings = formatter.string(from: NSNumber(value: number)) ?? cleaned
-                                } else {
-                                    viewModel.currentSavings = cleaned
-                                }
-                            }
                     }
                 }
 
@@ -724,17 +712,34 @@ struct FIRECalculatorView: View {
 
         let annualContribution = Double(viewModel.annualSavingsContribution.replacingOccurrences(of: ",", with: "")) ?? 0
 
-        let calculator = FIRECalculator()
-        viewModel.calculationResult = calculator.calculate(
-            currentAge: viewModel.currentAge,
-            currentSavings: savings,
-            annualSavings: annualContribution,
-            annualExpenses: expenses,
-            expectedReturn: viewModel.expectedReturn,
-            withdrawalRate: viewModel.withdrawalRate,
-            inflationRate: viewModel.inflationRate,
-            benefitPlans: benefitManager.plans
-        )
+        // Offload intensive calculation to background thread
+        Task.detached(priority: .userInitiated) { [weak viewModel, benefitManager] in
+            guard let viewModel = viewModel else { return }
+            
+            let calculator = FIRECalculator()
+            
+            // Capture values before async work
+            let currentAge = await viewModel.currentAge
+            let expectedReturn = await viewModel.expectedReturn
+            let withdrawalRate = await viewModel.withdrawalRate
+            let inflationRate = await viewModel.inflationRate
+            let plans = await benefitManager.plans
+            
+            let result = calculator.calculate(
+                currentAge: currentAge,
+                currentSavings: savings,
+                annualSavings: annualContribution,
+                annualExpenses: expenses,
+                expectedReturn: expectedReturn,
+                withdrawalRate: withdrawalRate,
+                inflationRate: inflationRate,
+                benefitPlans: plans
+            )
+            
+            await MainActor.run {
+                viewModel.calculationResult = result
+            }
+        }
     }
 
     private func formatChartValue(_ value: Double) -> String {

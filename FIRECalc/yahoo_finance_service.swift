@@ -34,10 +34,42 @@ actor YahooFinanceService {
     
     private init() {}
     
+    // MARK: - Retry Logic
+    
+    /// Retry wrapper for transient network failures
+    private func fetchWithRetry<T>(
+        maxAttempts: Int = 3,
+        operation: () async throws -> T
+    ) async throws -> T {
+        var lastError: Error?
+        
+        for attempt in 1...maxAttempts {
+            do {
+                return try await operation()
+            } catch {
+                lastError = error
+                print("⚠️ Attempt \(attempt) failed: \(error.localizedDescription)")
+                
+                if attempt < maxAttempts {
+                    let delay = UInt64(attempt * 500_000_000) // 0.5s, 1s, 1.5s
+                    try await Task.sleep(nanoseconds: delay)
+                }
+            }
+        }
+        
+        throw lastError ?? YFError.networkError(NSError(domain: "Retry failed", code: -1))
+    }
+    
     // MARK: - Quote Fetching
     
     /// Fetch current price for a single ticker
     func fetchQuote(ticker: String) async throws -> YFStockQuote {
+        try await fetchWithRetry {
+            try await self.fetchQuoteInternal(ticker: ticker)
+        }
+    }
+    
+    private func fetchQuoteInternal(ticker: String) async throws -> YFStockQuote {
         let cleanTicker = ticker.uppercased().trimmingCharacters(in: .whitespaces)
         
         let urlString = "\(chartURL)/\(cleanTicker)"
@@ -122,27 +154,49 @@ actor YahooFinanceService {
         )
     }
     
-    /// Fetch quotes for multiple tickers
+    /// Fetch quotes for multiple tickers (optimized with concurrent fetching)
     func fetchBatchQuotes(tickers: [String]) async throws -> [String: YFStockQuote] {
         guard !tickers.isEmpty else { return [:] }
         
+        // Process in batches of 5 to balance speed and API courtesy
+        let batchSize = 5
         var quotes: [String: YFStockQuote] = [:]
         
-        for ticker in tickers {
-            do {
-                let quote = try await fetchQuote(ticker: ticker)
-                quotes[ticker.uppercased()] = quote
-                try await Task.sleep(nanoseconds: 200_000_000)
-            } catch {
-                print("⚠️ Failed to fetch \(ticker): \(error.localizedDescription)")
-                continue
+        for batchStart in stride(from: 0, to: tickers.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, tickers.count)
+            let batch = Array(tickers[batchStart..<batchEnd])
+            
+            // Fetch batch concurrently
+            await withTaskGroup(of: (String, YFStockQuote?).self) { group in
+                for ticker in batch {
+                    group.addTask {
+                        do {
+                            let quote = try await self.fetchQuote(ticker: ticker)
+                            return (ticker.uppercased(), quote)
+                        } catch {
+                            print("⚠️ Failed to fetch \(ticker): \(error.localizedDescription)")
+                            return (ticker.uppercased(), nil)
+                        }
+                    }
+                }
+                
+                for await (ticker, quote) in group {
+                    if let quote = quote {
+                        quotes[ticker] = quote
+                    }
+                }
+            }
+            
+            // Small delay between batches to be respectful to Yahoo Finance
+            if batchEnd < tickers.count {
+                try await Task.sleep(nanoseconds: 500_000_000) // 0.5s between batches
             }
         }
         
         return quotes
     }
     
-    /// Update all assets in a portfolio
+    /// Update all assets in a portfolio (optimized with rate-limited concurrent fetching)
     func updatePortfolioPrices(portfolio: Portfolio) async throws -> Portfolio {
         var updatedPortfolio = portfolio
         let assetsWithTickers = portfolio.assetsWithTickers
@@ -153,27 +207,78 @@ actor YahooFinanceService {
         
         print("🔄 Updating \(assetsWithTickers.count) assets...")
         
-        for asset in assetsWithTickers {
-            guard let ticker = asset.ticker else { continue }
+        // Group assets by type (stock vs crypto)
+        let stockAssets = assetsWithTickers.filter { $0.assetClass != .crypto }
+        let cryptoAssets = assetsWithTickers.filter { $0.assetClass == .crypto }
+        
+        // Process stocks in batches of 3 to be respectful to Yahoo Finance
+        let batchSize = 3
+        
+        for batchStart in stride(from: 0, to: stockAssets.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, stockAssets.count)
+            let batch = Array(stockAssets[batchStart..<batchEnd])
             
-            do {
-                if asset.assetClass == .crypto {
-                    let quote = try await fetchCryptoQuote(symbol: ticker)
-                    let updatedAsset = asset.updatedWithLivePrice(quote.latestPrice, change: nil)
-                    updatedPortfolio.updateAsset(updatedAsset)
-                } else {
-                    let quote = try await fetchQuote(ticker: ticker)
-                    let updatedAsset = asset.updatedWithLivePrice(
-                        quote.latestPrice,
-                        change: quote.changePercent
-                    )
-                    updatedPortfolio.updateAsset(updatedAsset)
+            // Fetch this batch concurrently
+            await withTaskGroup(of: (Asset, Double?, Double?).self) { group in
+                for asset in batch {
+                    guard let ticker = asset.ticker else { continue }
+                    
+                    group.addTask {
+                        do {
+                            let quote = try await self.fetchQuote(ticker: ticker)
+                            return (asset, quote.latestPrice, quote.changePercent)
+                        } catch {
+                            print("⚠️ Failed to update \(ticker): \(error.localizedDescription)")
+                            return (asset, nil, nil)
+                        }
+                    }
                 }
                 
-                try await Task.sleep(nanoseconds: 200_000_000)
-            } catch {
-                print("⚠️ Failed to update \(ticker): \(error.localizedDescription)")
-                continue
+                for await (asset, price, change) in group {
+                    if let price = price {
+                        let updatedAsset = asset.updatedWithLivePrice(price, change: change)
+                        updatedPortfolio.updateAsset(updatedAsset)
+                    }
+                }
+            }
+            
+            // Small delay between batches to avoid overwhelming Yahoo Finance
+            if batchEnd < stockAssets.count {
+                try await Task.sleep(nanoseconds: 300_000_000) // 0.3s between batches
+            }
+        }
+        
+        // Process crypto in batches too
+        for batchStart in stride(from: 0, to: cryptoAssets.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, cryptoAssets.count)
+            let batch = Array(cryptoAssets[batchStart..<batchEnd])
+            
+            await withTaskGroup(of: (Asset, Double?).self) { group in
+                for asset in batch {
+                    guard let ticker = asset.ticker else { continue }
+                    
+                    group.addTask {
+                        do {
+                            let quote = try await self.fetchCryptoQuote(symbol: ticker)
+                            return (asset, quote.latestPrice)
+                        } catch {
+                            print("⚠️ Failed to update \(ticker): \(error.localizedDescription)")
+                            return (asset, nil)
+                        }
+                    }
+                }
+                
+                for await (asset, price) in group {
+                    if let price = price {
+                        let updatedAsset = asset.updatedWithLivePrice(price, change: nil)
+                        updatedPortfolio.updateAsset(updatedAsset)
+                    }
+                }
+            }
+            
+            // Delay between crypto batches
+            if batchEnd < cryptoAssets.count {
+                try await Task.sleep(nanoseconds: 300_000_000) // 0.3s between batches
             }
         }
         

@@ -15,7 +15,7 @@ struct HistoricalReturnsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            LazyVStack(spacing: 24) {
                 // Asset Class Picker
                 assetClassPicker
                 
