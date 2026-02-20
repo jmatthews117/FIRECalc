@@ -75,6 +75,7 @@ struct WithdrawalConfigurationView: View {
         }
         .navigationTitle("Withdrawal Strategy")
         .navigationBarTitleDisplayMode(.inline)
+        .keyboardDoneButton()
         .sheet(isPresented: $showingStrategyInfo) {
             StrategyInfoSheet(strategy: selectedStrategy)
         }

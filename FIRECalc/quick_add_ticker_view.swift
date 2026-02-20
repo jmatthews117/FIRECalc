@@ -164,6 +164,7 @@ struct QuickAddTickerView: View {
             }
             .navigationTitle("Quick Add")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

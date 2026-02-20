@@ -156,6 +156,7 @@ struct BondPricingCalculatorView: View {
             }
             .navigationTitle("Bond Pricing Calculator")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }

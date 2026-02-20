@@ -44,6 +44,7 @@ struct BulkAssetUploadView: View {
             }
             .navigationTitle("Add Multiple Assets")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

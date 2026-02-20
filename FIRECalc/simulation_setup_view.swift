@@ -405,6 +405,7 @@ struct SimulationSetupView: View {
             }
             .navigationTitle("Setup Simulation")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDoneButton()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

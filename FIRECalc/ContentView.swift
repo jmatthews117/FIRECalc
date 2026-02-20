@@ -7,21 +7,6 @@
 
 import SwiftUI
 
-// Global helper to add a keyboard toolbar with a Done button
-private extension View {
-    func keyboardDoneToolbar() -> some View {
-        self.toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                }
-                .fontWeight(.semibold)
-            }
-        }
-    }
-}
-
 struct ContentView: View {
     @StateObject private var portfolioVM = PortfolioViewModel()
     @StateObject private var simulationVM = SimulationViewModel()
@@ -124,12 +109,12 @@ struct DashboardTabView: View {
                     simulationVM: simulationVM,
                     showingResults: $showingResults
                 )
-                .keyboardDoneToolbar()
+                .keyboardDoneButton()
             }
             .sheet(isPresented: $showingResults) {
                 if let result = simulationVM.currentResult {
                     SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
-                        .keyboardDoneToolbar()
+                        .keyboardDoneButton()
                 }
             }
             .alert("Error", isPresented: .constant(portfolioVM.errorMessage != nil)) {
@@ -154,7 +139,7 @@ struct DashboardTabView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .keyboardDoneToolbar()
+            .keyboardDoneButton()
         }
     }
     
@@ -442,10 +427,10 @@ struct PortfolioTabView: View {
                 }
                 .sheet(isPresented: $showingAddAsset) {
                     AddAssetView(portfolioVM: portfolioVM)
-                        .keyboardDoneToolbar()
+                        .keyboardDoneButton()
                 }
         }
-        .keyboardDoneToolbar()
+        .keyboardDoneButton()
     }
 }
 
@@ -488,12 +473,12 @@ struct SimulationsTab: View {
                 simulationVM: simulationVM,
                 showingResults: $showingResults
             )
-            .keyboardDoneToolbar()
+            .keyboardDoneButton()
         }
         .sheet(isPresented: $showingResults) {
             if let result = simulationVM.currentResult {
                 SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
-                    .keyboardDoneToolbar()
+                    .keyboardDoneButton()
             }
         }
         .sheet(isPresented: $showingManualReturns) {
@@ -501,9 +486,9 @@ struct SimulationsTab: View {
                 simulationVM: simulationVM,
                 portfolioVM: portfolioVM
             )
-            .keyboardDoneToolbar()
+            .keyboardDoneButton()
         }
-        .keyboardDoneToolbar()
+        .keyboardDoneButton()
         .navigationTitle("Simulations")
     }
     
@@ -719,6 +704,7 @@ struct SimulationsTab: View {
         .sheet(isPresented: $showingHistoryResult) {
             if let result = selectedHistoryResult {
                 SimulationResultsView(result: result)
+                    .keyboardDoneButton()
             }
         }
     }
@@ -742,7 +728,7 @@ struct FIRECalculatorTabView: View {
         NavigationView {
             FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager, viewModel: fireCalcVM)
         }
-        .keyboardDoneToolbar()
+        .keyboardDoneButton()
     }
 }
 
@@ -839,7 +825,7 @@ struct ToolsTabView: View {
                 }
             }
             .navigationTitle("Tools")
-            .keyboardDoneToolbar()
+            .keyboardDoneButton()
         }
     }
 }
@@ -854,7 +840,7 @@ struct SettingsTabView: View {
         NavigationView {
             SettingsView(portfolioVM: portfolioVM, benefitManager: benefitManager)
                 .navigationTitle("Settings")
-                .keyboardDoneToolbar()
+                .keyboardDoneButton()
         }
     }
 }
@@ -1006,7 +992,7 @@ struct AssetDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingEditSheet) {
             EditAssetView(asset: asset, portfolioVM: portfolioVM)
-                .keyboardDoneToolbar()
+                .keyboardDoneButton()
         }
         .confirmationDialog("Delete Asset", isPresented: $showingDeleteConfirmation) {
             Button("Delete", role: .destructive) {
@@ -1097,7 +1083,7 @@ struct EditAssetView: View {
                 }
             }
         }
-        .keyboardDoneToolbar()
+        .keyboardDoneButton()
     }
     
     private var isValid: Bool {

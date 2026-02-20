@@ -108,6 +108,7 @@ struct FIRECalculatorView: View {
         }
         .navigationTitle("FIRE Calculator")
         .navigationBarTitleDisplayMode(.inline)
+        .keyboardDoneButton()
         .onAppear {
             // Always sync the current savings from the live portfolio value
             // so changes made outside this view (price refreshes, new assets,
