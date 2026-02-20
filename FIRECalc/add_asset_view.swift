@@ -123,18 +123,6 @@ struct AddAssetView: View {
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 100)
                                 .focused($focusedField, equals: .quantity)
-                                .onChange(of: quantity) { oldValue, newValue in
-                                    let cleaned = newValue.replacingOccurrences(of: ",", with: "")
-                                    if let number = Double(cleaned) {
-                                        let formatter = NumberFormatter()
-                                        formatter.numberStyle = .decimal
-                                        formatter.groupingSeparator = ","
-                                        formatter.maximumFractionDigits = 6
-                                        quantity = formatter.string(from: NSNumber(value: number)) ?? cleaned
-                                    } else {
-                                        quantity = cleaned
-                                    }
-                                }
                         }
                         
                         HStack {
@@ -145,18 +133,6 @@ struct AddAssetView: View {
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 100)
                                 .focused($focusedField, equals: .unitValue)
-                                .onChange(of: unitValue) { oldValue, newValue in
-                                    let cleaned = newValue.replacingOccurrences(of: ",", with: "")
-                                    if let number = Double(cleaned) {
-                                        let formatter = NumberFormatter()
-                                        formatter.numberStyle = .decimal
-                                        formatter.groupingSeparator = ","
-                                        formatter.maximumFractionDigits = 6
-                                        unitValue = formatter.string(from: NSNumber(value: number)) ?? cleaned
-                                    } else {
-                                        unitValue = cleaned
-                                    }
-                                }
                         }
                         
                         if let total = totalValue {
@@ -177,18 +153,6 @@ struct AddAssetView: View {
                             TextField("Total Value", text: $unitValue)
                                 .keyboardType(.decimalPad)
                                 .focused($focusedField, equals: .unitValue)
-                                .onChange(of: unitValue) { oldValue, newValue in
-                                    let cleaned = newValue.replacingOccurrences(of: ",", with: "")
-                                    if let number = Double(cleaned) {
-                                        let formatter = NumberFormatter()
-                                        formatter.numberStyle = .decimal
-                                        formatter.groupingSeparator = ","
-                                        formatter.maximumFractionDigits = 6
-                                        unitValue = formatter.string(from: NSNumber(value: number)) ?? cleaned
-                                    } else {
-                                        unitValue = cleaned
-                                    }
-                                }
                             
                             if !selectedAssetClass.supportsTicker && assetName.isEmpty {
                                 TextField("Asset Name (optional)", text: $assetName)
