@@ -16,6 +16,7 @@ struct DashboardView: View {
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
     @State private var showingQuickAdd = false
+    @State private var showDollarGain = false
     
     var body: some View {
         NavigationView {
@@ -122,6 +123,38 @@ struct DashboardView: View {
             Text(portfolioVM.totalValue.toCurrency())
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
+            
+            // Daily gain/loss display (toggleable)
+            if let dailyGain = portfolioVM.dailyGain, 
+               let dailyGainPct = portfolioVM.dailyGainPercentage {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showDollarGain.toggle()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: dailyGain >= 0 ? "arrow.up.right" : "arrow.down.right")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        
+                        if showDollarGain {
+                            Text(dailyGain.toCurrency())
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        } else {
+                            Text(dailyGainPct.toPercent())
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                        
+                        Text("today")
+                            .font(.caption)
+                    }
+                    .foregroundColor(dailyGain >= 0 ? .green : .red)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
+            }
             
             HStack {
                 Label("\(portfolioVM.portfolio.assets.count) Assets", systemImage: "chart.bar.fill")

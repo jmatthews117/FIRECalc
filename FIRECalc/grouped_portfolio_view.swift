@@ -13,6 +13,7 @@ struct GroupedPortfolioView: View {
     @State private var showingBondCalculator = false
     @State private var selectedAsset: Asset?
     @State private var showingAssetDetail = false
+    @State private var showDollarGain = false
 
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
     @AppStorage(AppConstants.UserDefaultsKeys.withdrawalPercentage) private var storedWithdrawalRate: Double = 0
@@ -87,6 +88,37 @@ struct GroupedPortfolioView: View {
             Text(portfolioVM.totalValue.toCurrency())
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
+            
+            // Daily gain/loss display (toggleable)
+            if let dailyGain = portfolioVM.dailyGain, 
+               let dailyGainPct = portfolioVM.dailyGainPercentage {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showDollarGain.toggle()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: dailyGain >= 0 ? "arrow.up.right" : "arrow.down.right")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        
+                        if showDollarGain {
+                            Text(dailyGain.toCurrency())
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        } else {
+                            Text(dailyGainPct.toPercent())
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                        
+                        Text("today")
+                            .font(.caption)
+                    }
+                    .foregroundColor(dailyGain >= 0 ? .green : .red)
+                }
+                .buttonStyle(.plain)
+            }
             
             // Retirement Progress
             if retirementTarget > 0 {

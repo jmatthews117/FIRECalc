@@ -33,6 +33,27 @@ class PortfolioViewModel: ObservableObject {
         }
         
         print("📊 Using Yahoo Finance (no API key required)")
+        
+        // Automatically refresh prices on launch if we have stale data
+        Task {
+            await refreshPricesIfNeeded()
+        }
+    }
+    
+    /// Refresh prices only if data is stale (older than 1 hour)
+    func refreshPricesIfNeeded() async {
+        let assetsNeedingUpdate = portfolio.assetsNeedingPriceUpdate
+        
+        // Also refresh if we have tickers but no price data at all
+        let assetsWithoutPrices = portfolio.assetsWithTickers.filter { $0.currentPrice == nil }
+        
+        guard !assetsNeedingUpdate.isEmpty || !assetsWithoutPrices.isEmpty else {
+            print("✅ All prices are fresh")
+            return
+        }
+        
+        print("🔄 Auto-refreshing \(max(assetsNeedingUpdate.count, assetsWithoutPrices.count)) stale/missing prices on launch...")
+        await refreshPrices()
     }
     
     // MARK: - Asset Management
@@ -77,7 +98,6 @@ class PortfolioViewModel: ObservableObject {
         
         guard !portfolio.assetsWithTickers.isEmpty else {
             print("⚠️ No assets with tickers to update")
-            show(error: "No assets with ticker symbols to update")
             return
         }
         
@@ -130,7 +150,39 @@ class PortfolioViewModel: ObservableObject {
         return stockValue / totalValue
     }
     
+    /// Total daily gain/loss across all assets with price data
+    var dailyGain: Double? {
+        let assetsWithPriceChange = portfolio.assets.filter { 
+            $0.currentPrice != nil && $0.priceChange != nil 
+        }
+        
+        guard !assetsWithPriceChange.isEmpty else { return nil }
+        
+        // Calculate dollar change for each asset
+        let totalDailyChange = assetsWithPriceChange.reduce(0.0) { sum, asset in
+            guard let priceChange = asset.priceChange else { return sum }
+            let currentValue = asset.totalValue
+            // Calculate previous value: current / (1 + changePercent)
+            let previousValue = currentValue / (1 + priceChange)
+            let dollarChange = currentValue - previousValue
+            return sum + dollarChange
+        }
+        
+        return totalDailyChange
+    }
+    
+    /// Daily gain as a percentage of total portfolio value
+    var dailyGainPercentage: Double? {
+        guard let gain = dailyGain, totalValue > 0 else { return nil }
+        return gain / totalValue
+    }
+    
     // MARK: - Private Helpers
+    
+    func clearMessages() {
+        successMessage = nil
+        errorMessage = nil
+    }
     
     private func show(success message: String) {
         successMessage = message

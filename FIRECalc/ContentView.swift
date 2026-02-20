@@ -7,11 +7,27 @@
 
 import SwiftUI
 
+// Global helper to add a keyboard toolbar with a Done button
+private extension View {
+    func keyboardDoneToolbar() -> some View {
+        self.toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+                .fontWeight(.semibold)
+            }
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var portfolioVM = PortfolioViewModel()
     @StateObject private var simulationVM = SimulationViewModel()
     @StateObject private var benefitManager = DefinedBenefitManager()
     @State private var selectedTab: Int = 0
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -50,6 +66,14 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                // Refresh prices when app becomes active (if stale)
+                Task {
+                    await portfolioVM.refreshPricesIfNeeded()
+                }
+            }
+        }
     }
 }
 
@@ -62,6 +86,7 @@ struct DashboardTabView: View {
     @Binding var selectedTab: Int
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
+    @State private var showDollarGain = false
 
     // Used only to decide whether to show the FIRE timeline card.
     @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double = 0
@@ -99,12 +124,37 @@ struct DashboardTabView: View {
                     simulationVM: simulationVM,
                     showingResults: $showingResults
                 )
+                .keyboardDoneToolbar()
             }
             .sheet(isPresented: $showingResults) {
                 if let result = simulationVM.currentResult {
                     SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
+                        .keyboardDoneToolbar()
                 }
             }
+            .alert("Error", isPresented: .constant(portfolioVM.errorMessage != nil)) {
+                Button("OK") {
+                    portfolioVM.clearMessages()
+                }
+            } message: {
+                if let error = portfolioVM.errorMessage {
+                    Text(error)
+                }
+            }
+            .overlay(alignment: .top) {
+                if let success = portfolioVM.successMessage {
+                    Text(success)
+                        .font(.subheadline)
+                        .padding()
+                        .background(Color.green.opacity(0.9))
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        .shadow(radius: 4)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .keyboardDoneToolbar()
         }
     }
     
@@ -121,14 +171,51 @@ struct DashboardTabView: View {
                 Spacer()
                 
                 if portfolioVM.isUpdatingPrices {
-                    ProgressView()
-                        .scaleEffect(0.8)
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Updating...")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             
             Text(portfolioVM.totalValue.toCurrency())
                 .font(.system(size: 40, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
+            
+            // Daily gain/loss display (toggleable)
+            if let dailyGain = portfolioVM.dailyGain, 
+               let dailyGainPct = portfolioVM.dailyGainPercentage {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showDollarGain.toggle()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: dailyGain >= 0 ? "arrow.up.right" : "arrow.down.right")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        
+                        if showDollarGain {
+                            Text(dailyGain.toCurrency())
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        } else {
+                            Text(dailyGainPct.toPercent())
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                        
+                        Text("today")
+                            .font(.caption)
+                    }
+                    .foregroundColor(dailyGain >= 0 ? .green : .red)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
+            }
             
             HStack {
                 Label("\(portfolioVM.portfolio.assets.count) Assets", systemImage: "chart.bar.fill")
@@ -138,9 +225,20 @@ struct DashboardTabView: View {
                 Spacer()
                 
                 if portfolioVM.hasAssets {
-                    Text("Pull to refresh")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Pull to refresh")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        // Show last update time for assets with live prices
+                        if let mostRecentUpdate = portfolioVM.portfolio.assetsWithTickers
+                            .compactMap({ $0.lastUpdated })
+                            .max() {
+                            Text("Updated \(timeAgo(from: mostRecentUpdate))")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
             }
         }
@@ -148,6 +246,23 @@ struct DashboardTabView: View {
         .background(Color(.systemBackground))
         .cornerRadius(AppConstants.UI.cornerRadius)
         .shadow(radius: AppConstants.UI.shadowRadius)
+    }
+    
+    // Helper to display relative time
+    private func timeAgo(from date: Date) -> String {
+        let seconds = Date().timeIntervalSince(date)
+        if seconds < 60 {
+            return "just now"
+        } else if seconds < 3600 {
+            let minutes = Int(seconds / 60)
+            return "\(minutes)m ago"
+        } else if seconds < 86400 {
+            let hours = Int(seconds / 3600)
+            return "\(hours)h ago"
+        } else {
+            let days = Int(seconds / 86400)
+            return "\(days)d ago"
+        }
     }
     
     // MARK: - Retirement Progress Card
@@ -320,8 +435,10 @@ struct PortfolioTabView: View {
                 }
                 .sheet(isPresented: $showingAddAsset) {
                     AddAssetView(portfolioVM: portfolioVM)
+                        .keyboardDoneToolbar()
                 }
         }
+        .keyboardDoneToolbar()
     }
 }
 
@@ -358,17 +475,18 @@ struct SimulationsTab: View {
             }
             .padding()
         }
-        .navigationTitle("Simulations")
         .sheet(isPresented: $showingSetup) {
             SimulationSetupView(
                 portfolioVM: portfolioVM,
                 simulationVM: simulationVM,
                 showingResults: $showingResults
             )
+            .keyboardDoneToolbar()
         }
         .sheet(isPresented: $showingResults) {
             if let result = simulationVM.currentResult {
                 SimulationResultsView(result: result, portfolio: portfolioVM.portfolio)
+                    .keyboardDoneToolbar()
             }
         }
         .sheet(isPresented: $showingManualReturns) {
@@ -376,7 +494,10 @@ struct SimulationsTab: View {
                 simulationVM: simulationVM,
                 portfolioVM: portfolioVM
             )
+            .keyboardDoneToolbar()
         }
+        .keyboardDoneToolbar()
+        .navigationTitle("Simulations")
     }
     
     private var portfolioSummaryCard: some View {
@@ -614,6 +735,7 @@ struct FIRECalculatorTabView: View {
         NavigationView {
             FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager, viewModel: fireCalcVM)
         }
+        .keyboardDoneToolbar()
     }
 }
 
@@ -710,6 +832,7 @@ struct ToolsTabView: View {
                 }
             }
             .navigationTitle("Tools")
+            .keyboardDoneToolbar()
         }
     }
 }
@@ -723,6 +846,8 @@ struct SettingsTabView: View {
     var body: some View {
         NavigationView {
             SettingsView(portfolioVM: portfolioVM, benefitManager: benefitManager)
+                .navigationTitle("Settings")
+                .keyboardDoneToolbar()
         }
     }
 }
@@ -874,6 +999,7 @@ struct AssetDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingEditSheet) {
             EditAssetView(asset: asset, portfolioVM: portfolioVM)
+                .keyboardDoneToolbar()
         }
         .confirmationDialog("Delete Asset", isPresented: $showingDeleteConfirmation) {
             Button("Delete", role: .destructive) {
@@ -962,19 +1088,9 @@ struct EditAssetView: View {
                     }
                     .disabled(!isValid)
                 }
-
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                        UIApplication.shared.sendAction(
-                            #selector(UIResponder.resignFirstResponder),
-                            to: nil, from: nil, for: nil
-                        )
-                    }
-                    .fontWeight(.semibold)
-                }
             }
         }
+        .keyboardDoneToolbar()
     }
     
     private var isValid: Bool {
