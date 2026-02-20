@@ -159,7 +159,7 @@ struct SimulationResultsView: View {
             
             ExplanationRow(
                 icon: "percent",
-                text: "Used \(result.parameters.withdrawalConfig.strategy.rawValue) withdrawal strategy at \(result.parameters.withdrawalConfig.withdrawalRate.toPercent())"
+                text: withdrawalStrategyDescription
             )
             
             Text("Results show what could happen based on past market performance. Your actual experience may differ.")
@@ -171,6 +171,54 @@ struct SimulationResultsView: View {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 4)
+    }
+    
+    /// Generates a description of the withdrawal strategy with the correct parameters
+    private var withdrawalStrategyDescription: String {
+        let config = result.parameters.withdrawalConfig
+        let strategyName = config.strategy.rawValue
+        
+        switch config.strategy {
+        case .fixedPercentage:
+            let rate = config.withdrawalRate.toPercent()
+            let inflation = config.adjustForInflation ? " (adjusted for inflation)" : " (not adjusted for inflation)"
+            return "Used \(strategyName) at \(rate)\(inflation)"
+            
+        case .fixedDollar:
+            if let amount = config.annualAmount {
+                let formatted = amount.toCurrency()
+                let inflation = config.adjustForInflation ? " (adjusted for inflation)" : " (not adjusted for inflation)"
+                return "Used \(strategyName) of \(formatted) per year\(inflation)"
+            } else {
+                // Fallback: calculate from initial portfolio and withdrawal rate
+                let amount = result.parameters.initialPortfolioValue * config.withdrawalRate
+                let formatted = amount.toCurrency()
+                let inflation = config.adjustForInflation ? " (adjusted for inflation)" : " (not adjusted for inflation)"
+                return "Used \(strategyName) of \(formatted) per year\(inflation)"
+            }
+            
+        case .dynamicPercentage:
+            let rate = config.withdrawalRate.toPercent()
+            var details = "Used \(strategyName) at \(rate) of current portfolio"
+            if let floor = config.floorPercentage, let ceiling = config.ceilingPercentage {
+                details += " (floor: \(floor.toPercent()), ceiling: \(ceiling.toPercent()))"
+            }
+            return details
+            
+        case .guardrails:
+            let rate = config.withdrawalRate.toPercent()
+            var details = "Used \(strategyName) starting at \(rate)"
+            if let upper = config.upperGuardrail, let lower = config.lowerGuardrail {
+                let upperPct = (upper * 100).formatted(.number.precision(.fractionLength(0)))
+                let lowerPct = (lower * 100).formatted(.number.precision(.fractionLength(0)))
+                details += " with +\(upperPct)%/-\(lowerPct)% guardrails"
+                if let adjustment = config.guardrailAdjustmentMagnitude {
+                    let adjustPct = (adjustment * 100).formatted(.number.precision(.fractionLength(0)))
+                    details += " (\(adjustPct)% adjustments)"
+                }
+            }
+            return details
+        }
     }
     
     // MARK: - Key Metrics Grid
