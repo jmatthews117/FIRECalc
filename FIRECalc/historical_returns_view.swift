@@ -200,38 +200,101 @@ struct HistoricalReturnsView: View {
     // MARK: - Yearly Returns Chart
     
     private func yearlyReturnsChart(for assetClass: AssetClass, data: HistoricalData) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let returns = data.returns(for: assetClass)
+        let metadata = data.metadata
+        
+        // Calculate tick marks: evenly spaced to show first, last, and ~5 in between
+        let totalTicks = 7
+        let tickIndices: [Int]
+        if returns.count <= totalTicks {
+            tickIndices = Array(0..<returns.count)
+        } else {
+            tickIndices = (0..<totalTicks).map { i in
+                let position = Double(i) / Double(totalTicks - 1)
+                return Int(position * Double(returns.count - 1))
+            }
+        }
+        
+        // Find max absolute value to center y-axis at 0
+        let maxAbsReturn = returns.map { abs($0) }.max() ?? 1.0
+        let yAxisBounds = maxAbsReturn * 1.1 // Add 10% padding
+        
+        return VStack(alignment: .leading, spacing: 12) {
             Text("Year-by-Year Returns")
                 .font(.headline)
             
-            let returns = data.returns(for: assetClass)
-            let metadata = data.metadata
-            
             Chart {
                 ForEach(Array(returns.enumerated()), id: \.offset) { index, returnValue in
-                    let year = metadata.startYear + index
-                    
                     BarMark(
-                        x: .value("Year", year),
+                        x: .value("Index", index),
                         y: .value("Return", returnValue)
                     )
                     .foregroundStyle(returnValue >= 0 ? Color.green.gradient : Color.red.gradient)
                 }
+                
+                // Reference line at 0%
+                RuleMark(y: .value("Zero", 0))
+                    .foregroundStyle(.gray.opacity(0.5))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5))
             }
-            .frame(height: 200)
-            .chartYAxis {
-                AxisMarks { value in
+            .frame(height: 250)
+            .chartXAxis {
+                AxisMarks(values: tickIndices) { value in
+                    AxisGridLine()
                     AxisValueLabel {
-                        if let returnVal = value.as(Double.self) {
-                            Text(String(format: "%.0f%%", returnVal * 100))
+                        if let index = value.as(Int.self) {
+                            let year = metadata.startYear + index
+                            Text(String(year))
+                                .font(.caption2)
                         }
                     }
                 }
             }
+            .chartYAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisValueLabel {
+                        if let returnVal = value.as(Double.self) {
+                            Text(String(format: "%.0f%%", returnVal * 100))
+                                .font(.caption2)
+                        }
+                    }
+                }
+            }
+            .chartXScale(domain: 0...(returns.count - 1))
+            .chartYScale(domain: -yAxisBounds...yAxisBounds)
             
-            Text("\(metadata.endYear - metadata.startYear + 1) years of data (\(metadata.startYear)-\(metadata.endYear))")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .fill(Color.green.gradient)
+                            .frame(width: 12, height: 12)
+                        Text("Positive")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    HStack(spacing: 4) {
+                        Rectangle()
+                            .fill(Color.red.gradient)
+                            .frame(width: 12, height: 12)
+                        Text("Negative")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(returns.count) years of data")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(metadata.startYear)-\(metadata.endYear)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
         }
         .padding()
         .background(Color(.systemBackground))
