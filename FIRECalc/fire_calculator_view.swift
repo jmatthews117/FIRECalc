@@ -166,20 +166,24 @@ struct FIRECalculatorView: View {
                     Text("Current Savings")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    TextField("$0", text: $viewModel.currentSavings)
-                        .keyboardType(.decimalPad)
-                        .onChange(of: viewModel.currentSavings) { oldValue, newValue in
-                            let cleaned = newValue.replacingOccurrences(of: ",", with: "")
-                            if let number = Double(cleaned) {
-                                let formatter = NumberFormatter()
-                                formatter.numberStyle = .decimal
-                                formatter.groupingSeparator = ","
-                                formatter.maximumFractionDigits = 2
-                                viewModel.currentSavings = formatter.string(from: NSNumber(value: number)) ?? cleaned
-                            } else {
-                                viewModel.currentSavings = cleaned
+                    HStack {
+                        Text("$")
+                            .foregroundColor(.secondary)
+                        TextField("0", text: $viewModel.currentSavings)
+                            .keyboardType(.decimalPad)
+                            .onChange(of: viewModel.currentSavings) { oldValue, newValue in
+                                let cleaned = newValue.replacingOccurrences(of: ",", with: "")
+                                if let number = Double(cleaned) {
+                                    let formatter = NumberFormatter()
+                                    formatter.numberStyle = .decimal
+                                    formatter.groupingSeparator = ","
+                                    formatter.maximumFractionDigits = 2
+                                    viewModel.currentSavings = formatter.string(from: NSNumber(value: number)) ?? cleaned
+                                } else {
+                                    viewModel.currentSavings = cleaned
+                                }
                             }
-                        }
+                    }
                 }
 
                 // Annual Savings Contribution
