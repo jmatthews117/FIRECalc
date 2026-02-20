@@ -2,7 +2,17 @@
 //  simulation_result.swift
 //  FIRECalc
 //
-//  MODIFIED - Added allSimulationRuns to store all paths for spaghetti chart
+//  Contains simulation results with aggregate statistics and individual run data.
+//
+//  MEMORY OPTIMIZATION:
+//  The `allSimulationRuns` field stores every simulation path for visualization
+//  (spaghetti charts, sequence of returns analysis, etc.). With default settings
+//  (10,000 runs × 30 years), this can consume 4-8 MB per result.
+//
+//  To manage memory:
+//  - Keep full data for `currentResult` (needed for active visualizations)
+//  - Strip run data before persisting via `withoutSimulationRuns()`
+//  - Historical results loaded from disk have empty `allSimulationRuns` arrays
 //
 
 import Foundation

@@ -99,16 +99,27 @@ class PersistenceService {
     
     // MARK: - Simulation History
     
+    /// Saves a simulation result to persistent history.
+    ///
+    /// **Memory Optimization:** This method automatically strips out the
+    /// `allSimulationRuns` array before persisting. Each SimulationRun contains
+    /// ~30-50 years of balance/withdrawal data, so with 10,000 runs that's
+    /// ~4-8 MB per result. Stripped results are only ~50-100 KB.
+    ///
+    /// The current result in `SimulationViewModel.currentResult` retains full
+    /// data for visualization, but historical results don't need it.
     func saveSimulationResult(_ result: SimulationResult) throws {
         var history = (try? loadSimulationHistory()) ?? []
+        
         // Strip the per-run paths before persisting — they can be enormous
-        // (e.g. 1 000 runs × 50 years = 50 000 Double arrays) and are only
+        // (e.g. 10,000 runs × 30 years = 300,000 Double arrays) and are only
         // needed while the results sheet is on screen, not in stored history.
         history.append(result.withoutSimulationRuns())
         
-        // Keep only last 50 simulations
-        if history.count > 50 {
-            history = Array(history.suffix(50))
+        // Keep only last 20 simulations to conserve storage and memory.
+        // 20 results × ~75 KB = ~1.5 MB vs 20 results × 6 MB = 120 MB!
+        if history.count > 20 {
+            history = Array(history.suffix(20))
         }
         
         let encoder = JSONEncoder()
@@ -118,7 +129,7 @@ class PersistenceService {
         let data = try encoder.encode(history)
         try data.write(to: simulationHistoryURL)
         
-        print("✅ Simulation saved to history")
+        print("✅ Simulation saved to history (stripped run data, keeping last \(history.count) results)")
     }
     
     func loadSimulationHistory() throws -> [SimulationResult] {

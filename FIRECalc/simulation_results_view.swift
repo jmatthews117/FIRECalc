@@ -42,9 +42,11 @@ struct SimulationResultsView: View {
                     endingBalanceHistogram
                         .onTapGesture { showHistogramFullScreen = true }
                     
-                    // Spaghetti Chart of All Paths
-                    spaghettiChartSection
-                        .onTapGesture { showSpaghettiFullScreen = true }
+                    // Spaghetti Chart of All Paths (only if we have run data)
+                    if !result.allSimulationRuns.isEmpty {
+                        spaghettiChartSection
+                            .onTapGesture { showSpaghettiFullScreen = true }
+                    }
 
                     // ── NEW: Sequence of Returns Risk ─────────────────────
                     if !result.allSimulationRuns.isEmpty {
@@ -103,8 +105,13 @@ struct SimulationResultsView: View {
         .task {
             // Compute expensive derived data once, off the critical render path.
             histogramBuckets = createImprovedHistogramBuckets()
-            spaghettiSeries = result.allSimulationRuns.enumerated().map { (idx, run) in
-                SpaghettiChartView.PathSeries(id: idx, values: run.yearlyBalances)
+            
+            // Only compute spaghetti series if we have run data
+            // (historical results loaded from disk have this stripped to save memory)
+            if !result.allSimulationRuns.isEmpty {
+                spaghettiSeries = result.allSimulationRuns.enumerated().map { (idx, run) in
+                    SpaghettiChartView.PathSeries(id: idx, values: run.yearlyBalances)
+                }
             }
         }
     }

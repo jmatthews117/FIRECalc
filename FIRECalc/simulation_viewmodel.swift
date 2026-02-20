@@ -11,8 +11,16 @@ import SwiftUI
 @MainActor
 class SimulationViewModel: ObservableObject {
     @Published var parameters: SimulationParameters
+    
+    /// The most recent simulation result with FULL data including all simulation runs.
+    /// This is kept in memory to support detailed visualizations (spaghetti charts, etc.)
     @Published var currentResult: SimulationResult?
+    
+    /// Historical simulation results loaded from disk. These are stored WITHOUT
+    /// the heavy `allSimulationRuns` data to conserve memory. Each result with
+    /// full run data can be 5-10 MB; stripping that reduces storage to <100 KB.
     @Published var simulationHistory: [SimulationResult] = []
+    
     @Published var isSimulating: Bool = false
     @Published var progress: Double = 0
     @Published var errorMessage: String?
@@ -98,7 +106,8 @@ class SimulationViewModel: ObservableObject {
             currentResult = result
             progress = 1.0
             
-            try? persistence.saveSimulationResult(result)
+            // Strip out heavy simulation run data before persisting to disk
+            try? persistence.saveSimulationResult(result.withoutSimulationRuns())
             if let history = try? persistence.loadSimulationHistory() {
                 simulationHistory = history.reversed()
             }

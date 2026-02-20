@@ -324,11 +324,25 @@ struct SettingsView: View {
                         Label("Export Portfolio", systemImage: "square.and.arrow.up")
                     }
                     
+                    Button(action: { clearSimulationHistory() }) {
+                        HStack {
+                            Label("Clear Simulation History", systemImage: "clock.arrow.circlepath")
+                            Spacer()
+                            if let historyCount = try? persistence.loadSimulationHistory().count, historyCount > 0 {
+                                Text("\(historyCount) saved")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
                     Button(role: .destructive, action: { showingResetConfirmation = true }) {
                         Label("Reset All Data", systemImage: "trash")
                     }
                 } header: {
                     Text("Data Management")
+                } footer: {
+                    Text("Simulation history is automatically limited to 20 results to conserve storage. Clearing history frees up disk space but doesn't affect your current result.")
                 }
                 
                 // App Info
@@ -547,6 +561,16 @@ struct SettingsView: View {
         }
         
         UserDefaults.standard.set(withdrawalPercentage, forKey: AppConstants.UserDefaultsKeys.withdrawalPercentage)
+    }
+    
+    private func clearSimulationHistory() {
+        // Delete the simulation history file
+        let fileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(AppConstants.Storage.simulationHistoryFileName)
+        
+        try? FileManager.default.removeItem(at: fileURL)
+        
+        print("✅ Simulation history cleared")
     }
     
     private func resetAllData() {

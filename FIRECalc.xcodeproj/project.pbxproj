@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9C3D1D0A2F48A2F000014060 /* MEMORY_OPTIMIZATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D092F48A2F000014060 /* MEMORY_OPTIMIZATION_SUMMARY.md */; };
+		9C3D1D0C2F48A31000014060 /* MEMORY_FIX_VERIFICATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D0B2F48A31000014060 /* MEMORY_FIX_VERIFICATION.md */; };
 		9CD2F8022F3C1B5900BF8FCB /* SpaghettiChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD2F8012F3C1B5900BF8FCB /* SpaghettiChartView.swift */; };
 /* End PBXBuildFile section */
 
@@ -31,6 +33,8 @@
 		9C21F6CA2F268A6C004B6016 /* FIRECalc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FIRECalc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6DA2F268A6E004B6016 /* FIRECalcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6E42F268A6E004B6016 /* FIRECalcUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C3D1D092F48A2F000014060 /* MEMORY_OPTIMIZATION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = MEMORY_OPTIMIZATION_SUMMARY.md; sourceTree = "<group>"; };
+		9C3D1D0B2F48A31000014060 /* MEMORY_FIX_VERIFICATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = MEMORY_FIX_VERIFICATION.md; sourceTree = "<group>"; };
 		9CD2F8012F3C1B5900BF8FCB /* SpaghettiChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaghettiChartView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -85,6 +89,8 @@
 				9C21F6CB2F268A6C004B6016 /* Products */,
 				9C21F6CC2F268A6C004B6016 /* FIRECalc */,
 				9CD2F8012F3C1B5900BF8FCB /* SpaghettiChartView.swift */,
+				9C3D1D092F48A2F000014060 /* MEMORY_OPTIMIZATION_SUMMARY.md */,
+				9C3D1D0B2F48A31000014060 /* MEMORY_FIX_VERIFICATION.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -218,6 +224,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C3D1D0C2F48A31000014060 /* MEMORY_FIX_VERIFICATION.md in Resources */,
+				9C3D1D0A2F48A2F000014060 /* MEMORY_OPTIMIZATION_SUMMARY.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
