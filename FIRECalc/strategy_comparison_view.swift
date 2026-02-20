@@ -287,6 +287,10 @@ struct StrategyComparisonView: View {
             Text("Median Portfolio Balance Over Time")
                 .font(.subheadline)
                 .fontWeight(.semibold)
+            
+            Text("All values in today's dollars (inflation-adjusted)")
+                .font(.caption2)
+                .foregroundColor(.secondary)
 
             let maxY = comparisonResults
                 .flatMap(\.yearlyMedians)

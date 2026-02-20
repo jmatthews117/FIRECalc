@@ -266,7 +266,7 @@ struct SimulationResultsView: View {
             Text("Ending Balance Distribution")
                 .font(.headline)
             
-            Text("Shows the final portfolio value after \(result.parameters.timeHorizonYears) years across all \(result.parameters.numberOfRuns.formatted()) scenarios")
+            Text("Shows the final portfolio value after \(result.parameters.timeHorizonYears) years across all \(result.parameters.numberOfRuns.formatted()) scenarios (inflation-adjusted dollars)")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
@@ -387,7 +387,7 @@ struct SimulationResultsView: View {
             Text("All Simulated Paths")
                 .font(.headline)
             
-            Text("Each line shows one scenario's portfolio balance over time")
+            Text("Each line shows one scenario's portfolio balance over time (inflation-adjusted dollars)")
                 .font(.caption)
                 .foregroundColor(.secondary)
             

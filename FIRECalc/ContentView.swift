@@ -159,93 +159,100 @@ struct DashboardTabView: View {
     }
     
     private var portfolioOverviewCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "briefcase.fill")
-                    .font(.title2)
-                    .foregroundColor(.blue)
-                
-                Text("Portfolio Value")
-                    .font(.headline)
-                
-                Spacer()
-                
-                if portfolioVM.isUpdatingPrices {
-                    HStack(spacing: 4) {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Updating...")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            
-            Text(portfolioVM.totalValue.toCurrency())
-                .font(.system(size: 40, weight: .bold, design: .rounded))
-                .foregroundColor(.primary)
-            
-            // Daily gain/loss display (toggleable)
-            if let dailyGain = portfolioVM.dailyGain, 
-               let dailyGainPct = portfolioVM.dailyGainPercentage {
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showDollarGain.toggle()
-                    }
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: dailyGain >= 0 ? "arrow.up.right" : "arrow.down.right")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                        
-                        if showDollarGain {
-                            Text(dailyGain.toCurrency())
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        } else {
-                            Text(dailyGainPct.toPercent())
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                        }
-                        
-                        Text("today")
-                            .font(.caption)
-                    }
-                    .foregroundColor(dailyGain >= 0 ? .green : .red)
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 4)
-            }
-            
-            HStack {
-                Label("\(portfolioVM.portfolio.assets.count) Assets", systemImage: "chart.bar.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                if portfolioVM.hasAssets {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("Pull to refresh")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        // Show last update time for assets with live prices
-                        if let mostRecentUpdate = portfolioVM.portfolio.assetsWithTickers
-                            .compactMap({ $0.lastUpdated })
-                            .max() {
-                            Text("Updated \(timeAgo(from: mostRecentUpdate))")
+        Button(action: { selectedTab = 1 }) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "briefcase.fill")
+                        .font(.title2)
+                        .foregroundColor(.blue)
+                    
+                    Text("Portfolio Value")
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    if portfolioVM.isUpdatingPrices {
+                        HStack(spacing: 4) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Updating...")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Text(portfolioVM.totalValue.toCurrency())
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundColor(.primary)
+                
+                // Daily gain/loss display (toggleable)
+                if let dailyGain = portfolioVM.dailyGain, 
+                   let dailyGainPct = portfolioVM.dailyGainPercentage {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showDollarGain.toggle()
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: dailyGain >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                            
+                            if showDollarGain {
+                                Text(dailyGain.toCurrency())
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            } else {
+                                Text(dailyGainPct.toPercent())
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+                            
+                            Text("today")
+                                .font(.caption)
+                        }
+                        .foregroundColor(dailyGain >= 0 ? .green : .red)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 4)
+                }
+                
+                HStack {
+                    Label("\(portfolioVM.portfolio.assets.count) Assets", systemImage: "chart.bar.fill")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    if portfolioVM.hasAssets {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("Pull to refresh")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            // Show last update time for assets with live prices
+                            if let mostRecentUpdate = portfolioVM.portfolio.assetsWithTickers
+                                .compactMap({ $0.lastUpdated })
+                                .max() {
+                                Text("Updated \(timeAgo(from: mostRecentUpdate))")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
                     }
                 }
             }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(AppConstants.UI.cornerRadius)
+            .shadow(radius: AppConstants.UI.shadowRadius)
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.UI.cornerRadius)
-        .shadow(radius: AppConstants.UI.shadowRadius)
+        .buttonStyle(.plain)
     }
     
     // Helper to display relative time
