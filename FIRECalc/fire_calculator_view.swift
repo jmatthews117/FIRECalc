@@ -379,7 +379,7 @@ struct FIRECalculatorView: View {
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundColor(.blue)
 
-                Text("In \(result.yearsToFIRE) years (\(result.fireYear))")
+                Text("In \(result.yearsToFIRE) years (\(String(format: "%d", result.fireYear)))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
