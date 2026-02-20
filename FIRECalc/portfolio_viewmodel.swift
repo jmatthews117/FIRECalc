@@ -111,27 +111,137 @@ class PortfolioViewModel: ObservableObject {
     // MARK: - Price Updates
     
     func refreshPrices() async {
-        print("🔄 Starting price refresh...")
-        print("   Assets with tickers: \(portfolio.assetsWithTickers.count)")
+        print("\n" + String(repeating: "=", count: 60))
+        print("🔄 REFRESH PRICES STARTED")
+        print(String(repeating: "=", count: 60))
+        print("📅 Time: \(Date())")
+        print("📊 Total assets in portfolio: \(portfolio.assets.count)")
+        print("🎯 Assets with tickers: \(portfolio.assetsWithTickers.count)")
+        
+        // Debug: List all assets
+        print("\n📋 All Assets:")
+        for (index, asset) in portfolio.assets.enumerated() {
+            print("   \(index + 1). \(asset.name)")
+            print("      - Asset Class: \(asset.assetClass.rawValue)")
+            print("      - Ticker: \(asset.ticker ?? "NONE")")
+            print("      - Current Price: \(asset.currentPrice?.description ?? "nil")")
+            print("      - Last Updated: \(asset.lastUpdated?.description ?? "nil")")
+            print("      - Quantity: \(asset.quantity)")
+        }
         
         guard !portfolio.assetsWithTickers.isEmpty else {
-            print("⚠️ No assets with tickers to update")
+            print("\n⚠️ NO ASSETS WITH TICKERS - EXITING")
+            print(String(repeating: "=", count: 60) + "\n")
             return
         }
+        
+        // Debug: Print tickers we're trying to update
+        let tickers = portfolio.assetsWithTickers.compactMap { $0.ticker }
+        print("\n🎯 Tickers to update: \(tickers.joined(separator: ", "))")
         
         isUpdatingPrices = true
         errorMessage = nil
         
-        do {
-            print("📊 Fetching prices from Yahoo Finance...")
-            portfolio = try await YahooFinanceService.shared.updatePortfolioPrices(portfolio: portfolio)
-            savePortfolio()
-            print("✅ Prices updated successfully!")
-            show(success: "Prices updated successfully")
-        } catch {
-            print("❌ Price refresh failed: \(error.localizedDescription)")
-            show(error: error.localizedDescription)
+        var successCount = 0
+        var failCount = 0
+        var failedTickers: [String] = []
+        
+        print("\n" + String(repeating: "-", count: 60))
+        print("🚀 BEGINNING API CALLS")
+        print(String(repeating: "-", count: 60))
+        
+        // Use the same simple approach as when adding assets - fetch price for each ticker directly
+        for (index, asset) in portfolio.assetsWithTickers.enumerated() {
+            guard let ticker = asset.ticker else {
+                print("\n⚠️ Asset #\(index + 1) has no ticker, skipping...")
+                continue
+            }
+            
+            print("\n📡 [\(index + 1)/\(portfolio.assetsWithTickers.count)] Processing: \(ticker)")
+            print("   Asset Name: \(asset.name)")
+            print("   Asset ID: \(asset.id)")
+            print("   Current Price: \(asset.currentPrice?.description ?? "nil")")
+            print("   Last Updated: \(asset.lastUpdated?.description ?? "nil")")
+            
+            do {
+                print("   ⏳ Calling YahooFinanceService.shared.fetchQuote(ticker: \"\(ticker)\")...")
+                
+                // Use Yahoo Finance service directly - same as when adding assets
+                let quote = try await YahooFinanceService.shared.fetchQuote(ticker: ticker)
+                let newPrice = quote.latestPrice
+                
+                print("   ✅ SUCCESS! Got quote:")
+                print("      - Symbol: \(quote.symbol)")
+                print("      - Price: $\(newPrice)")
+                print("      - Change: \(quote.change?.description ?? "nil")")
+                print("      - Change %: \(quote.changePercent?.description ?? "nil")")
+                
+                // Update the asset with the new price
+                print("   📝 Updating asset in portfolio...")
+                var updatedAsset = asset
+                let oldPrice = updatedAsset.currentPrice
+                let oldUpdated = updatedAsset.lastUpdated
+                
+                updatedAsset = updatedAsset.updatedWithLivePrice(newPrice, change: quote.changePercent)
+                
+                print("      - Old price: \(oldPrice?.description ?? "nil")")
+                print("      - New price: \(updatedAsset.currentPrice?.description ?? "nil")")
+                print("      - Old lastUpdated: \(oldUpdated?.description ?? "nil")")
+                print("      - New lastUpdated: \(updatedAsset.lastUpdated?.description ?? "nil")")
+                
+                portfolio.updateAsset(updatedAsset)
+                print("   ✅ Asset updated in portfolio successfully")
+                
+                successCount += 1
+                
+                // Small delay between requests to be respectful to Yahoo Finance
+                print("   ⏸️  Waiting 0.3 seconds before next request...")
+                try await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+                
+            } catch {
+                print("   ❌ FAILED!")
+                print("      Error Type: \(type(of: error))")
+                print("      Error: \(error)")
+                print("      Localized: \(error.localizedDescription)")
+                failedTickers.append(ticker)
+                failCount += 1
+            }
         }
+        
+        print("\n" + String(repeating: "-", count: 60))
+        print("💾 SAVING PORTFOLIO")
+        print(String(repeating: "-", count: 60))
+        savePortfolio()
+        invalidateCache()
+        print("✅ Portfolio saved")
+        
+        print("\n" + String(repeating: "=", count: 60))
+        print("📊 FINAL RESULTS")
+        print(String(repeating: "=", count: 60))
+        print("✅ Successful updates: \(successCount)")
+        print("❌ Failed updates: \(failCount)")
+        if !failedTickers.isEmpty {
+            print("❌ Failed tickers: \(failedTickers.joined(separator: ", "))")
+        }
+        
+        // Show appropriate message
+        if successCount > 0 && failCount == 0 {
+            print("🎉 All prices updated successfully!")
+            show(success: "All prices updated successfully")
+        } else if successCount > 0 {
+            print("⚠️ Partial success: \(successCount) of \(portfolio.assetsWithTickers.count)")
+            show(success: "\(successCount) of \(portfolio.assetsWithTickers.count) prices updated")
+        } else {
+            print("💔 All updates failed!")
+            // All failed - provide helpful error
+            if !failedTickers.isEmpty {
+                show(error: "Unable to update: \(failedTickers.prefix(3).joined(separator: ", "))\(failedTickers.count > 3 ? " + \(failedTickers.count - 3) more" : "")")
+            } else {
+                show(error: "Unable to update prices. Check your internet connection.")
+            }
+        }
+        
+        print(String(repeating: "=", count: 60) + "\n")
         
         isUpdatingPrices = false
     }

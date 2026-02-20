@@ -46,13 +46,23 @@ actor YahooFinanceService {
         for attempt in 1...maxAttempts {
             do {
                 return try await operation()
+            } catch is CancellationError {
+                // Don't retry on cancellation - just re-throw immediately
+                print("⚠️ Task was cancelled - not retrying")
+                throw CancellationError()
             } catch {
                 lastError = error
                 print("⚠️ Attempt \(attempt) failed: \(error.localizedDescription)")
                 
                 if attempt < maxAttempts {
                     let delay = UInt64(attempt * 500_000_000) // 0.5s, 1s, 1.5s
-                    try await Task.sleep(nanoseconds: delay)
+                    do {
+                        try await Task.sleep(nanoseconds: delay)
+                    } catch is CancellationError {
+                        // If sleep is cancelled, stop retrying
+                        print("⚠️ Sleep cancelled - stopping retries")
+                        throw CancellationError()
+                    }
                 }
             }
         }
@@ -207,6 +217,10 @@ actor YahooFinanceService {
         
         print("🔄 Updating \(assetsWithTickers.count) assets...")
         
+        // Track successful and failed updates
+        var successfulUpdates = 0
+        var failedUpdates = 0
+        
         // Group assets by type (stock vs crypto)
         let stockAssets = assetsWithTickers.filter { $0.assetClass != .crypto }
         let cryptoAssets = assetsWithTickers.filter { $0.assetClass == .crypto }
@@ -238,6 +252,11 @@ actor YahooFinanceService {
                     if let price = price {
                         let updatedAsset = asset.updatedWithLivePrice(price, change: change)
                         updatedPortfolio.updateAsset(updatedAsset)
+                        successfulUpdates += 1
+                        print("✅ Updated \(asset.ticker ?? asset.name): $\(price)")
+                    } else {
+                        failedUpdates += 1
+                        print("❌ Failed to update \(asset.ticker ?? asset.name)")
                     }
                 }
             }
@@ -272,6 +291,11 @@ actor YahooFinanceService {
                     if let price = price {
                         let updatedAsset = asset.updatedWithLivePrice(price, change: nil)
                         updatedPortfolio.updateAsset(updatedAsset)
+                        successfulUpdates += 1
+                        print("✅ Updated \(asset.ticker ?? asset.name): $\(price)")
+                    } else {
+                        failedUpdates += 1
+                        print("❌ Failed to update \(asset.ticker ?? asset.name)")
                     }
                 }
             }
@@ -281,6 +305,8 @@ actor YahooFinanceService {
                 try await Task.sleep(nanoseconds: 300_000_000) // 0.3s between batches
             }
         }
+        
+        print("📊 Update complete: \(successfulUpdates) succeeded, \(failedUpdates) failed")
         
         return updatedPortfolio
     }

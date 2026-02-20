@@ -14,6 +14,10 @@
 		9C3D1D122F48A5AD00014060 /* OPTIMIZATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D112F48A5AD00014060 /* OPTIMIZATION_SUMMARY.md */; };
 		9C3D1D142F48A5D600014060 /* QUICK_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D132F48A5D600014060 /* QUICK_REFERENCE.md */; };
 		9C3D1D162F48A7D100014060 /* RATE_LIMITING_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D152F48A7D100014060 /* RATE_LIMITING_GUIDE.md */; };
+		9C3D1D182F48A8EB00014060 /* APP_STORE_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D172F48A8EB00014060 /* APP_STORE_CHECKLIST.md */; };
+		9C3D1D1A2F48A92A00014060 /* CRITICAL_CODE_CHANGES.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3D1D192F48A92A00014060 /* CRITICAL_CODE_CHANGES.swift */; };
+		9C3D1D1C2F48A94800014060 /* PRIVACY_POLICY_TEMPLATE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D1B2F48A94800014060 /* PRIVACY_POLICY_TEMPLATE.md */; };
+		9C3D1D1E2F48A99300014060 /* LAUNCH_QUICK_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D1D2F48A99300014060 /* LAUNCH_QUICK_REFERENCE.md */; };
 		9CD2F8022F3C1B5900BF8FCB /* SpaghettiChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD2F8012F3C1B5900BF8FCB /* SpaghettiChartView.swift */; };
 /* End PBXBuildFile section */
 
@@ -45,6 +49,10 @@
 		9C3D1D112F48A5AD00014060 /* OPTIMIZATION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = OPTIMIZATION_SUMMARY.md; sourceTree = "<group>"; };
 		9C3D1D132F48A5D600014060 /* QUICK_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_REFERENCE.md; sourceTree = "<group>"; };
 		9C3D1D152F48A7D100014060 /* RATE_LIMITING_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = RATE_LIMITING_GUIDE.md; sourceTree = "<group>"; };
+		9C3D1D172F48A8EB00014060 /* APP_STORE_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = APP_STORE_CHECKLIST.md; sourceTree = "<group>"; };
+		9C3D1D192F48A92A00014060 /* CRITICAL_CODE_CHANGES.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CRITICAL_CODE_CHANGES.swift; sourceTree = "<group>"; };
+		9C3D1D1B2F48A94800014060 /* PRIVACY_POLICY_TEMPLATE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PRIVACY_POLICY_TEMPLATE.md; sourceTree = "<group>"; };
+		9C3D1D1D2F48A99300014060 /* LAUNCH_QUICK_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LAUNCH_QUICK_REFERENCE.md; sourceTree = "<group>"; };
 		9CD2F8012F3C1B5900BF8FCB /* SpaghettiChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaghettiChartView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -106,6 +114,10 @@
 				9C3D1D112F48A5AD00014060 /* OPTIMIZATION_SUMMARY.md */,
 				9C3D1D132F48A5D600014060 /* QUICK_REFERENCE.md */,
 				9C3D1D152F48A7D100014060 /* RATE_LIMITING_GUIDE.md */,
+				9C3D1D172F48A8EB00014060 /* APP_STORE_CHECKLIST.md */,
+				9C3D1D192F48A92A00014060 /* CRITICAL_CODE_CHANGES.swift */,
+				9C3D1D1B2F48A94800014060 /* PRIVACY_POLICY_TEMPLATE.md */,
+				9C3D1D1D2F48A99300014060 /* LAUNCH_QUICK_REFERENCE.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -239,9 +251,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C3D1D1C2F48A94800014060 /* PRIVACY_POLICY_TEMPLATE.md in Resources */,
 				9C3D1D142F48A5D600014060 /* QUICK_REFERENCE.md in Resources */,
+				9C3D1D1E2F48A99300014060 /* LAUNCH_QUICK_REFERENCE.md in Resources */,
 				9C3D1D122F48A5AD00014060 /* OPTIMIZATION_SUMMARY.md in Resources */,
 				9C3D1D162F48A7D100014060 /* RATE_LIMITING_GUIDE.md in Resources */,
+				9C3D1D182F48A8EB00014060 /* APP_STORE_CHECKLIST.md in Resources */,
 				9C3D1D0E2F48A52600014060 /* PERFORMANCE_OPTIMIZATIONS.md in Resources */,
 				9C3D1D0C2F48A31000014060 /* MEMORY_FIX_VERIFICATION.md in Resources */,
 				9C3D1D0A2F48A2F000014060 /* MEMORY_OPTIMIZATION_SUMMARY.md in Resources */,
@@ -271,6 +286,7 @@
 			files = (
 				9C3D1D102F48A57700014060 /* performance_helpers.swift in Sources */,
 				9CD2F8022F3C1B5900BF8FCB /* SpaghettiChartView.swift in Sources */,
+				9C3D1D1A2F48A92A00014060 /* CRITICAL_CODE_CHANGES.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

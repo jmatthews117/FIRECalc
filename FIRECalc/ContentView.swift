@@ -100,7 +100,11 @@ struct DashboardTabView: View {
                 .padding()
             }
             .refreshable {
-                await portfolioVM.refreshPrices()
+                // Use Task.detached to prevent SwiftUI from cancelling the refresh
+                // when user scrolls or interacts during refresh
+                await Task.detached { @MainActor in
+                    await portfolioVM.refreshPrices()
+                }.value
             }
             .navigationTitle("Dashboard")
             .sheet(isPresented: $showingSimulationSetup) {
