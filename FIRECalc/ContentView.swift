@@ -139,7 +139,6 @@ struct DashboardTabView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .keyboardDoneButton()
         }
     }
     
@@ -430,7 +429,6 @@ struct PortfolioTabView: View {
                         .keyboardDoneButton()
                 }
         }
-        .keyboardDoneButton()
     }
 }
 
@@ -488,7 +486,6 @@ struct SimulationsTab: View {
             )
             .keyboardDoneButton()
         }
-        .keyboardDoneButton()
         .navigationTitle("Simulations")
     }
     
@@ -728,7 +725,6 @@ struct FIRECalculatorTabView: View {
         NavigationView {
             FIRECalculatorView(portfolioVM: portfolioVM, benefitManager: benefitManager, viewModel: fireCalcVM)
         }
-        .keyboardDoneButton()
     }
 }
 
@@ -825,7 +821,6 @@ struct ToolsTabView: View {
                 }
             }
             .navigationTitle("Tools")
-            .keyboardDoneButton()
         }
     }
 }
@@ -840,7 +835,6 @@ struct SettingsTabView: View {
         NavigationView {
             SettingsView(portfolioVM: portfolioVM, benefitManager: benefitManager)
                 .navigationTitle("Settings")
-                .keyboardDoneButton()
         }
     }
 }
@@ -992,7 +986,6 @@ struct AssetDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingEditSheet) {
             EditAssetView(asset: asset, portfolioVM: portfolioVM)
-                .keyboardDoneButton()
         }
         .confirmationDialog("Delete Asset", isPresented: $showingDeleteConfirmation) {
             Button("Delete", role: .destructive) {
