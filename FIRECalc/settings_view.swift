@@ -1,6 +1,6 @@
 //
 //  SettingsView.swift
-//  FIRECalc
+//  FIcalc
 //
 //  App settings and retirement planning configuration
 //

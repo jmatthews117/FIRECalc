@@ -1,5 +1,5 @@
 //  grouped_portfolio_view.swift
-//  FIRECalc
+//  FIcalc
 //
 //  Portfolio view grouped by asset type with interactive pie chart
 //

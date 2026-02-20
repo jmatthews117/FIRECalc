@@ -2,7 +2,7 @@
 
 ## 📁 Copy These Files to Your Xcode Project
 
-### Models Folder (`FIRECalc/Models/`)
+### Models Folder (`FIcalc/Models/`)
 ```
 AssetClass.swift ..................... Defines asset types (stocks, bonds, etc.)
 Asset.swift .......................... Individual asset holdings
@@ -13,7 +13,7 @@ SimulationResult.swift ............... Simulation output data
 UserProfile.swift .................... User settings and history
 ```
 
-### Services Folder (`FIRECalc/Services/`)
+### Services Folder (`FIcalc/Services/`)
 ```
 MonteCarloEngine.swift ............... Core simulation engine
 WithdrawalCalculator.swift ........... Implements withdrawal strategies
@@ -21,13 +21,13 @@ HistoricalDataService.swift .......... Loads historical return data
 IEXCloudService.swift ................ Live stock price API
 ```
 
-### Data Folder (`FIRECalc/Data/`)
+### Data Folder (`FIcalc/Data/`)
 ```
 HistoricalReturns.json ............... 98 years of market data (1926-2024)
                                        ⚠️ MUST check "Target Membership"
 ```
 
-### Utilities Folder (`FIRECalc/Utilities/`)
+### Utilities Folder (`FIcalc/Utilities/`)
 ```
 Constants.swift ...................... App-wide settings and helpers
 ```
@@ -38,7 +38,7 @@ Constants.swift ...................... App-wide settings and helpers
 
 1. **Create Xcode Project**
    - iOS App
-   - Name: FIRECalc
+   - Name: FIcalc
    - Interface: SwiftUI
    - Language: Swift
    - iOS 17.0+

@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  FIRECalc
+//  FIcalc
 //
 //  Main app structure with edit/delete asset capabilities
 //
