@@ -223,6 +223,9 @@ class PortfolioViewModel: ObservableObject {
             print("❌ Failed tickers: \(failedTickers.joined(separator: ", "))")
         }
         
+        // Save performance snapshot after refresh (regardless of success/fail)
+        savePerformanceSnapshot()
+        
         // Show appropriate message
         if successCount > 0 && failCount == 0 {
             print("🎉 All prices updated successfully!")
@@ -343,6 +346,46 @@ class PortfolioViewModel: ObservableObject {
             guard !Task.isCancelled else { return }
             successMessage = nil
             errorMessage = nil
+        }
+    }
+    
+    // MARK: - Performance Tracking
+    
+    /// Automatically saves a portfolio snapshot after a refresh
+    /// Only saves the overall value (not detailed asset data) for chart logging
+    private func savePerformanceSnapshot() {
+        // Only save if portfolio has value
+        guard totalValue > 0 else {
+            print("⏭️ Skipping snapshot - portfolio has no value")
+            return
+        }
+        
+        // Check if we recently saved a snapshot (within last 15 minutes)
+        // This prevents duplicate snapshots if user refreshes multiple times quickly
+        if let existingSnapshots = try? persistence.loadSnapshots(),
+           let lastSnapshot = existingSnapshots.last {
+            let timeSinceLastSnapshot = Date().timeIntervalSince(lastSnapshot.date)
+            
+            // Skip if last snapshot was within 15 minutes
+            if timeSinceLastSnapshot < 15 * 60 {
+                print("⏭️ Skipping snapshot - last snapshot was \(Int(timeSinceLastSnapshot/60)) minutes ago")
+                return
+            }
+        }
+        
+        let snapshot = PerformanceSnapshot(
+            portfolioId: portfolio.id,
+            totalValue: totalValue,
+            allocation: portfolio.assetAllocation,
+            assets: portfolio.assets
+        )
+        
+        do {
+            try persistence.saveSnapshot(snapshot)
+            print("📸 Performance snapshot saved: \(totalValue.toCurrency())")
+        } catch {
+            print("⚠️ Failed to save performance snapshot: \(error.localizedDescription)")
+            // Don't show error to user - this is a background operation
         }
     }
 }

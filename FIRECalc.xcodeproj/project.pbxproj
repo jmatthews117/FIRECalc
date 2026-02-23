@@ -22,6 +22,7 @@
 		9C3D1D2E2F4C014D00014060 /* MEMORY_FIX_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D2D2F4C014D00014060 /* MEMORY_FIX_COMPLETE.md */; };
 		9C3D1D302F4C016000014060 /* MEMORY_FIX_QUICK_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D2F2F4C016000014060 /* MEMORY_FIX_QUICK_REFERENCE.md */; };
 		9C3D1D322F4C018200014060 /* MEMORY_FIX_VERIFICATION_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D312F4C018200014060 /* MEMORY_FIX_VERIFICATION_CHECKLIST.md */; };
+		9C3D1D422F4C09B100014060 /* AUTOMATIC_SNAPSHOT_FEATURE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C3D1D412F4C09B100014060 /* AUTOMATIC_SNAPSHOT_FEATURE.md */; };
 		9CD2F8022F3C1B5900BF8FCB /* SpaghettiChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD2F8012F3C1B5900BF8FCB /* SpaghettiChartView.swift */; };
 /* End PBXBuildFile section */
 
@@ -61,6 +62,7 @@
 		9C3D1D2D2F4C014D00014060 /* MEMORY_FIX_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = MEMORY_FIX_COMPLETE.md; sourceTree = "<group>"; };
 		9C3D1D2F2F4C016000014060 /* MEMORY_FIX_QUICK_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = MEMORY_FIX_QUICK_REFERENCE.md; sourceTree = "<group>"; };
 		9C3D1D312F4C018200014060 /* MEMORY_FIX_VERIFICATION_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = MEMORY_FIX_VERIFICATION_CHECKLIST.md; sourceTree = "<group>"; };
+		9C3D1D412F4C09B100014060 /* AUTOMATIC_SNAPSHOT_FEATURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AUTOMATIC_SNAPSHOT_FEATURE.md; sourceTree = "<group>"; };
 		9CD2F8012F3C1B5900BF8FCB /* SpaghettiChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaghettiChartView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -130,6 +132,7 @@
 				9C3D1D2D2F4C014D00014060 /* MEMORY_FIX_COMPLETE.md */,
 				9C3D1D2F2F4C016000014060 /* MEMORY_FIX_QUICK_REFERENCE.md */,
 				9C3D1D312F4C018200014060 /* MEMORY_FIX_VERIFICATION_CHECKLIST.md */,
+				9C3D1D412F4C09B100014060 /* AUTOMATIC_SNAPSHOT_FEATURE.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -267,6 +270,7 @@
 				9C3D1D2E2F4C014D00014060 /* MEMORY_FIX_COMPLETE.md in Resources */,
 				9C3D1D322F4C018200014060 /* MEMORY_FIX_VERIFICATION_CHECKLIST.md in Resources */,
 				9C3D1D142F48A5D600014060 /* QUICK_REFERENCE.md in Resources */,
+				9C3D1D422F4C09B100014060 /* AUTOMATIC_SNAPSHOT_FEATURE.md in Resources */,
 				9C3D1D1E2F48A99300014060 /* LAUNCH_QUICK_REFERENCE.md in Resources */,
 				9C3D1D122F48A5AD00014060 /* OPTIMIZATION_SUMMARY.md in Resources */,
 				9C3D1D162F48A7D100014060 /* RATE_LIMITING_GUIDE.md in Resources */,
