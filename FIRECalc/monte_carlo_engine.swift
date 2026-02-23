@@ -42,11 +42,14 @@ actor MonteCarloEngine {
         print("Starting Monte Carlo simulation with \(parameters.numberOfRuns) runs...")
         print("Working in REAL terms (all returns inflation-adjusted)")
 
-        // Split work into batches — one per logical CPU core — so task-creation
-        // overhead stays low while all cores stay saturated.
+        // MEMORY FIX: Split work into batches to limit peak memory usage.
+        // Each batch processes runs sequentially, then returns just the results.
+        // This prevents creating 10K+ concurrent tasks that would spike memory.
         let coreCount = max(1, ProcessInfo.processInfo.activeProcessorCount)
         let totalRuns = parameters.numberOfRuns
         let batchSize = max(1, (totalRuns + coreCount - 1) / coreCount)
+        
+        print("📊 Running \(totalRuns) simulations across \(coreCount) batches of ~\(batchSize) runs each")
 
         let allRuns: [SimulationRun] = try await withThrowingTaskGroup(
             of: [SimulationRun].self
@@ -58,7 +61,8 @@ actor MonteCarloEngine {
                 let batchEnd   = min(start + batchSize, totalRuns)
                 group.addTask {
                     // Each task is nonisolated — pure value-type computation,
-                    // no shared mutable state.
+                    // no shared mutable state. Process runs sequentially to
+                    // avoid spawning thousands of tasks.
                     var batchRuns: [SimulationRun] = []
                     batchRuns.reserveCapacity(batchEnd - batchStart)
                     for runNumber in batchStart..<batchEnd {
@@ -69,6 +73,11 @@ actor MonteCarloEngine {
                             runNumber: runNumber
                         )
                         batchRuns.append(run)
+                        
+                        // MEMORY: Periodically yield to allow other tasks to progress
+                        if (runNumber - batchStart) % 100 == 0 {
+                            await Task.yield()
+                        }
                     }
                     return batchRuns
                 }

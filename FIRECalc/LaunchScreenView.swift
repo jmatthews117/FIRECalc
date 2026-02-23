@@ -82,7 +82,7 @@ struct LaunchScreenView: View {
                 
                 // App name
                 VStack(spacing: 8) {
-                    Text("FIRECalc")
+                    Text("FICalc")
                         .font(.system(size: 40, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     

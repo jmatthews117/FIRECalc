@@ -63,7 +63,11 @@ struct AssetListView: View {
                         
                         Spacer()
                         
-                        Button(action: { Task { await portfolioVM.refreshPrices() } }) {
+                        Button(action: {
+                            Task.detached { @MainActor in
+                                await portfolioVM.refreshPrices()
+                            }
+                        }) {
                             Label("Refresh Prices", systemImage: "arrow.clockwise")
                                 .font(.caption)
                         }

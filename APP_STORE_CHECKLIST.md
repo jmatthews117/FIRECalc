@@ -1,4 +1,4 @@
-# App Store Submission Checklist for FIRECalc
+# App Store Submission Checklist for FICalc
 
 ## 🔴 CRITICAL - Required Before Submission
 
@@ -67,7 +67,7 @@ Section("Legal") {
 
 ### 4. App Store Description
 
-**App Name:** FIRECalc - Retirement Planner
+**App Name:** FICalc - Retirement Planner
 
 **Subtitle (30 chars):** Plan Your Path to Financial Independence
 
@@ -78,7 +78,7 @@ Track your portfolio, run powerful Monte Carlo simulations, and visualize your p
 
 **Description (4000 chars max):**
 ```
-Plan your journey to Financial Independence and Early Retirement with FIRECalc, the most comprehensive FIRE calculator for iOS.
+Plan your journey to Financial Independence and Early Retirement with FICalc, the most comprehensive FIRE calculator for iOS.
 
 🎯 SMART RETIREMENT PLANNING
 • Calculate exactly when you can retire based on your portfolio, savings, and spending
@@ -116,7 +116,7 @@ Plan your journey to Financial Independence and Early Retirement with FIRECalc, 
 • No account required, no ads
 • Your financial data never leaves your control
 
-Whether you're just starting your FIRE journey or years into accumulation, FIRECalc helps you plan with confidence and make data-driven decisions about your financial future.
+Whether you're just starting your FIRE journey or years into accumulation, FICalc helps you plan with confidence and make data-driven decisions about your financial future.
 
 Perfect for:
 • FIRE enthusiasts and early retirement planners
@@ -133,8 +133,8 @@ FIRE,retirement,calculator,financial,independence,portfolio,Monte Carlo,withdraw
 ### 5. App Information in Xcode
 
 **Update Info.plist or project settings:**
-- [ ] Bundle display name: "FIRECalc"
-- [ ] Bundle identifier: com.yourname.FIRECalc (must be unique)
+- [ ] Bundle display name: "FICalc"
+- [ ] Bundle identifier: com.yourname.FICalc (must be unique)
 - [ ] Version: 1.0
 - [ ] Build number: 1
 - [ ] Minimum iOS version: 17.0 (or 16.0 if you want wider compatibility)

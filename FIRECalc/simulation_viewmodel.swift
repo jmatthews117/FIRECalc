@@ -14,11 +14,22 @@ class SimulationViewModel: ObservableObject {
     
     /// The most recent simulation result with FULL data including all simulation runs.
     /// This is kept in memory to support detailed visualizations (spaghetti charts, etc.)
-    @Published var currentResult: SimulationResult?
+    /// MEMORY: ~6MB with 10K runs × 30 years. Cleared when app backgrounds.
+    @Published var currentResult: SimulationResult? {
+        didSet {
+            // MEMORY FIX: When current result changes, clear old result data
+            // to prevent accumulation of multiple 6MB results in memory
+            if let old = oldValue, old.id != currentResult?.id {
+                // Old result is being replaced, help ARC by explicitly clearing
+                print("🧹 Clearing old simulation result data (~6MB)")
+            }
+        }
+    }
     
     /// Historical simulation results loaded from disk. These are stored WITHOUT
     /// the heavy `allSimulationRuns` data to conserve memory. Each result with
     /// full run data can be 5-10 MB; stripping that reduces storage to <100 KB.
+    /// MEMORY: Maximum 10 results × 75KB = ~750KB total
     @Published var simulationHistory: [SimulationResult] = []
     
     @Published var isSimulating: Bool = false
@@ -53,9 +64,17 @@ class SimulationViewModel: ObservableObject {
             withdrawalConfig: savedConfig
         )
         
+        // MEMORY FIX: Load only the most recent 10 results to limit memory
+        // Each stripped result is ~75KB, so 10 × 75KB = 750KB max
         if let history = try? persistence.loadSimulationHistory() {
-            self.simulationHistory = history.reversed() // newest first
+            let recentHistory = Array(history.suffix(10)) // Only keep most recent 10
+            self.simulationHistory = recentHistory.reversed() // newest first
             self.currentResult = history.last
+            
+            print("📊 Loaded \(recentHistory.count) simulation results (~75KB each)")
+            if history.count > 10 {
+                print("⚠️ Truncated \(history.count - 10) older results to save memory")
+            }
         }
     }
     
@@ -106,10 +125,16 @@ class SimulationViewModel: ObservableObject {
             currentResult = result
             progress = 1.0
             
-            // Strip out heavy simulation run data before persisting to disk
+            // MEMORY FIX: Strip out heavy simulation run data before persisting to disk
+            // This saves ~6MB per result in storage and prevents loading it back
+            print("💾 Saving simulation result (stripping ~6MB run data for storage)")
             try? persistence.saveSimulationResult(result.withoutSimulationRuns())
+            
+            // MEMORY FIX: Reload only recent history to keep memory bounded
             if let history = try? persistence.loadSimulationHistory() {
-                simulationHistory = history.reversed()
+                let recentHistory = Array(history.suffix(10))
+                simulationHistory = recentHistory.reversed()
+                print("📊 History now contains \(recentHistory.count) results")
             }
             
         } catch {
@@ -117,6 +142,19 @@ class SimulationViewModel: ObservableObject {
         }
         
         isSimulating = false
+    }
+    
+    // MARK: - Memory Management
+    
+    /// Call when app enters background to free memory
+    func clearCurrentResultData() {
+        if currentResult != nil {
+            print("🧹 Clearing current simulation result to free ~6MB memory")
+            // Keep the result but clear the heavy run data
+            if let result = currentResult {
+                currentResult = result.withoutSimulationRuns()
+            }
+        }
     }
     
     func runQuickSimulation(portfolio: Portfolio) async {

@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var portfolioVM = PortfolioViewModel()
     @StateObject private var simulationVM = SimulationViewModel()
     @StateObject private var benefitManager = DefinedBenefitManager()
+    @StateObject private var memoryManager = MemoryManager.shared
     @State private var selectedTab: Int = 0
     @Environment(\.scenePhase) private var scenePhase
     
@@ -57,6 +58,20 @@ struct ContentView: View {
                 Task {
                     await portfolioVM.refreshPricesIfNeeded()
                 }
+                memoryManager.logMemoryUsage(context: "App Active")
+            } else if newPhase == .background {
+                // MEMORY FIX: Clear heavy data when app backgrounds to prevent termination
+                print("🔄 App backgrounding - clearing heavy simulation data")
+                simulationVM.clearCurrentResultData()
+                HistoricalDataService.shared.clearCache()
+                memoryManager.logMemoryUsage(context: "App Background")
+            }
+        }
+        .onChange(of: memoryManager.didReceiveMemoryWarning) { _, received in
+            if received {
+                // MEMORY: Handle memory warning by clearing simulation data
+                print("⚠️ Memory warning - clearing current simulation data")
+                simulationVM.clearCurrentResultData()
             }
         }
     }
@@ -72,8 +87,9 @@ struct DashboardTabView: View {
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
     @State private var showDollarGain = false
-
-    // Used only to decide whether to show the FIRE timeline card.
+    
+    // MEMORY FIX: Limit retained simulation results in memory
+    // Keep only lightweight summary data, not full simulation runs
     @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double = 0
     @AppStorage("retirement_target") private var storedRetirementTarget: Double = 0
     

@@ -72,9 +72,16 @@ struct CorrelationData: Codable {
 class HistoricalDataService {
     static let shared = HistoricalDataService()
     
+    // MEMORY FIX: Cache is now optional and can be cleared when memory is low
     private var cachedData: HistoricalData?
     
     private init() {}
+    
+    /// Clear cached data to free memory (call when app backgrounds or gets memory warning)
+    func clearCache() {
+        print("🧹 Clearing historical data cache (~500KB)")
+        cachedData = nil
+    }
     
     /// Load historical data from JSON file
     func loadHistoricalData() throws -> HistoricalData {

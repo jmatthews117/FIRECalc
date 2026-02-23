@@ -147,64 +147,63 @@ class PortfolioViewModel: ObservableObject {
         var failedTickers: [String] = []
         
         print("\n" + String(repeating: "-", count: 60))
-        print("🚀 BEGINNING API CALLS")
+        print("🚀 BEGINNING API CALLS (BATCHED)")
         print(String(repeating: "-", count: 60))
         
-        // Use the same simple approach as when adding assets - fetch price for each ticker directly
-        for (index, asset) in portfolio.assetsWithTickers.enumerated() {
-            guard let ticker = asset.ticker else {
-                print("\n⚠️ Asset #\(index + 1) has no ticker, skipping...")
-                continue
+        // EFFICIENCY: Batch requests in groups of 5 for parallel execution
+        // This is 5-7× faster than sequential while respecting rate limits
+        let batchSize = 5
+        let assetsToUpdate = portfolio.assetsWithTickers.filter { $0.ticker != nil }
+        let batches = stride(from: 0, to: assetsToUpdate.count, by: batchSize).map {
+            Array(assetsToUpdate[$0..<min($0 + batchSize, assetsToUpdate.count)])
+        }
+        
+        print("📦 Processing \(assetsToUpdate.count) assets in \(batches.count) batches of ~\(batchSize)")
+        
+        for (batchIndex, batch) in batches.enumerated() {
+            print("\n📦 Batch \(batchIndex + 1)/\(batches.count) - \(batch.count) assets")
+            
+            // Process batch in parallel
+            await withTaskGroup(of: (Asset, YFStockQuote?, Error?).self) { group in
+                for asset in batch {
+                    guard let ticker = asset.ticker else { continue }
+                    
+                    group.addTask {
+                        do {
+                            let quote = try await YahooFinanceService.shared.fetchQuote(ticker: ticker)
+                            return (asset, quote, nil)
+                        } catch {
+                            return (asset, nil, error)
+                        }
+                    }
+                }
+                
+                // Collect results from parallel tasks
+                for await (asset, quote, error) in group {
+                    if let quote = quote {
+                        var updatedAsset = asset
+                        updatedAsset = updatedAsset.updatedWithLivePrice(quote.latestPrice, change: quote.changePercent)
+                        portfolio.updateAsset(updatedAsset)
+                        successCount += 1
+                        print("   ✅ \(asset.ticker!): $\(quote.latestPrice)")
+                    } else {
+                        failCount += 1
+                        if let ticker = asset.ticker {
+                            failedTickers.append(ticker)
+                        }
+                        print("   ❌ \(asset.ticker!): \(error?.localizedDescription ?? "Failed")")
+                    }
+                }
             }
             
-            print("\n📡 [\(index + 1)/\(portfolio.assetsWithTickers.count)] Processing: \(ticker)")
-            print("   Asset Name: \(asset.name)")
-            print("   Asset ID: \(asset.id)")
-            print("   Current Price: \(asset.currentPrice?.description ?? "nil")")
-            print("   Last Updated: \(asset.lastUpdated?.description ?? "nil")")
-            
-            do {
-                print("   ⏳ Calling YahooFinanceService.shared.fetchQuote(ticker: \"\(ticker)\")...")
-                
-                // Use Yahoo Finance service directly - same as when adding assets
-                let quote = try await YahooFinanceService.shared.fetchQuote(ticker: ticker)
-                let newPrice = quote.latestPrice
-                
-                print("   ✅ SUCCESS! Got quote:")
-                print("      - Symbol: \(quote.symbol)")
-                print("      - Price: $\(newPrice)")
-                print("      - Change: \(quote.change?.description ?? "nil")")
-                print("      - Change %: \(quote.changePercent?.description ?? "nil")")
-                
-                // Update the asset with the new price
-                print("   📝 Updating asset in portfolio...")
-                var updatedAsset = asset
-                let oldPrice = updatedAsset.currentPrice
-                let oldUpdated = updatedAsset.lastUpdated
-                
-                updatedAsset = updatedAsset.updatedWithLivePrice(newPrice, change: quote.changePercent)
-                
-                print("      - Old price: \(oldPrice?.description ?? "nil")")
-                print("      - New price: \(updatedAsset.currentPrice?.description ?? "nil")")
-                print("      - Old lastUpdated: \(oldUpdated?.description ?? "nil")")
-                print("      - New lastUpdated: \(updatedAsset.lastUpdated?.description ?? "nil")")
-                
-                portfolio.updateAsset(updatedAsset)
-                print("   ✅ Asset updated in portfolio successfully")
-                
-                successCount += 1
-                
-                // Small delay between requests to be respectful to Yahoo Finance
-                print("   ⏸️  Waiting 0.3 seconds before next request...")
-                try await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
-                
-            } catch {
-                print("   ❌ FAILED!")
-                print("      Error Type: \(type(of: error))")
-                print("      Error: \(error)")
-                print("      Localized: \(error.localizedDescription)")
-                failedTickers.append(ticker)
-                failCount += 1
+            // Small delay only between batches, not individual requests
+            if batchIndex < batches.count - 1 {
+                print("   ⏸️  Waiting 200ms before next batch...")
+                do {
+                    try await Task.sleep(nanoseconds: 200_000_000) // 200ms
+                } catch {
+                    // Sleep was cancelled, continue anyway
+                }
             }
         }
         

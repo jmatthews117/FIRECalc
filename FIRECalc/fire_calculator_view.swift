@@ -1,6 +1,6 @@
 //
 //  FIRECalculatorView.swift
-//  FIRECalc
+//  FICalc
 //
 //  Calculate when you can retire based on income, savings rate, and expenses
 //
@@ -20,12 +20,23 @@ class FIRECalculatorViewModel: ObservableObject {
     @Published var inflationRate: Double = 0.025
     @Published var calculationResult: FIREResult?
 
+    // EFFICIENCY: Debounce task to prevent excessive UserDefaults writes
+    private var debounceSavingsTask: Task<Void, Never>?
+    private var debounceExpensesTask: Task<Void, Never>?
+
     /// The annual savings contribution, kept in sync with the shared
     /// `"annual_savings"` UserDefaults key that Settings also reads/writes.
     @Published var annualSavingsContribution: String = "" {
         didSet {
-            let value = Double(annualSavingsContribution) ?? 0
-            UserDefaults.standard.set(value, forKey: "annual_savings")
+            // EFFICIENCY: Debounce writes - only save after user stops typing for 0.5s
+            debounceSavingsTask?.cancel()
+            debounceSavingsTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.5))
+                guard !Task.isCancelled else { return }
+                
+                let value = Double(annualSavingsContribution) ?? 0
+                UserDefaults.standard.set(value, forKey: "annual_savings")
+            }
         }
     }
 
@@ -33,8 +44,15 @@ class FIRECalculatorViewModel: ObservableObject {
     /// `"expected_annual_spend"` UserDefaults key that Settings also reads/writes.
     @Published var annualExpenses: String = "" {
         didSet {
-            let value = Double(annualExpenses) ?? 0
-            UserDefaults.standard.set(value, forKey: "expected_annual_spend")
+            // EFFICIENCY: Debounce writes - only save after user stops typing for 0.5s
+            debounceExpensesTask?.cancel()
+            debounceExpensesTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.5))
+                guard !Task.isCancelled else { return }
+                
+                let value = Double(annualExpenses) ?? 0
+                UserDefaults.standard.set(value, forKey: "expected_annual_spend")
+            }
         }
     }
 
@@ -75,7 +93,7 @@ struct FIRECalculatorView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 24) {
+                VStack(spacing: 24) {  // MEMORY FIX: Use regular VStack, projections are small
                     // Projected FIRE Timeline summary
                     FIRETimelineCard(portfolioVM: portfolioVM, benefitManager: benefitManager)
 
@@ -89,7 +107,7 @@ struct FIRECalculatorView: View {
                     calculateButton
                         .id("calculateButton")
 
-                    // Results Section
+                    // Results Section (only render if exists)
                     if let result = viewModel.calculationResult {
                         resultsSection(result: result)
                         pathwayChart(result: result)
@@ -337,7 +355,7 @@ struct FIRECalculatorView: View {
         Button(action: calculate) {
             HStack {
                 Spacer()
-                Image(systemName: "calculator")
+                Image(systemName: "chart.line.uptrend.xyaxis")
                 Text("Calculate FIRE Date")
                     .fontWeight(.semibold)
                 Spacer()

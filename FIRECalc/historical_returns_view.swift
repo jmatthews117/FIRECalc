@@ -15,7 +15,7 @@ struct HistoricalReturnsView: View {
     
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 24) {
+            VStack(spacing: 24) {  // MEMORY FIX: Changed from LazyVStack - not needed here
                 // Asset Class Picker
                 assetClassPicker
                 
@@ -31,7 +31,7 @@ struct HistoricalReturnsView: View {
                     // Distribution Chart
                     distributionChart(for: selectedAssetClass, data: data)
                     
-                    // Year-by-Year Returns
+                    // Year-by-Year Returns (MEMORY: Only render selected asset class)
                     yearlyReturnsChart(for: selectedAssetClass, data: data)
                     
                     // Best/Worst Years
@@ -43,6 +43,10 @@ struct HistoricalReturnsView: View {
         .navigationTitle("Historical Returns")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: loadData)
+        .onDisappear {
+            // MEMORY FIX: Clear data when view disappears
+            historicalData = nil
+        }
     }
     
     // MARK: - Asset Class Picker

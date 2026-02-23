@@ -1,6 +1,6 @@
 //
 //  YahooTestView.swift
-//  FIRECalc
+//  FICalc
 //
 //  TEMPORARY - Debug view to test Yahoo Finance
 //  Delete this file once everything works

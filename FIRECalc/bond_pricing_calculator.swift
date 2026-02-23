@@ -1,6 +1,6 @@
 //
 //  bond_pricing_calculator.swift
-//  FIRECalc
+//  FICalc
 //
 //  NEW FILE - Advanced bond pricing calculator
 //
