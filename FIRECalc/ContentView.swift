@@ -1165,6 +1165,9 @@ struct FIRETimelineCard: View {
         let currentValue = portfolioVM.totalValue
         let annualReturn = savedExpectedReturn
         let savings = storedAnnualSavings
+        // Use the stored inflation rate (defaults to 2.5% if not set)
+        let inflationRate = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.inflationRate)
+        let inflation = inflationRate > 0 ? inflationRate : 0.025
 
         let initialEffective = effectiveTarget(grossTarget: gross, age: startAge)
         if currentValue >= initialEffective {
@@ -1173,7 +1176,11 @@ struct FIRETimelineCard: View {
 
         var value = currentValue
         for year in 1...100 {
-            value = value * (1 + annualReturn) + savings
+            // Apply inflation adjustment to savings to match FIRECalculator logic
+            // Year 1 uses the baseline contribution (no inflation adjustment yet),
+            // then subsequent years apply cumulative inflation from year 0.
+            let inflationAdjustedSavings = savings * pow(1 + inflation, Double(year - 1))
+            value = value * (1 + annualReturn) + inflationAdjustedSavings
             let age = startAge + year
             let target = effectiveTarget(grossTarget: gross, age: age)
             if value >= target {

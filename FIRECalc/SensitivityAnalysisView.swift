@@ -29,6 +29,7 @@ struct SensitivityAnalysisView: View {
     @AppStorage("annual_savings")        private var storedAnnualSavings: Double = 0
     @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double  = 0
     @AppStorage("withdrawal_percentage") private var storedWithdrawalRate: Double = 0
+    @AppStorage("inflation_rate")        private var storedInflationRate: Double = 0
 
     enum SweepVariable: String, CaseIterable, Identifiable {
         case spending = "Annual Spending"
@@ -70,6 +71,10 @@ struct SensitivityAnalysisView: View {
 
     private var withdrawalRate: Double {
         storedWithdrawalRate > 0 ? storedWithdrawalRate : 0.04
+    }
+
+    private var inflationRate: Double {
+        storedInflationRate > 0 ? storedInflationRate : 0.025
     }
 
     private var annualReturn: Double {
@@ -410,7 +415,11 @@ struct SensitivityAnalysisView: View {
 
             var value = currentValue
             for yr in 1...100 {
-                value = value * (1 + annualReturn) + savings
+                // Apply inflation adjustment to savings to match FIRECalculator logic
+                // Year 1 uses the baseline contribution (no inflation adjustment yet),
+                // then subsequent years apply cumulative inflation from year 0.
+                let inflationAdjustedSavings = savings * pow(1 + inflationRate, Double(yr - 1))
+                value = value * (1 + annualReturn) + inflationAdjustedSavings
                 if value >= target {
                     return SensitivityPoint(xValue: xVal, years: yr, retirementAge: age + yr)
                 }

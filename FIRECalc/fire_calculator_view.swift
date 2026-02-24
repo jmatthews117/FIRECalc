@@ -956,7 +956,9 @@ struct FIRECalculator {
             age += 1
 
             // Contributions grow with inflation each year.
-            let inflationAdjustedSavings = annualSavings * pow(1 + inflationRate, Double(year))
+            // Year 1 uses the baseline contribution (no inflation adjustment yet),
+            // then subsequent years apply cumulative inflation from year 0.
+            let inflationAdjustedSavings = annualSavings * pow(1 + inflationRate, Double(year - 1))
             totalContributions += inflationAdjustedSavings
 
             // Portfolio grows, then receives this year's contribution.

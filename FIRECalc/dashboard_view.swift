@@ -201,10 +201,17 @@ struct DashboardView: View {
         let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
         guard annualReturn > 0 else { return nil }
         let currentValue = portfolioVM.totalValue
+        
+        // Load inflation rate from UserDefaults
+        let inflationRate = UserDefaults.standard.double(forKey: "inflation_rate")
+        let inflation = inflationRate > 0 ? inflationRate : 0.025
+        
         if currentValue >= target { return 0 }
         var value = currentValue
         for year in 1...100 {
-            value = value * (1 + annualReturn) + savedAnnualSavings
+            // Apply inflation adjustment to savings (year - 1 for correct indexing)
+            let inflationAdjustedSavings = savedAnnualSavings * pow(1 + inflation, Double(year - 1))
+            value = value * (1 + annualReturn) + inflationAdjustedSavings
             if value >= target { return year }
         }
         return nil

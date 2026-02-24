@@ -51,6 +51,13 @@ let inflationAdjustedSavings = annualSavings * pow(1 + inflationRate, Double(yea
 - Applied inflation adjustment: `pow(1 + inflationRate, Double(yr - 1))`
 - Now matches FIRECalculator logic exactly
 
+### 4. DashboardView (Legacy)
+**Added inflation support and fixed indexing** (lines ~200-220):
+- Added inflation rate loading from UserDefaults
+- Applied inflation adjustment: `pow(1 + inflation, Double(year - 1))`
+- Now matches FIRECalculator logic exactly
+- Note: This appears to be legacy code not used in the main app, but updated for consistency
+
 ## Result
 
 All three calculation methods now:
