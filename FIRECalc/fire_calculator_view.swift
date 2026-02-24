@@ -302,6 +302,7 @@ struct FIRECalculatorView: View {
                                 if let number = Double(cleaned) {
                                     let formatter = NumberFormatter()
                                     formatter.numberStyle = .decimal
+                                    formatter.usesGroupingSeparator = true
                                     formatter.groupingSeparator = ","
                                     formatter.maximumFractionDigits = 2
                                     viewModel.annualSavingsContribution = formatter.string(from: NSNumber(value: number)) ?? cleaned
@@ -330,6 +331,7 @@ struct FIRECalculatorView: View {
                                 if let number = Double(cleaned) {
                                     let formatter = NumberFormatter()
                                     formatter.numberStyle = .decimal
+                                    formatter.usesGroupingSeparator = true
                                     formatter.groupingSeparator = ","
                                     formatter.maximumFractionDigits = 2
                                     viewModel.annualExpenses = formatter.string(from: NSNumber(value: number)) ?? cleaned
