@@ -90,8 +90,8 @@ struct DashboardTabView: View {
     
     // MEMORY FIX: Limit retained simulation results in memory
     // Keep only lightweight summary data, not full simulation runs
-    @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double = 0
-    @AppStorage("retirement_target") private var storedRetirementTarget: Double = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.retirementTarget) private var storedRetirementTarget: Double = 0
     
     var body: some View {
         NavigationView {
@@ -1125,16 +1125,19 @@ struct FIRETimelineCard: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
 
-    @AppStorage("current_age") private var storedCurrentAge: Int = 0
-    @AppStorage("annual_savings") private var storedAnnualSavings: Double = 0
-    @AppStorage("expected_annual_spend") private var storedAnnualSpend: Double = 0
-    @AppStorage("withdrawal_percentage") private var storedWithdrawalRate: Double = 0
-    @AppStorage("retirement_target") private var storedRetirementTarget: Double = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.currentAge) private var storedCurrentAge: Int = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.annualSavings) private var storedAnnualSavings: Double = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.withdrawalPercentage) private var storedWithdrawalRate: Double = 0
+    @AppStorage(AppConstants.UserDefaultsKeys.expectedReturn) private var storedExpectedReturn: Double = 0
 
     // MARK: - Helpers
 
     private var savedCurrentAge: Int? { storedCurrentAge > 0 ? storedCurrentAge : nil }
     private var savedWithdrawalRate: Double { storedWithdrawalRate > 0 ? storedWithdrawalRate : 0.04 }
+    private var savedExpectedReturn: Double { 
+        storedExpectedReturn > 0 ? storedExpectedReturn : portfolioVM.portfolio.weightedExpectedReturn
+    }
 
     private var grossRetirementTarget: Double {
         guard storedAnnualSpend > 0 else { return storedRetirementTarget }
@@ -1160,7 +1163,7 @@ struct FIRETimelineCard: View {
         guard let startAge = savedCurrentAge else { return nil }
 
         let currentValue = portfolioVM.totalValue
-        let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
+        let annualReturn = savedExpectedReturn
         let savings = storedAnnualSavings
 
         let initialEffective = effectiveTarget(grossTarget: gross, age: startAge)
@@ -1179,6 +1182,9 @@ struct FIRETimelineCard: View {
         }
         return nil
     }
+
+    // Keep the storedRetirementTarget for backwards compatibility
+    @AppStorage(AppConstants.UserDefaultsKeys.retirementTarget) private var storedRetirementTarget: Double = 0
 
     // MARK: - Body
 
@@ -1242,7 +1248,7 @@ struct FIRETimelineCard: View {
                             Text("Expected Return")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
-                            Text(portfolioVM.portfolio.weightedExpectedReturn.toPercent())
+                            Text(savedExpectedReturn.toPercent())
                                 .font(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.green)

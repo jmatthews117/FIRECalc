@@ -13,16 +13,64 @@ import Charts
 /// Holds all mutable FIRE calculator state so it survives NavigationLink
 /// pushes and pops without being reset to defaults on every appearance.
 class FIRECalculatorViewModel: ObservableObject {
-    @Published var currentAge: Int = 35
     @Published var currentSavings: String = ""
-    @Published var expectedReturn: Double = 0.07
-    @Published var withdrawalRate: Double = 0.04
-    @Published var inflationRate: Double = 0.025
     @Published var calculationResult: FIREResult?
 
-    // EFFICIENCY: Debounce task to prevent excessive UserDefaults writes
+    // EFFICIENCY: Debounce tasks to prevent excessive UserDefaults writes
     private var debounceSavingsTask: Task<Void, Never>?
     private var debounceExpensesTask: Task<Void, Never>?
+    private var debounceAgeTask: Task<Void, Never>?
+    private var debounceReturnTask: Task<Void, Never>?
+    private var debounceWithdrawalTask: Task<Void, Never>?
+    private var debounceInflationTask: Task<Void, Never>?
+
+    /// Current age, synced with UserDefaults globally
+    @Published var currentAge: Int = 35 {
+        didSet {
+            debounceAgeTask?.cancel()
+            debounceAgeTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.5))
+                guard !Task.isCancelled else { return }
+                UserDefaults.standard.set(currentAge, forKey: AppConstants.UserDefaultsKeys.currentAge)
+            }
+        }
+    }
+
+    /// Expected return, synced with UserDefaults globally
+    @Published var expectedReturn: Double = 0.07 {
+        didSet {
+            debounceReturnTask?.cancel()
+            debounceReturnTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.3))
+                guard !Task.isCancelled else { return }
+                UserDefaults.standard.set(expectedReturn, forKey: AppConstants.UserDefaultsKeys.expectedReturn)
+            }
+        }
+    }
+
+    /// Withdrawal rate, synced with UserDefaults globally
+    @Published var withdrawalRate: Double = 0.04 {
+        didSet {
+            debounceWithdrawalTask?.cancel()
+            debounceWithdrawalTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.3))
+                guard !Task.isCancelled else { return }
+                UserDefaults.standard.set(withdrawalRate, forKey: AppConstants.UserDefaultsKeys.withdrawalPercentage)
+            }
+        }
+    }
+
+    /// Inflation rate, synced with UserDefaults globally
+    @Published var inflationRate: Double = 0.025 {
+        didSet {
+            debounceInflationTask?.cancel()
+            debounceInflationTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(0.3))
+                guard !Task.isCancelled else { return }
+                UserDefaults.standard.set(inflationRate, forKey: AppConstants.UserDefaultsKeys.inflationRate)
+            }
+        }
+    }
 
     /// The annual savings contribution, kept in sync with the shared
     /// `"annual_savings"` UserDefaults key that Settings also reads/writes.
@@ -35,7 +83,7 @@ class FIRECalculatorViewModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 
                 let value = Double(annualSavingsContribution) ?? 0
-                UserDefaults.standard.set(value, forKey: "annual_savings")
+                UserDefaults.standard.set(value, forKey: AppConstants.UserDefaultsKeys.annualSavings)
             }
         }
     }
@@ -51,18 +99,44 @@ class FIRECalculatorViewModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 
                 let value = Double(annualExpenses) ?? 0
-                UserDefaults.standard.set(value, forKey: "expected_annual_spend")
+                UserDefaults.standard.set(value, forKey: AppConstants.UserDefaultsKeys.expectedAnnualSpend)
             }
         }
     }
 
     init() {
-        let savedSavings = UserDefaults.standard.double(forKey: "annual_savings")
+        // Load current age
+        let savedAge = UserDefaults.standard.integer(forKey: AppConstants.UserDefaultsKeys.currentAge)
+        if savedAge > 0 {
+            currentAge = savedAge
+        }
+
+        // Load expected return
+        let savedReturn = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.expectedReturn)
+        if savedReturn > 0 {
+            expectedReturn = savedReturn
+        }
+
+        // Load withdrawal rate
+        let savedWithdrawal = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.withdrawalPercentage)
+        if savedWithdrawal > 0 {
+            withdrawalRate = savedWithdrawal
+        }
+
+        // Load inflation rate
+        let savedInflation = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.inflationRate)
+        if savedInflation > 0 {
+            inflationRate = savedInflation
+        }
+
+        // Load annual savings
+        let savedSavings = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.annualSavings)
         if savedSavings > 0 {
             annualSavingsContribution = String(format: "%.0f", savedSavings)
         }
 
-        let savedExpenses = UserDefaults.standard.double(forKey: "expected_annual_spend")
+        // Load annual expenses
+        let savedExpenses = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.expectedAnnualSpend)
         if savedExpenses > 0 {
             annualExpenses = String(format: "%.0f", savedExpenses)
         }
@@ -71,13 +145,33 @@ class FIRECalculatorViewModel: ObservableObject {
     /// Call this to pull the latest values from UserDefaults (e.g. when the
     /// view appears after the user may have changed them in Settings).
     func syncFromUserDefaults() {
-        let savedSavings = UserDefaults.standard.double(forKey: "annual_savings")
+        let savedAge = UserDefaults.standard.integer(forKey: AppConstants.UserDefaultsKeys.currentAge)
+        if savedAge > 0 && savedAge != currentAge {
+            currentAge = savedAge
+        }
+
+        let savedReturn = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.expectedReturn)
+        if savedReturn > 0 && abs(savedReturn - expectedReturn) > 0.0001 {
+            expectedReturn = savedReturn
+        }
+
+        let savedWithdrawal = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.withdrawalPercentage)
+        if savedWithdrawal > 0 && abs(savedWithdrawal - withdrawalRate) > 0.0001 {
+            withdrawalRate = savedWithdrawal
+        }
+
+        let savedInflation = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.inflationRate)
+        if savedInflation > 0 && abs(savedInflation - inflationRate) > 0.0001 {
+            inflationRate = savedInflation
+        }
+
+        let savedSavings = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.annualSavings)
         let currentSavingsContribution = Double(annualSavingsContribution) ?? 0
         if savedSavings != currentSavingsContribution {
             annualSavingsContribution = savedSavings > 0 ? String(format: "%.0f", savedSavings) : ""
         }
 
-        let savedExpenses = UserDefaults.standard.double(forKey: "expected_annual_spend")
+        let savedExpenses = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.expectedAnnualSpend)
         let currentExpenses = Double(annualExpenses) ?? 0
         if savedExpenses != currentExpenses {
             annualExpenses = savedExpenses > 0 ? String(format: "%.0f", savedExpenses) : ""

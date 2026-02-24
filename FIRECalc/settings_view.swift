@@ -23,6 +23,8 @@ struct SettingsView: View {
     @State private var annualSavings: String = ""
     @State private var expectedAnnualSpend: String = "40000"
     @State private var withdrawalPercentage: Double = 0.04
+    @State private var expectedReturn: Double = 0.07
+    @State private var inflationRate: Double = 0.025
 
     @State private var showingResetConfirmation = false
     @State private var showingExportSheet = false
@@ -135,6 +137,38 @@ struct SettingsView: View {
                         }
 
                         Text("The 4% rule suggests you can safely withdraw 4% of your portfolio annually")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    // Expected Return Slider
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Expected Annual Return")
+                            Spacer()
+                            Text(expectedReturn.toPercent())
+                                .foregroundColor(.secondary)
+                        }
+
+                        Slider(value: $expectedReturn, in: 0...0.15, step: 0.005)
+
+                        Text("Used for FIRE timeline projections. Default uses your portfolio's weighted return (\(portfolioVM.portfolio.weightedExpectedReturn.toPercent()))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    // Inflation Rate Slider
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Inflation Rate")
+                            Spacer()
+                            Text(inflationRate.toPercent())
+                                .foregroundColor(.secondary)
+                        }
+
+                        Slider(value: $inflationRate, in: 0...0.05, step: 0.005)
+
+                        Text("Adjusts annual savings contributions over time")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -376,6 +410,8 @@ struct SettingsView: View {
             .onChange(of: annualSavings) { _, _ in saveSettings() }
             .onChange(of: expectedAnnualSpend) { _, _ in saveSettings() }
             .onChange(of: withdrawalPercentage) { _, _ in saveSettings() }
+            .onChange(of: expectedReturn) { _, _ in saveSettings() }
+            .onChange(of: inflationRate) { _, _ in saveSettings() }
             
             .confirmationDialog("Reset All Data", isPresented: $showingResetConfirmation) {
                 Button("Reset Everything", role: .destructive) {
@@ -415,7 +451,7 @@ struct SettingsView: View {
     }
 
     /// Projects how many years until the current portfolio (plus annual savings,
-    /// compounded at the portfolio's weighted expected return) reaches the FIRE target,
+    /// compounded at the expected return rate) reaches the FIRE target,
     /// accounting for guaranteed income streams that reduce the required portfolio
     /// once they begin.
     private var fireProjection: FIREProjection? {
@@ -424,7 +460,7 @@ struct SettingsView: View {
 
         let grossTarget = spend / withdrawalPercentage
         let currentValue = portfolioVM.totalValue
-        let annualReturn = portfolioVM.portfolio.weightedExpectedReturn
+        let annualReturn = expectedReturn > 0 ? expectedReturn : portfolioVM.portfolio.weightedExpectedReturn
         let savings = parseFormattedNumber(annualSavings) ?? 0
         let startAge = Int(currentAge) ?? 0
 
@@ -532,6 +568,19 @@ struct SettingsView: View {
         if savedWithdrawalPct > 0 {
             withdrawalPercentage = savedWithdrawalPct
         }
+
+        let savedReturn = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.expectedReturn)
+        if savedReturn > 0 {
+            expectedReturn = savedReturn
+        } else {
+            // Default to portfolio weighted return if not set
+            expectedReturn = portfolioVM.portfolio.weightedExpectedReturn
+        }
+
+        let savedInflation = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.inflationRate)
+        if savedInflation > 0 {
+            inflationRate = savedInflation
+        }
     }
     
     private func saveSettings() {
@@ -561,6 +610,8 @@ struct SettingsView: View {
         }
         
         UserDefaults.standard.set(withdrawalPercentage, forKey: AppConstants.UserDefaultsKeys.withdrawalPercentage)
+        UserDefaults.standard.set(expectedReturn, forKey: AppConstants.UserDefaultsKeys.expectedReturn)
+        UserDefaults.standard.set(inflationRate, forKey: AppConstants.UserDefaultsKeys.inflationRate)
     }
     
     private func clearSimulationHistory() {
@@ -588,6 +639,8 @@ struct SettingsView: View {
         annualSavings = ""
         expectedAnnualSpend = "40000"
         withdrawalPercentage = 0.04
+        expectedReturn = 0.07
+        inflationRate = 0.025
     }
 }
 

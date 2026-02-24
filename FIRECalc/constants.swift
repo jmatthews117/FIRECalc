@@ -58,6 +58,8 @@ enum AppConstants {
         static let expectedAnnualSpend = "expected_annual_spend"
         static let withdrawalPercentage = "withdrawal_percentage"
         static let retirementTarget = "retirement_target"
+        static let expectedReturn = "expected_return"
+        static let inflationRate = "inflation_rate"
     }
     
     // MARK: - File Storage
