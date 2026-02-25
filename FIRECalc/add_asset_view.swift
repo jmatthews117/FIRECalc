@@ -356,6 +356,11 @@ struct AddAssetView: View {
         priceError = nil
         autoLoadedPrice = nil
         
+        // DEBUG: Log crypto price fetch
+        if selectedAssetClass == .crypto {
+            print("🔍 Fetching price for crypto: [\(cleanTicker)] assetClass=\(selectedAssetClass)")
+        }
+        
         Task {
             do {
                 let tempAsset = Asset(
@@ -366,7 +371,17 @@ struct AddAssetView: View {
                     unitValue: 0
                 )
                 
+                // DEBUG: Show which ticker will be used for Yahoo Finance
+                if selectedAssetClass == .crypto {
+                    print("   📌 Will use Yahoo Finance ticker: \(tempAsset.yahooFinanceTicker ?? "nil")")
+                }
+                
                 let price = try await AlternativePriceService.shared.fetchPrice(for: tempAsset)
+                
+                // DEBUG: Log fetched crypto price
+                if selectedAssetClass == .crypto {
+                    print("✅ Fetched crypto price: [\(cleanTicker)] = \(price)")
+                }
                 
                 await MainActor.run {
                     autoLoadedPrice = price
@@ -374,6 +389,11 @@ struct AddAssetView: View {
                     isLoadingPrice = false
                 }
             } catch {
+                // DEBUG: Log crypto price fetch error
+                if selectedAssetClass == .crypto {
+                    print("❌ Failed to fetch crypto price: [\(cleanTicker)] error=\(error)")
+                }
+                
                 await MainActor.run {
                     priceError = "Could not load price"
                     isLoadingPrice = false
@@ -391,22 +411,44 @@ struct AddAssetView: View {
         
         let finalPrice: Double
         let finalQuantity: Double
+        let usedAutoLoadedPrice: Bool
         
         if needsQuantityAndPrice {
-            finalPrice = Double(unitValue.replacingOccurrences(of: ",", with: "")) ?? autoLoadedPrice ?? 0
+            // Check if user manually entered a price or if we should use auto-loaded price
+            if let manualPrice = Double(unitValue.replacingOccurrences(of: ",", with: "")), !unitValue.isEmpty {
+                finalPrice = manualPrice
+                usedAutoLoadedPrice = false
+            } else if let autoPrice = autoLoadedPrice {
+                finalPrice = autoPrice
+                usedAutoLoadedPrice = true
+            } else {
+                finalPrice = 0
+                usedAutoLoadedPrice = false
+            }
             finalQuantity = Double(quantity.replacingOccurrences(of: ",", with: "")) ?? 1
         } else {
             finalPrice = Double(unitValue.replacingOccurrences(of: ",", with: "")) ?? 0
             finalQuantity = 1
+            usedAutoLoadedPrice = false
         }
         
-        let asset = Asset(
+        var asset = Asset(
             name: finalName,
             assetClass: selectedAssetClass,
             ticker: finalTicker,
             quantity: finalQuantity,
             unitValue: finalPrice
         )
+        
+        // DEBUG: Log crypto asset creation
+        if selectedAssetClass == .crypto {
+            print("➕ Adding crypto: [\(finalTicker ?? finalName)] price=\(finalPrice) qty=\(finalQuantity) autoLoaded=\(usedAutoLoadedPrice)")
+        }
+        
+        // If we used the auto-loaded price, mark it as current live price
+        if usedAutoLoadedPrice, let autoPrice = autoLoadedPrice {
+            asset = asset.updatedWithLivePrice(autoPrice)
+        }
         
         portfolioVM.addAsset(asset)
         dismiss()

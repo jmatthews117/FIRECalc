@@ -56,9 +56,19 @@ struct Asset: Identifiable, Codable, Hashable {
     
     var totalValue: Double {
         if let current = currentPrice {
-            return current * quantity
+            let total = current * quantity
+            // DEBUG: Log for troubleshooting crypto pricing issues
+            if assetClass == .crypto {
+                print("💰 [\(ticker ?? name)] Total: \(total) = currentPrice(\(current)) × quantity(\(quantity))")
+            }
+            return total
         }
-        return unitValue * quantity
+        let total = unitValue * quantity
+        // DEBUG: Log for troubleshooting crypto pricing issues
+        if assetClass == .crypto {
+            print("💰 [\(ticker ?? name)] Total: \(total) = unitValue(\(unitValue)) × quantity(\(quantity))")
+        }
+        return total
     }
     
     var expectedReturn: Double {
@@ -78,6 +88,19 @@ struct Asset: Identifiable, Codable, Hashable {
         return Date().timeIntervalSince(updated) > 3600 // 1 hour
     }
     
+    /// Returns the properly formatted ticker for Yahoo Finance API
+    /// For crypto, adds -USD suffix if not already present
+    var yahooFinanceTicker: String? {
+        guard let ticker = ticker else { return nil }
+        
+        // For crypto, ensure -USD suffix is present
+        if assetClass == .crypto {
+            return ticker.hasSuffix("-USD") ? ticker : "\(ticker)-USD"
+        }
+        
+        return ticker
+    }
+    
     // MARK: - Helpers
     
     func updatedWithLivePrice(_ price: Double, change: Double? = nil) -> Asset {
@@ -85,6 +108,13 @@ struct Asset: Identifiable, Codable, Hashable {
         updated.currentPrice = price
         updated.lastUpdated = Date()
         updated.priceChange = change
+        
+        // DEBUG: Log price updates for crypto
+        if assetClass == .crypto {
+            print("🔄 [\(ticker ?? name)] Price updated: \(price) (was unitValue: \(unitValue))")
+            print("   📌 Stored ticker: '\(ticker ?? "nil")' | Yahoo Finance ticker: '\(yahooFinanceTicker ?? "nil")'")
+        }
+        
         return updated
     }
 }

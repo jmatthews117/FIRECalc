@@ -163,15 +163,16 @@ class PortfolioViewModel: ObservableObject {
         for (batchIndex, batch) in batches.enumerated() {
             print("\n📦 Batch \(batchIndex + 1)/\(batches.count) - \(batch.count) assets")
             
-            // Process batch in parallel
-            await withTaskGroup(of: (Asset, YFStockQuote?, Error?).self) { group in
+            // Process batch in parallel - UNIFIED: Use AlternativePriceService for ALL assets
+            await withTaskGroup(of: (Asset, Double?, Error?).self) { group in
                 for asset in batch {
-                    guard let ticker = asset.ticker else { continue }
+                    guard asset.ticker != nil else { continue }
                     
                     group.addTask {
                         do {
-                            let quote = try await YahooFinanceService.shared.fetchQuote(ticker: ticker)
-                            return (asset, quote, nil)
+                            // Use AlternativePriceService which handles crypto correctly with -USD suffix
+                            let price = try await AlternativePriceService.shared.fetchPrice(for: asset)
+                            return (asset, price, nil)
                         } catch {
                             return (asset, nil, error)
                         }
@@ -179,13 +180,14 @@ class PortfolioViewModel: ObservableObject {
                 }
                 
                 // Collect results from parallel tasks
-                for await (asset, quote, error) in group {
-                    if let quote = quote {
+                for await (asset, price, error) in group {
+                    if let price = price {
                         var updatedAsset = asset
-                        updatedAsset = updatedAsset.updatedWithLivePrice(quote.latestPrice, change: quote.changePercent)
+                        // For change percent, we could fetch it separately for stocks, but for now just update price
+                        updatedAsset = updatedAsset.updatedWithLivePrice(price, change: nil)
                         portfolio.updateAsset(updatedAsset)
                         successCount += 1
-                        print("   ✅ \(asset.ticker!): $\(quote.latestPrice)")
+                        print("   ✅ \(asset.ticker!): $\(price)")
                     } else {
                         failCount += 1
                         if let ticker = asset.ticker {

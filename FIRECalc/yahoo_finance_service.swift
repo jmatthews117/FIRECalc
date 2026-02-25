@@ -152,13 +152,33 @@ actor YahooFinanceService {
     
     /// Fetch crypto quote
     func fetchCryptoQuote(symbol: String) async throws -> YFCryptoQuote {
+        print("      ╔══════════════════════════════════════════════")
+        print("      ║ [YahooFinanceService.fetchCryptoQuote]")
+        print("      ║ Input symbol: '\(symbol)'")
+        
         let cleanSymbol = symbol.uppercased().trimmingCharacters(in: .whitespaces)
-        let yahooSymbol = cleanSymbol.contains("-") ? cleanSymbol : "\(cleanSymbol)-USD"
+        print("      ║ Clean symbol: '\(cleanSymbol)'")
+        
+        // CRYPTO FIX: Always ensure -USD suffix for Yahoo Finance
+        let yahooSymbol: String
+        if cleanSymbol.hasSuffix("-USD") {
+            yahooSymbol = cleanSymbol
+            print("      ║ Already has -USD suffix")
+        } else {
+            yahooSymbol = "\(cleanSymbol)-USD"
+            print("      ║ Adding -USD suffix")
+        }
+        
+        print("      ║ Yahoo symbol: '\(yahooSymbol)'")
+        print("      ║ Calling fetchQuote(ticker: '\(yahooSymbol)')...")
         
         let quote = try await fetchQuote(ticker: yahooSymbol)
         
+        print("      ║ ✅ Got quote: $\(quote.latestPrice)")
+        print("      ╚══════════════════════════════════════════════")
+        
         return YFCryptoQuote(
-            symbol: cleanSymbol,
+            symbol: cleanSymbol.replacingOccurrences(of: "-USD", with: ""),
             latestPrice: quote.latestPrice,
             lastUpdate: Date()
         )
@@ -221,28 +241,36 @@ actor YahooFinanceService {
         var successfulUpdates = 0
         var failedUpdates = 0
         
-        // Group assets by type (stock vs crypto)
-        let stockAssets = assetsWithTickers.filter { $0.assetClass != .crypto }
-        let cryptoAssets = assetsWithTickers.filter { $0.assetClass == .crypto }
-        
-        // Process stocks in batches of 3 to be respectful to Yahoo Finance
+        // UNIFIED APPROACH: Use AlternativePriceService for ALL assets
+        // This ensures crypto gets -USD suffix consistently
         let batchSize = 3
         
-        for batchStart in stride(from: 0, to: stockAssets.count, by: batchSize) {
-            let batchEnd = min(batchStart + batchSize, stockAssets.count)
-            let batch = Array(stockAssets[batchStart..<batchEnd])
+        for batchStart in stride(from: 0, to: assetsWithTickers.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, assetsWithTickers.count)
+            let batch = Array(assetsWithTickers[batchStart..<batchEnd])
             
             // Fetch this batch concurrently
             await withTaskGroup(of: (Asset, Double?, Double?).self) { group in
                 for asset in batch {
-                    guard let ticker = asset.ticker else { continue }
-                    
                     group.addTask {
                         do {
-                            let quote = try await self.fetchQuote(ticker: ticker)
-                            return (asset, quote.latestPrice, quote.changePercent)
+                            // Use AlternativePriceService which handles crypto correctly
+                            let price = try await AlternativePriceService.shared.fetchPrice(for: asset)
+                            
+                            // For change percentage, try to get it if available
+                            var changePercent: Double? = nil
+                            if asset.assetClass != .crypto {
+                                // For stocks, try to get change percent
+                                if let ticker = asset.ticker {
+                                    if let quote = try? await self.fetchQuote(ticker: ticker) {
+                                        changePercent = quote.changePercent
+                                    }
+                                }
+                            }
+                            
+                            return (asset, price, changePercent)
                         } catch {
-                            print("⚠️ Failed to update \(ticker): \(error.localizedDescription)")
+                            print("⚠️ Failed to update \(asset.ticker ?? asset.name): \(error.localizedDescription)")
                             return (asset, nil, nil)
                         }
                     }
@@ -253,55 +281,16 @@ actor YahooFinanceService {
                         let updatedAsset = asset.updatedWithLivePrice(price, change: change)
                         updatedPortfolio.updateAsset(updatedAsset)
                         successfulUpdates += 1
-                        print("✅ Updated \(asset.ticker ?? asset.name): $\(price)")
+                        print("   ✅ \(asset.ticker ?? asset.name): $\(price)")
                     } else {
                         failedUpdates += 1
-                        print("❌ Failed to update \(asset.ticker ?? asset.name)")
+                        print("   ❌ Failed to update \(asset.ticker ?? asset.name)")
                     }
                 }
             }
             
             // Small delay between batches to avoid overwhelming Yahoo Finance
-            if batchEnd < stockAssets.count {
-                try await Task.sleep(nanoseconds: 300_000_000) // 0.3s between batches
-            }
-        }
-        
-        // Process crypto in batches too
-        for batchStart in stride(from: 0, to: cryptoAssets.count, by: batchSize) {
-            let batchEnd = min(batchStart + batchSize, cryptoAssets.count)
-            let batch = Array(cryptoAssets[batchStart..<batchEnd])
-            
-            await withTaskGroup(of: (Asset, Double?).self) { group in
-                for asset in batch {
-                    guard let ticker = asset.ticker else { continue }
-                    
-                    group.addTask {
-                        do {
-                            let quote = try await self.fetchCryptoQuote(symbol: ticker)
-                            return (asset, quote.latestPrice)
-                        } catch {
-                            print("⚠️ Failed to update \(ticker): \(error.localizedDescription)")
-                            return (asset, nil)
-                        }
-                    }
-                }
-                
-                for await (asset, price) in group {
-                    if let price = price {
-                        let updatedAsset = asset.updatedWithLivePrice(price, change: nil)
-                        updatedPortfolio.updateAsset(updatedAsset)
-                        successfulUpdates += 1
-                        print("✅ Updated \(asset.ticker ?? asset.name): $\(price)")
-                    } else {
-                        failedUpdates += 1
-                        print("❌ Failed to update \(asset.ticker ?? asset.name)")
-                    }
-                }
-            }
-            
-            // Delay between crypto batches
-            if batchEnd < cryptoAssets.count {
+            if batchEnd < assetsWithTickers.count {
                 try await Task.sleep(nanoseconds: 300_000_000) // 0.3s between batches
             }
         }

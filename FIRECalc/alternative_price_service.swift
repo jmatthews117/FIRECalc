@@ -42,38 +42,65 @@ actor AlternativePriceService {
     
     /// Fetch price for any asset - tries Yahoo Finance API first, falls back to static prices
     func fetchPrice(for asset: Asset) async throws -> Double {
+        // DEBUG: Show what we received
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("🔍 [AlternativePriceService.fetchPrice] CALLED")
+        print("   Asset Name: \(asset.name)")
+        print("   Asset Class: \(asset.assetClass)")
+        print("   Asset Ticker: \(asset.ticker ?? "nil")")
+        print("   Asset ID: \(asset.id)")
+        
         guard let ticker = asset.ticker else {
+            print("❌ No ticker found - throwing error")
             throw PriceServiceError.noIdentifier
         }
         
         let cleanTicker = ticker.uppercased().trimmingCharacters(in: .whitespaces)
+        print("   Clean Ticker: '\(cleanTicker)'")
         
         // Try Yahoo Finance first (no API key needed!)
         do {
-            return try await fetchFromYahoo(for: asset, ticker: cleanTicker)
+            print("   🌐 Attempting Yahoo Finance fetch...")
+            let price = try await fetchFromYahoo(for: asset, ticker: cleanTicker)
+            print("   ✅ SUCCESS: Got price $\(price)")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            return price
         } catch {
-            print("⚠️ Yahoo Finance failed for \(cleanTicker): \(error.localizedDescription)")
-            print("   Falling back to demo prices...")
+            print("   ❌ Yahoo Finance FAILED: \(error.localizedDescription)")
+            print("   📦 Falling back to demo prices...")
             
             // Use fallback prices
-            return try fetchFromFallback(ticker: cleanTicker)
+            let fallbackPrice = try fetchFromFallback(ticker: cleanTicker)
+            print("   ✅ Fallback price: $\(fallbackPrice)")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            return fallbackPrice
         }
     }
     
     private func fetchFromYahoo(for asset: Asset, ticker: String) async throws -> Double {
+        print("   ├─ [fetchFromYahoo] Starting...")
+        print("   ├─ Ticker: '\(ticker)'")
+        print("   ├─ Asset Class: \(asset.assetClass)")
+        
         let yahooService = YahooFinanceService.shared
         
         switch asset.assetClass {
         case .crypto:
+            print("   ├─ 🪙 CRYPTO PATH SELECTED")
+            print("   ├─ Calling YahooFinanceService.fetchCryptoQuote(symbol: '\(ticker)')")
             let quote = try await yahooService.fetchCryptoQuote(symbol: ticker)
+            print("   ├─ ✅ Got crypto quote: $\(quote.latestPrice)")
             return quote.latestPrice
             
         case .stocks, .bonds, .reits, .preciousMetals:
-            // All can be fetched as regular tickers from Yahoo
+            print("   ├─ 📈 STOCK/BOND PATH SELECTED")
+            print("   ├─ Calling YahooFinanceService.fetchQuote(ticker: '\(ticker)')")
             let quote = try await yahooService.fetchQuote(ticker: ticker)
+            print("   ├─ ✅ Got quote: $\(quote.latestPrice)")
             return quote.latestPrice
             
         default:
+            print("   ├─ ❌ Unsupported asset class: \(asset.assetClass)")
             throw PriceServiceError.noPricingAvailable
         }
     }
