@@ -336,8 +336,6 @@ struct StrategyComparisonView: View {
     // MARK: - Recommendation card
 
     private var recommendationCard: some View {
-        let best = comparisonResults.max { $0.successRate < $1.successRate }
-        let mostIncome = comparisonResults.max { $0.averageAnnualWithdrawal < $1.averageAnnualWithdrawal }
         let current = comparisonResults.first {
             $0.strategy == baseResult.parameters.withdrawalConfig.strategy
         }
@@ -348,28 +346,105 @@ struct StrategyComparisonView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.purple)
 
-            if let best, let current {
+            // Generate takeaway based on selected metric
+            metricSpecificTakeaway(current: current)
+        }
+        .padding(12)
+        .background(Color.purple.opacity(0.07))
+        .cornerRadius(10)
+    }
+
+    @ViewBuilder
+    private func metricSpecificTakeaway(current: StrategyComparisonResult?) -> some View {
+        switch selectedMetric {
+        case .successRate:
+            successRateTakeaway(current: current)
+        case .medianBalance:
+            medianBalanceTakeaway(current: current)
+        case .annualIncome:
+            annualIncomeTakeaway(current: current)
+        }
+    }
+
+    private func successRateTakeaway(current: StrategyComparisonResult?) -> some View {
+        let best = comparisonResults.max { $0.successRate < $1.successRate }
+
+        return Group {
+            if let best, let current = current {
                 if best.strategy == current.strategy {
                     Text("Your current strategy (\(current.strategy.shortName)) has the highest success rate of all four options — a great choice for this portfolio.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else {
-                    Text("**\(best.strategy.shortName)** achieves the highest success rate (\(String(format: "%.0f%%", best.successRate * 100))) — \(String(format: "%.0f", (best.successRate - current.successRate) * 100)) points above your current strategy. It does this by reducing withdrawals in poor market years, preserving capital when you need it most.")
+                    let improvement = (best.successRate - current.successRate) * 100
+                    Text("**\(best.strategy.shortName)** achieves the highest success rate (\(String(format: "%.0f%%", best.successRate * 100))) — \(String(format: "%.0f", improvement)) points above your current strategy. It does this by reducing withdrawals in poor market years, preserving capital when you need it most.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
+        }
+    }
 
-            if let top = mostIncome, top.strategy != best?.strategy {
-                Text("For the highest annual income, **\(top.strategy.shortName)** delivers \(shortCurrency(top.averageAnnualWithdrawal))/yr on average — but at a lower success rate of \(String(format: "%.0f%%", top.successRate * 100)).")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 2)
+    private func medianBalanceTakeaway(current: StrategyComparisonResult?) -> some View {
+        let best = comparisonResults.max { $0.medianFinalBalance < $1.medianFinalBalance }
+
+        return Group {
+            if let best, let current = current {
+                if best.strategy == current.strategy {
+                    Text("Your current strategy (\(current.strategy.shortName)) preserves the most wealth, ending with a median balance of \(shortCurrency(best.medianFinalBalance)). This is ideal if leaving a legacy is important to you.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    let difference = best.medianFinalBalance - current.medianFinalBalance
+                    Text("**\(best.strategy.shortName)** leaves \(shortCurrency(difference)) more in median ending balance than your current strategy. This happens because it withdraws less during retirement, prioritizing wealth preservation over income flexibility.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    // Add context about the trade-off
+                    let successGap = (best.successRate - current.successRate) * 100
+                    if successGap < -5 {
+                        Text("Note: This comes at the cost of a \(String(format: "%.0f", abs(successGap))) point lower success rate.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(.top, 2)
+                    }
+                }
             }
         }
-        .padding(12)
-        .background(Color.purple.opacity(0.07))
-        .cornerRadius(10)
+    }
+
+    private func annualIncomeTakeaway(current: StrategyComparisonResult?) -> some View {
+        let best = comparisonResults.max { $0.averageAnnualWithdrawal < $1.averageAnnualWithdrawal }
+
+        return Group {
+            if let best, let current = current {
+                if best.strategy == current.strategy {
+                    Text("Your current strategy (\(current.strategy.shortName)) provides the highest annual income at \(shortCurrency(best.averageAnnualWithdrawal))/yr on average, maximizing your retirement spending power.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    let difference = best.averageAnnualWithdrawal - current.averageAnnualWithdrawal
+                    let percentIncrease = (difference / current.averageAnnualWithdrawal) * 100
+                    Text("**\(best.strategy.shortName)** delivers \(shortCurrency(difference)) more in average annual income — a \(String(format: "%.0f%%", percentIncrease)) increase over your current strategy. This means more spending flexibility throughout retirement.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    // Add context about the trade-off
+                    let successGap = (best.successRate - current.successRate) * 100
+                    if successGap < -5 {
+                        Text("Trade-off: This higher income comes with a \(String(format: "%.0f", abs(successGap))) point lower success rate (\(String(format: "%.0f%%", best.successRate * 100))).")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(.top, 2)
+                    } else if successGap > 5 {
+                        Text("Best of both worlds: This also improves your success rate by \(String(format: "%.0f", successGap)) points to \(String(format: "%.0f%%", best.successRate * 100)).")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .padding(.top, 2)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Run logic

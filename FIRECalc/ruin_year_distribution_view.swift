@@ -18,7 +18,7 @@ private struct RuinBucket: Identifiable {
     let startYear: Int      // first year of this band (e.g. 1, 6, 11…)
     let midYear: Int        // for x-axis bar placement
     let count: Int          // number of failed runs in this bucket
-    let fraction: Double    // count / totalFailed
+    let fraction: Double    // count / totalSimulations (overall failure percentage)
 }
 
 // MARK: - View
@@ -34,6 +34,7 @@ struct RuinYearDistributionView: View {
     @State private var earlyRuinCount: Int          = 0   // ≤ first half of horizon
     @State private var lateRuinCount:  Int          = 0   // > first half
     @State private var totalFailed:    Int          = 0
+    @State private var totalSimulations: Int        = 0   // total number of all simulations
 
     private let bucketSize = 5   // group into 5-year bands
 
@@ -113,7 +114,7 @@ struct RuinYearDistributionView: View {
             .annotation(position: .top, alignment: bucket.startYear == 1 ? .leading : .center, spacing: 2) {
                 if bucket.fraction >= 0.0 {
                     // Nudge the first bucket's label slightly right so it's not clipped
-                    Text("\(Int(bucket.fraction * 100))%")
+                    Text(String(format: "%.1f%%", bucket.fraction * 100))
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -226,7 +227,7 @@ struct RuinYearDistributionView: View {
 
     @MainActor
     private func buildBuckets() async {
-        let (b, med, early, late, total) = await Task.detached(priority: .userInitiated) {
+        let (b, med, early, late, total, totalSims) = await Task.detached(priority: .userInitiated) {
             Self.compute(runs: self.runs,
                          timeHorizonYears: self.timeHorizonYears,
                          bucketSize: self.bucketSize)
@@ -237,16 +238,18 @@ struct RuinYearDistributionView: View {
         earlyRuinCount = early
         lateRuinCount  = late
         totalFailed    = total
+        totalSimulations = totalSims
     }
 
     private static func compute(
         runs: [SimulationRun],
         timeHorizonYears: Int,
         bucketSize: Int
-    ) -> ([RuinBucket], Int?, Int, Int, Int) {
+    ) -> ([RuinBucket], Int?, Int, Int, Int, Int) {
 
+        let totalSimulations = runs.count
         let failedRuns = runs.filter { !$0.success }
-        guard !failedRuns.isEmpty else { return ([], nil, 0, 0, 0) }
+        guard !failedRuns.isEmpty else { return ([], nil, 0, 0, 0, totalSimulations) }
 
         let ruinYears = failedRuns.map(\.yearsLasted).sorted()
         let total = ruinYears.count
@@ -269,13 +272,13 @@ struct RuinYearDistributionView: View {
                     startYear: low,
                     midYear: midYear,
                     count: count,
-                    fraction: Double(count) / Double(total)
+                    fraction: Double(count) / Double(totalSimulations) // Changed: use total simulations, not total failures
                 ))
             }
             low += bucketSize
         }
 
-        return (buckets, medianRuinYear, earlyRuinCount, lateRuinCount, total)
+        return (buckets, medianRuinYear, earlyRuinCount, lateRuinCount, total, totalSimulations)
     }
 
     // MARK: - Styling helpers
