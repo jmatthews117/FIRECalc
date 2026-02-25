@@ -12,7 +12,6 @@ struct GroupedPortfolioView: View {
     @State private var selectedAssetClass: AssetClass?
     @State private var showingBondCalculator = false
     @State private var selectedAsset: Asset?
-    @State private var showingAssetDetail = false
     @State private var showDollarGain = false
 
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
@@ -33,6 +32,9 @@ struct GroupedPortfolioView: View {
                 
                 // Interactive Pie Chart
                 interactivePieChart
+                
+                // Gain Display Toggle
+                gainDisplayToggle
                 
                 // Grouped Assets
                 if let selected = selectedAssetClass {
@@ -64,10 +66,8 @@ struct GroupedPortfolioView: View {
         .sheet(isPresented: $showingBondCalculator) {
             BondPricingCalculatorView()
         }
-        .sheet(isPresented: $showingAssetDetail) {
-            if let asset = selectedAsset {
-                AssetDetailView(asset: asset, portfolioVM: portfolioVM)
-            }
+        .sheet(item: $selectedAsset) { asset in
+            AssetDetailView(asset: asset, portfolioVM: portfolioVM)
         }
     }
     
@@ -261,6 +261,35 @@ struct GroupedPortfolioView: View {
         .shadow(radius: 4)
     }
     
+    // MARK: - Gain Display Toggle
+    
+    private var gainDisplayToggle: some View {
+        HStack {
+            Text("Show asset gains as")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            HStack(spacing: 12) {
+                Text("%")
+                    .font(.subheadline)
+                    .foregroundColor(showDollarGain ? .secondary : .primary)
+                
+                Toggle("", isOn: $showDollarGain)
+                    .labelsHidden()
+                
+                Text("Dollar")
+                    .font(.subheadline)
+                    .foregroundColor(showDollarGain ? .primary : .secondary)
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+        .shadow(radius: 4)
+    }
+    
     @State private var selectedAngle: Double?
     
     private var allocationData: [AllocationChartData] {
@@ -372,9 +401,8 @@ struct GroupedPortfolioView: View {
                 ForEach(assetsInClass) { asset in
                     Button(action: {
                         selectedAsset = asset
-                        showingAssetDetail = true
                     }) {
-                        AssetRowView2(asset: asset)
+                        AssetRowView2(asset: asset, showDollarGain: showDollarGain)
                     }
                     .buttonStyle(.plain)
                     
@@ -403,6 +431,7 @@ struct AllocationChartData: Identifiable {
 
 struct AssetRowView2: View {
     let asset: Asset
+    let showDollarGain: Bool
     
     var body: some View {
         HStack {
@@ -434,8 +463,16 @@ struct AssetRowView2: View {
                     HStack(spacing: 2) {
                         Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.caption2)
-                        Text(change.toPercent())
-                            .font(.caption)
+                        
+                        if showDollarGain {
+                            // Calculate dollar gain from percentage change
+                            let dollarGain = asset.totalValue * change
+                            Text(dollarGain.toCurrency())
+                                .font(.caption)
+                        } else {
+                            Text(change.toPercent())
+                                .font(.caption)
+                        }
                     }
                     .foregroundColor(change >= 0 ? .green : .red)
                 }
