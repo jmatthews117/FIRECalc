@@ -429,11 +429,24 @@ struct PortfolioTabView: View {
     @State private var showingAddAsset = false
     @State private var showingQuickAdd = false
     @State private var showingBulkUpload = false
+    @State private var showingQuickEdit = false
     
     var body: some View {
         NavigationView {
             GroupedPortfolioView(portfolioVM: portfolioVM)
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        if portfolioVM.hasAssets {
+                            Button(action: { showingQuickEdit = true }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "slider.horizontal.3")
+                                    Text("Quick Edit")
+                                }
+                                .font(.headline)
+                            }
+                        }
+                    }
+                    
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: { showingAddAsset = true }) {
                             HStack(spacing: 6) {
@@ -447,6 +460,9 @@ struct PortfolioTabView: View {
                 .sheet(isPresented: $showingAddAsset) {
                     AddAssetView(portfolioVM: portfolioVM)
                         .keyboardDoneButton()
+                }
+                .sheet(isPresented: $showingQuickEdit) {
+                    QuickEditQuantitiesView(portfolioVM: portfolioVM)
                 }
         }
     }
@@ -1177,9 +1193,7 @@ struct FIRETimelineCard: View {
         var value = currentValue
         for year in 1...100 {
             // Apply inflation adjustment to savings to match FIRECalculator logic
-            // Year 1 uses the baseline contribution (no inflation adjustment yet),
-            // then subsequent years apply cumulative inflation from year 0.
-            let inflationAdjustedSavings = savings * pow(1 + inflation, Double(year - 1))
+            let inflationAdjustedSavings = savings * pow(1 + inflation, Double(year))
             value = value * (1 + annualReturn) + inflationAdjustedSavings
             let age = startAge + year
             let target = effectiveTarget(grossTarget: gross, age: age)
@@ -1321,6 +1335,189 @@ struct FIRETimelineCard: View {
             .background(Color.orange.opacity(0.08))
             .cornerRadius(AppConstants.UI.cornerRadius)
         )
+    }
+}
+
+// MARK: - Quick Edit Quantities View
+
+struct QuickEditQuantitiesView: View {
+    @ObservedObject var portfolioVM: PortfolioViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    // Track edited quantities in a dictionary
+    @State private var editedQuantities: [UUID: String] = [:]
+    @State private var hasChanges = false
+    
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(portfolioVM.portfolio.assets) { asset in
+                    VStack(spacing: 12) {
+                        // Asset Header
+                        HStack {
+                            Image(systemName: asset.assetClass.iconName)
+                                .foregroundColor(asset.assetClass.color)
+                                .frame(width: 30)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(asset.name)
+                                    .font(.headline)
+                                
+                                if let ticker = asset.ticker {
+                                    Text(ticker)
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+                        
+                        // Asset Details Table
+                        VStack(spacing: 8) {
+                            // Type
+                            HStack {
+                                Text("Type")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text(asset.assetClass.rawValue)
+                                    .font(.subheadline)
+                            }
+                            
+                            Divider()
+                            
+                            // Price per unit
+                            HStack {
+                                Text("Price")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                if let currentPrice = asset.currentPrice {
+                                    VStack(alignment: .trailing, spacing: 2) {
+                                        Text(currentPrice.toPreciseCurrency())
+                                            .font(.subheadline)
+                                            .foregroundColor(.blue)
+                                        Text("Live")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                } else {
+                                    Text(asset.unitValue.toPreciseCurrency())
+                                        .font(.subheadline)
+                                }
+                            }
+                            
+                            Divider()
+                            
+                            // Quantity (Editable)
+                            HStack {
+                                Text("Quantity")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                Spacer()
+                                
+                                TextField("0.00", text: quantityBinding(for: asset))
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .font(.subheadline)
+                                    .frame(width: 120)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+                            
+                            Divider()
+                            
+                            // Total Value (Calculated)
+                            HStack {
+                                Text("Total Value")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text(calculatedValue(for: asset).toCurrency())
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(hasChanged(for: asset) ? .orange : .primary)
+                            }
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(8)
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Quick Edit Quantities")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveChanges()
+                    }
+                    .disabled(!hasChanges)
+                    .fontWeight(.semibold)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func quantityBinding(for asset: Asset) -> Binding<String> {
+        Binding(
+            get: {
+                editedQuantities[asset.id] ?? String(asset.quantity)
+            },
+            set: { newValue in
+                editedQuantities[asset.id] = newValue
+                updateHasChanges()
+            }
+        )
+    }
+    
+    private func hasChanged(for asset: Asset) -> Bool {
+        guard let editedValue = editedQuantities[asset.id],
+              let newQuantity = Double(editedValue) else {
+            return false
+        }
+        return newQuantity != asset.quantity
+    }
+    
+    private func calculatedValue(for asset: Asset) -> Double {
+        guard let editedValue = editedQuantities[asset.id],
+              let newQuantity = Double(editedValue) else {
+            return asset.totalValue
+        }
+        
+        let price = asset.currentPrice ?? asset.unitValue
+        return newQuantity * price
+    }
+    
+    private func updateHasChanges() {
+        hasChanges = portfolioVM.portfolio.assets.contains { asset in
+            hasChanged(for: asset)
+        }
+    }
+    
+    private func saveChanges() {
+        for asset in portfolioVM.portfolio.assets {
+            if hasChanged(for: asset),
+               let editedValue = editedQuantities[asset.id],
+               let newQuantity = Double(editedValue) {
+                var updatedAsset = asset
+                updatedAsset.quantity = newQuantity
+                portfolioVM.updateAsset(updatedAsset)
+            }
+        }
+        dismiss()
     }
 }
 
