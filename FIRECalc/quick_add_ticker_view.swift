@@ -154,7 +154,7 @@ struct QuickAddTickerView: View {
                                 .font(.caption)
                                 .foregroundColor(.red)
                             
-                            Text("Tip: Verify the ticker symbol is correct on Yahoo Finance.")
+                            Text("Tip: Verify the ticker symbol.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }

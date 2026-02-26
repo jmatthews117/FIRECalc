@@ -40,8 +40,8 @@ The only exception is if you enable **iCloud sync** (optional):
 ## Third-Party Services
 
 ### Price Data
-FIRECalc uses Yahoo Finance's public API to fetch live price data for publicly traded assets:
-- Only ticker symbols are sent to Yahoo Finance
+
+- Only ticker symbols are sent
 - No personal or portfolio information is transmitted
 - Price data is cached locally to minimize requests
 - You can use the app without live price updates if preferred
@@ -118,7 +118,7 @@ This privacy policy complies with:
 ✅ **We never see or collect your information**  
 ✅ **No tracking, no ads, no data sharing**  
 ✅ **You control everything**  
-✅ **Only ticker symbols are sent to Yahoo Finance for price updates**  
+✅ **Only ticker symbols are sent for asset price updates**  
 
 Your privacy and financial information security is our top priority.
 

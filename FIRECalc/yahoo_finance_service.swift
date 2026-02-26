@@ -357,11 +357,11 @@ enum YFError: LocalizedError {
         case .invalidURL:
             return "Invalid URL"
         case .invalidResponse:
-            return "Invalid response from Yahoo Finance"
+            return "Invalid response"
         case .httpError(let code):
-            return "HTTP error: \(code). Yahoo Finance may be temporarily unavailable."
+            return "HTTP error: \(code). Service may be temporarily unavailable."
         case .tickerNotFound(let ticker):
-            return "Ticker '\(ticker)' not found on Yahoo Finance. Please verify the symbol is correct."
+            return "Ticker '\(ticker)' not found. Please verify the symbol is correct."
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
         }
