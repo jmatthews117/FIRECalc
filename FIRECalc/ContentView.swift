@@ -93,6 +93,9 @@ struct DashboardTabView: View {
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
     @AppStorage(AppConstants.UserDefaultsKeys.retirementTarget) private var storedRetirementTarget: Double = 0
     
+    // PERFORMANCE FIX: Track last refresh to prevent pull-to-refresh spam
+    @State private var lastPullRefresh: Date?
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -116,6 +119,15 @@ struct DashboardTabView: View {
                 .padding()
             }
             .refreshable {
+                // PERFORMANCE FIX: Debounce pull-to-refresh
+                // Prevent users from accidentally triggering multiple refreshes
+                if let lastRefresh = lastPullRefresh, Date().timeIntervalSince(lastRefresh) < 10 {
+                    print("⏭️ Pull-to-refresh too soon - skipping")
+                    return
+                }
+                
+                lastPullRefresh = Date()
+                
                 // Use Task.detached to prevent SwiftUI from cancelling the refresh
                 // when user scrolls or interacts during refresh
                 await Task.detached { @MainActor in
@@ -1146,6 +1158,10 @@ struct FIRETimelineCard: View {
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
     @AppStorage(AppConstants.UserDefaultsKeys.withdrawalPercentage) private var storedWithdrawalRate: Double = 0
     @AppStorage(AppConstants.UserDefaultsKeys.expectedReturn) private var storedExpectedReturn: Double = 0
+    
+    // PERFORMANCE FIX: Cache the expensive calculation and only recalculate when inputs actually change
+    @State private var cachedProjection: FIREProjection?
+    @State private var lastCalculationInputs: CalculationInputs?
 
     // MARK: - Helpers
 
@@ -1172,18 +1188,55 @@ struct FIRETimelineCard: View {
         let target: Double
         var yearsLabel: String { years == 1 ? "1 year" : "\(years) years" }
     }
+    
+    // Track inputs that affect calculation to detect when we need to recalculate
+    private struct CalculationInputs: Equatable {
+        let currentValue: Double
+        let grossTarget: Double
+        let currentAge: Int
+        let annualReturn: Double
+        let savings: Double
+        let inflation: Double
+        let benefitsHash: Int
+        
+        // Round values to avoid recalculating on tiny price fluctuations
+        static func ==(lhs: CalculationInputs, rhs: CalculationInputs) -> Bool {
+            return abs(lhs.currentValue - rhs.currentValue) < 100 && // Only recalc if portfolio changes by $100+
+                   lhs.grossTarget == rhs.grossTarget &&
+                   lhs.currentAge == rhs.currentAge &&
+                   lhs.annualReturn == rhs.annualReturn &&
+                   lhs.savings == rhs.savings &&
+                   lhs.inflation == rhs.inflation &&
+                   lhs.benefitsHash == rhs.benefitsHash
+        }
+    }
 
-    private var fireProjection: FIREProjection? {
+    private var currentInputs: CalculationInputs? {
         let gross = grossRetirementTarget
         guard gross > 0, portfolioVM.hasAssets else { return nil }
         guard let startAge = savedCurrentAge else { return nil }
-
-        let currentValue = portfolioVM.totalValue
-        let annualReturn = savedExpectedReturn
-        let savings = storedAnnualSavings
-        // Use the stored inflation rate (defaults to 2.5% if not set)
+        
         let inflationRate = UserDefaults.standard.double(forKey: AppConstants.UserDefaultsKeys.inflationRate)
         let inflation = inflationRate > 0 ? inflationRate : 0.025
+        
+        return CalculationInputs(
+            currentValue: portfolioVM.totalValue,
+            grossTarget: gross,
+            currentAge: startAge,
+            annualReturn: savedExpectedReturn,
+            savings: storedAnnualSavings,
+            inflation: inflation,
+            benefitsHash: benefitManager.plans.map { "\($0.id)-\($0.annualBenefit)-\($0.startAge)" }.joined().hashValue
+        )
+    }
+
+    private func calculateProjection(inputs: CalculationInputs) -> FIREProjection? {
+        let currentValue = inputs.currentValue
+        let gross = inputs.grossTarget
+        let startAge = inputs.currentAge
+        let annualReturn = inputs.annualReturn
+        let savings = inputs.savings
+        let inflation = inputs.inflation
 
         let initialEffective = effectiveTarget(grossTarget: gross, age: startAge)
         if currentValue >= initialEffective {
@@ -1203,6 +1256,19 @@ struct FIRETimelineCard: View {
         }
         return nil
     }
+    
+    private var fireProjection: FIREProjection? {
+        // Check if we need to recalculate
+        guard let inputs = currentInputs else { return nil }
+        
+        // Use cached value if inputs haven't changed meaningfully
+        if let lastInputs = lastCalculationInputs, lastInputs == inputs, let cached = cachedProjection {
+            return cached
+        }
+        
+        // Inputs changed - recalculate
+        return calculateProjection(inputs: inputs)
+    }
 
     // Keep the storedRetirementTarget for backwards compatibility
     @AppStorage(AppConstants.UserDefaultsKeys.retirementTarget) private var storedRetirementTarget: Double = 0
@@ -1212,8 +1278,23 @@ struct FIRETimelineCard: View {
     var body: some View {
         let gross = grossRetirementTarget
         guard gross > 0 else { return AnyView(EmptyView()) }
+        
+        // PERFORMANCE FIX: Calculate projection only when inputs change, not on every render
+        let projection: FIREProjection? = {
+            guard let inputs = currentInputs else { return nil }
+            
+            // Update cache if needed
+            if lastCalculationInputs != inputs {
+                DispatchQueue.main.async {
+                    self.lastCalculationInputs = inputs
+                    self.cachedProjection = calculateProjection(inputs: inputs)
+                }
+            }
+            
+            return cachedProjection
+        }()
 
-        let displayTarget = fireProjection?.target ?? gross
+        let displayTarget = projection?.target ?? gross
         let progress = displayTarget > 0
             ? min(1.0, max(0.0, portfolioVM.totalValue / displayTarget))
             : 0.0
@@ -1230,7 +1311,7 @@ struct FIRETimelineCard: View {
                     Spacer()
                 }
 
-                if let projection = fireProjection {
+                if let projection = projection {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Years to FIRE")

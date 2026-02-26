@@ -23,6 +23,9 @@ class PortfolioViewModel: ObservableObject {
     private var clearMessageTask: Task<Void, Never>?
     /// Debounce saves to reduce I/O
     private var saveTask: Task<Void, Never>?
+    /// PERFORMANCE FIX: Debounce price refresh requests
+    private var refreshTask: Task<Void, Never>?
+    private var lastRefreshTime: Date?
     
     // MARK: - Computed Property Caching
     
@@ -49,6 +52,18 @@ class PortfolioViewModel: ObservableObject {
     
     /// Refresh prices only if data is stale (older than 1 hour)
     func refreshPricesIfNeeded() async {
+        // PERFORMANCE FIX: Prevent multiple simultaneous refresh attempts
+        if isUpdatingPrices {
+            print("⏭️ Already updating prices - skipping")
+            return
+        }
+        
+        // PERFORMANCE FIX: Don't refresh if we just did it recently (within 5 minutes)
+        if let lastRefresh = lastRefreshTime, Date().timeIntervalSince(lastRefresh) < 300 {
+            print("⏭️ Prices refreshed recently - skipping")
+            return
+        }
+        
         let assetsNeedingUpdate = portfolio.assetsNeedingPriceUpdate
         
         // Also refresh if we have tickers but no price data at all
@@ -111,10 +126,32 @@ class PortfolioViewModel: ObservableObject {
     // MARK: - Price Updates
     
     func refreshPrices() async {
+        // PERFORMANCE FIX: Cancel any pending refresh and debounce rapid calls
+        refreshTask?.cancel()
+        
+        // Don't allow overlapping refreshes
+        guard !isUpdatingPrices else {
+            print("⏭️ Price refresh already in progress - skipping")
+            return
+        }
+        
+        // Create new refresh task
+        refreshTask = Task { @MainActor in
+            await performRefresh()
+        }
+        
+        await refreshTask?.value
+    }
+    
+    private func performRefresh() async {
+        
         print("\n" + String(repeating: "=", count: 60))
         print("🔄 REFRESH PRICES STARTED")
         print(String(repeating: "=", count: 60))
         print("📅 Time: \(Date())")
+        
+        // PERFORMANCE FIX: Record when we started this refresh
+        lastRefreshTime = Date()
         print("📊 Total assets in portfolio: \(portfolio.assets.count)")
         print("🎯 Assets with tickers: \(portfolio.assetsWithTickers.count)")
         
