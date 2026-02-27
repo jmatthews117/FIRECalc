@@ -201,30 +201,35 @@ class PortfolioViewModel: ObservableObject {
             print("\n📦 Batch \(batchIndex + 1)/\(batches.count) - \(batch.count) assets")
             
             // Process batch in parallel - UNIFIED: Use AlternativePriceService for ALL assets
-            await withTaskGroup(of: (Asset, Double?, Error?).self) { group in
+            await withTaskGroup(of: (Asset, Double?, Double?, Error?).self) { group in
                 for asset in batch {
                     guard asset.ticker != nil else { continue }
                     
                     group.addTask {
                         do {
                             // Use AlternativePriceService which handles crypto correctly with -USD suffix
-                            let price = try await AlternativePriceService.shared.fetchPrice(for: asset)
-                            return (asset, price, nil)
+                            // and now also fetches daily change percentage
+                            let (price, changePercent) = try await AlternativePriceService.shared.fetchPriceAndChange(for: asset)
+                            return (asset, price, changePercent, nil)
                         } catch {
-                            return (asset, nil, error)
+                            return (asset, nil, nil, error)
                         }
                     }
                 }
                 
                 // Collect results from parallel tasks
-                for await (asset, price, error) in group {
+                for await (asset, price, changePercent, error) in group {
                     if let price = price {
                         var updatedAsset = asset
-                        // For change percent, we could fetch it separately for stocks, but for now just update price
-                        updatedAsset = updatedAsset.updatedWithLivePrice(price, change: nil)
+                        // Update with both price and daily change percentage
+                        updatedAsset = updatedAsset.updatedWithLivePrice(price, change: changePercent)
                         portfolio.updateAsset(updatedAsset)
                         successCount += 1
-                        print("   ✅ \(asset.ticker!): $\(price)")
+                        if let change = changePercent {
+                            print("   ✅ \(asset.ticker!): $\(price) (\(change >= 0 ? "+" : "")\(String(format: "%.2f%%", change * 100)))")
+                        } else {
+                            print("   ✅ \(asset.ticker!): $\(price)")
+                        }
                     } else {
                         failCount += 1
                         if let ticker = asset.ticker {
@@ -330,30 +335,56 @@ class PortfolioViewModel: ObservableObject {
     }
     
     /// Total daily gain/loss across all assets with price data
+    /// Calculates based on priceChange if available, otherwise compares currentPrice to unitValue
     var dailyGain: Double? {
+        // First try: use priceChange from API (most accurate for daily change)
         let assetsWithPriceChange = portfolio.assets.filter { 
             $0.currentPrice != nil && $0.priceChange != nil 
         }
         
-        guard !assetsWithPriceChange.isEmpty else { return nil }
-        
-        // Calculate dollar change for each asset
-        let totalDailyChange = assetsWithPriceChange.reduce(0.0) { sum, asset in
-            guard let priceChange = asset.priceChange else { return sum }
-            let currentValue = asset.totalValue
-            // Calculate previous value: current / (1 + changePercent)
-            let previousValue = currentValue / (1 + priceChange)
-            let dollarChange = currentValue - previousValue
-            return sum + dollarChange
+        if !assetsWithPriceChange.isEmpty {
+            // Calculate daily dollar change for each asset with priceChange data
+            let totalDailyChange = assetsWithPriceChange.reduce(0.0) { sum, asset in
+                guard let priceChange = asset.priceChange else { return sum }
+                let currentValue = asset.totalValue
+                // Calculate previous value: current / (1 + changePercent)
+                let previousValue = currentValue / (1 + priceChange)
+                let dollarChange = currentValue - previousValue
+                return sum + dollarChange
+            }
+            return totalDailyChange
         }
         
-        return totalDailyChange
+        // Fallback: Compare currentPrice to unitValue (total gain since purchase)
+        // This shows "all-time" gain when daily change data isn't available
+        let assetsWithCurrentPrice = portfolio.assets.filter { 
+            $0.currentPrice != nil && $0.ticker != nil
+        }
+        
+        guard !assetsWithCurrentPrice.isEmpty else { return nil }
+        
+        let totalGain = assetsWithCurrentPrice.reduce(0.0) { sum, asset in
+            guard let currentPrice = asset.currentPrice else { return sum }
+            let currentValue = currentPrice * asset.quantity
+            let originalValue = asset.unitValue * asset.quantity
+            return sum + (currentValue - originalValue)
+        }
+        
+        return totalGain
     }
     
     /// Daily gain as a percentage of total portfolio value
     var dailyGainPercentage: Double? {
         guard let gain = dailyGain, totalValue > 0 else { return nil }
         return gain / totalValue
+    }
+    
+    /// Check if we're showing daily change (true) or all-time change (false)
+    var isShowingDailyChange: Bool {
+        let assetsWithPriceChange = portfolio.assets.filter { 
+            $0.currentPrice != nil && $0.priceChange != nil 
+        }
+        return !assetsWithPriceChange.isEmpty
     }
     
     // MARK: - Private Helpers

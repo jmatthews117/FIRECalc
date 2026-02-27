@@ -229,7 +229,7 @@ struct DashboardTabView: View {
                                     .fontWeight(.semibold)
                             }
                             
-                            Text("today")
+                            Text(portfolioVM.isShowingDailyChange ? "today" : "total")
                                 .font(.caption)
                         }
                         .foregroundColor(dailyGain >= 0 ? .green : .red)

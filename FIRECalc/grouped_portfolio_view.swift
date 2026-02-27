@@ -115,12 +115,13 @@ struct GroupedPortfolioView: View {
                                 .fontWeight(.semibold)
                         }
                         
-                        Text("today")
+                        Text(portfolioVM.isShowingDailyChange ? "today" : "total")
                             .font(.caption)
                     }
                     .foregroundColor(dailyGain >= 0 ? .green : .red)
                 }
                 .buttonStyle(.plain)
+                .padding(.top, 4)
             }
             
             // Retirement Progress

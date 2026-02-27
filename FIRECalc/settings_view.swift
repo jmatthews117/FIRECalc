@@ -151,10 +151,26 @@ struct SettingsView: View {
                         }
 
                         Slider(value: $expectedReturn, in: 0...0.15, step: 0.005)
-
-                        Text("Used for FIRE timeline projections. Default uses your portfolio's weighted return (\(portfolioVM.portfolio.weightedExpectedReturn.toPercent()))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        
+                        HStack {
+                            Text("Used for FIRE timeline projections. Default uses your portfolio's weighted return (\(portfolioVM.portfolio.weightedExpectedReturn.toPercent()))")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            Button {
+                                resetToPortfolioReturn()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.counterclockwise")
+                                    Text("Reset")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            }
+                            .buttonStyle(.borderless)
+                        }
                     }
 
                     // Inflation Rate Slider
@@ -540,6 +556,11 @@ struct SettingsView: View {
     }
     
     // MARK: - Settings Functions
+    
+    private func resetToPortfolioReturn() {
+        expectedReturn = portfolioVM.portfolio.weightedExpectedReturn
+        saveSettings()
+    }
     
     private func loadSettings() {
         let settings = persistence.loadSettings()

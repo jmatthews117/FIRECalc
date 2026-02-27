@@ -42,9 +42,15 @@ actor AlternativePriceService {
     
     /// Fetch price for any asset - tries Yahoo Finance API first, falls back to static prices
     func fetchPrice(for asset: Asset) async throws -> Double {
+        let (price, _) = try await fetchPriceAndChange(for: asset)
+        return price
+    }
+    
+    /// Fetch both price and daily change percentage for any asset
+    func fetchPriceAndChange(for asset: Asset) async throws -> (price: Double, changePercent: Double?) {
         // DEBUG: Show what we received
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("🔍 [AlternativePriceService.fetchPrice] CALLED")
+        print("🔍 [AlternativePriceService.fetchPriceAndChange] CALLED")
         print("   Asset Name: \(asset.name)")
         print("   Asset Class: \(asset.assetClass)")
         print("   Asset Ticker: \(asset.ticker ?? "nil")")
@@ -61,24 +67,29 @@ actor AlternativePriceService {
         // Try Yahoo Finance first (no API key needed!)
         do {
             print("   🌐 Attempting Yahoo Finance fetch...")
-            let price = try await fetchFromYahoo(for: asset, ticker: cleanTicker)
-            print("   ✅ SUCCESS: Got price $\(price)")
+            let result = try await fetchFromYahooWithChange(for: asset, ticker: cleanTicker)
+            print("   ✅ SUCCESS: Got price $\(result.price), change: \(result.changePercent?.toPercent() ?? "nil")")
             print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            return price
+            return result
         } catch {
             print("   ❌ Yahoo Finance FAILED: \(error.localizedDescription)")
             print("   📦 Falling back to demo prices...")
             
-            // Use fallback prices
+            // Use fallback prices (no change data available)
             let fallbackPrice = try fetchFromFallback(ticker: cleanTicker)
             print("   ✅ Fallback price: $\(fallbackPrice)")
             print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            return fallbackPrice
+            return (fallbackPrice, nil)
         }
     }
     
     private func fetchFromYahoo(for asset: Asset, ticker: String) async throws -> Double {
-        print("   ├─ [fetchFromYahoo] Starting...")
+        let (price, _) = try await fetchFromYahooWithChange(for: asset, ticker: ticker)
+        return price
+    }
+    
+    private func fetchFromYahooWithChange(for asset: Asset, ticker: String) async throws -> (price: Double, changePercent: Double?) {
+        print("   ├─ [fetchFromYahooWithChange] Starting...")
         print("   ├─ Ticker: '\(ticker)'")
         print("   ├─ Asset Class: \(asset.assetClass)")
         
@@ -90,14 +101,16 @@ actor AlternativePriceService {
             print("   ├─ Calling YahooFinanceService.fetchCryptoQuote(symbol: '\(ticker)')")
             let quote = try await yahooService.fetchCryptoQuote(symbol: ticker)
             print("   ├─ ✅ Got crypto quote: $\(quote.latestPrice)")
-            return quote.latestPrice
+            // Crypto quote doesn't include change data in current implementation
+            // We'd need to fetch the full quote to get that
+            return (quote.latestPrice, nil)
             
         case .stocks, .bonds, .reits, .preciousMetals:
             print("   ├─ 📈 STOCK/BOND PATH SELECTED")
             print("   ├─ Calling YahooFinanceService.fetchQuote(ticker: '\(ticker)')")
             let quote = try await yahooService.fetchQuote(ticker: ticker)
-            print("   ├─ ✅ Got quote: $\(quote.latestPrice)")
-            return quote.latestPrice
+            print("   ├─ ✅ Got quote: $\(quote.latestPrice), change: \(quote.changePercent?.toPercent() ?? "nil")")
+            return (quote.latestPrice, quote.changePercent)
             
         default:
             print("   ├─ ❌ Unsupported asset class: \(asset.assetClass)")
