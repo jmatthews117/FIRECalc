@@ -4,4 +4,7 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:FINAL_FIX_APPLIED.md">
+   </FileRef>
 </Workspace>

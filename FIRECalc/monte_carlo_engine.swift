@@ -41,6 +41,21 @@ actor MonteCarloEngine {
         
         print("Starting Monte Carlo simulation with \(parameters.numberOfRuns) runs...")
         print("Working in REAL terms (all returns inflation-adjusted)")
+        
+        // DEBUG: Log income schedule configuration
+        if let retAge = parameters.retirementAge {
+            print("📍 Retirement age: \(retAge)")
+        }
+        if let schedule = parameters.incomeSchedule, !schedule.isEmpty {
+            print("💰 Income schedule configured with \(schedule.count) source(s):")
+            for income in schedule {
+                let cola = income.inflationAdjusted ? "COLA" : "Fixed"
+                let endInfo = income.endAge.map { "ends age \($0)" } ?? "continues"
+                print("   - \(income.name): \(String(format: "$%.0f", income.annualAmount))/yr (\(cola)), starts age \(income.startAge), \(endInfo)")
+            }
+        } else {
+            print("ℹ️ No scheduled income configured")
+        }
 
         // MEMORY FIX: Split work into batches to limit peak memory usage.
         // Each batch processes runs sequentially, then returns just the results.
@@ -155,12 +170,27 @@ actor MonteCarloEngine {
 
             // STEP 2: Calculate withdrawal (from grown balance)
             // Withdrawal is in REAL dollars (today's purchasing power)
+            
+            // Get scheduled income for this year (handles time-based start ages)
+            let scheduledIncome = parameters.totalScheduledIncome(year: year)
+            
+            // DEBUG: Log when scheduled income starts (only for first run, only when it changes)
+            if runNumber == 0 && year <= 5 {
+                let age = (parameters.retirementAge ?? 0) + year - 1
+                if scheduledIncome > 0 {
+                    print("✅ Year \(year) (Age \(age)): Scheduled income = \(String(format: "$%.0f", scheduledIncome))")
+                } else if year == 1 {
+                    print("ℹ️ Year \(year) (Age \(age)): No scheduled income yet")
+                }
+            }
+            
             let withdrawal = withdrawalCalc.calculateWithdrawal(
                 currentBalance: balance,
                 year: year,
                 baselineWithdrawal: baselineWithdrawal,
                 initialBalance: parameters.initialPortfolioValue,
-                config: parameters.withdrawalConfig
+                config: parameters.withdrawalConfig,
+                scheduledIncome: scheduledIncome
             )
 
             // Always track the actual withdrawal taken so strategies like

@@ -85,6 +85,7 @@ struct DashboardView: View {
                 SimulationSetupView(
                     portfolioVM: portfolioVM,
                     simulationVM: simulationVM,
+                    benefitManager: benefitManager,
                     showingResults: $showingResults
                 )
             }

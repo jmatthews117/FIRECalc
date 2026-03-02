@@ -10,6 +10,7 @@ import SwiftUI
 struct SimulationSetupView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
+    @ObservedObject var benefitManager: DefinedBenefitManager
     @Binding var showingResults: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -42,15 +43,10 @@ struct SimulationSetupView: View {
     @State private var ceilingEnabled: Bool
     @State private var ceilingRate: Double
 
-    @StateObject private var benefitManager = DefinedBenefitManager()
-
-    // Income buckets read from persisted plans at sheet-open time.
-    private let storedRealBucket: Double
-    private let storedNominalBucket: Double
-
-    init(portfolioVM: PortfolioViewModel, simulationVM: SimulationViewModel, showingResults: Binding<Bool>) {
+    init(portfolioVM: PortfolioViewModel, simulationVM: SimulationViewModel, benefitManager: DefinedBenefitManager, showingResults: Binding<Bool>) {
         self.portfolioVM = portfolioVM
         self.simulationVM = simulationVM
+        self.benefitManager = benefitManager
         self._showingResults = showingResults
 
         self._numberOfRuns = State(initialValue: Double(simulationVM.parameters.numberOfRuns))
@@ -93,13 +89,6 @@ struct SimulationSetupView: View {
         self._floorRate = State(initialValue: config.floorPercentage ?? 0.025)
         self._ceilingEnabled = State(initialValue: config.ceilingPercentage != nil)
         self._ceilingRate = State(initialValue: config.ceilingPercentage ?? 0.06)
-
-        // Capture income buckets from persisted plans at sheet-open time.
-        let plans = PersistenceService.shared.loadDefinedBenefitPlans()
-        let planTotal = plans.reduce(0) { $0 + $1.annualBenefit }
-        let realBucket = plans.filter { $0.inflationAdjusted }.reduce(0) { $0 + $1.annualBenefit }
-        self.storedRealBucket = realBucket
-        self.storedNominalBucket = planTotal - realBucket
     }
     
     var body: some View {
@@ -673,11 +662,15 @@ struct SimulationSetupView: View {
         let settings = PersistenceService.shared.loadSettings()
         let useBootstrap = simulationVM.useCustomReturns ? false : settings.useHistoricalBootstrap
 
-        // Stamp inflation rate and income buckets into the config.
+        // Stamp inflation rate into the config.
         var config = withdrawalConfig
         config.inflationRate = inflationRate
-        config.fixedIncomeReal    = storedRealBucket    > 0 ? storedRealBucket    : nil
-        config.fixedIncomeNominal = storedNominalBucket > 0 ? storedNominalBucket : nil
+        
+        // DO NOT set fixedIncomeReal/fixedIncomeNominal here!
+        // These are legacy fields that apply income from year 1.
+        // We use time-aware incomeSchedule instead.
+        config.fixedIncomeReal = nil
+        config.fixedIncomeNominal = nil
         
         // Synchronize strategy-specific fields
         if config.strategy == .fixedDollar {
@@ -697,6 +690,15 @@ struct SimulationSetupView: View {
             ? customAllocationPercents.mapValues { $0 / 100.0 }
             : nil
 
+        // Create time-aware income schedule from defined benefit plans
+        let incomeSchedule = benefitManager.plans.isEmpty 
+            ? nil 
+            : benefitManager.createIncomeSchedule()
+        
+        // Get retirement age from UserDefaults (stored separately from UserPreferences)
+        let storedAge = UserDefaults.standard.integer(forKey: AppConstants.UserDefaultsKeys.currentAge)
+        let retirementAge = storedAge > 0 ? storedAge : nil
+
         simulationVM.parameters = SimulationParameters(
             numberOfRuns: Int(numberOfRuns),
             timeHorizonYears: Int(timeHorizon),
@@ -704,8 +706,10 @@ struct SimulationSetupView: View {
             useHistoricalBootstrap: useBootstrap,
             initialPortfolioValue: portfolioVM.totalValue,
             targetPortfolioValue: useTargetPortfolioValue ? targetPortfolioValue : nil,
+            retirementAge: retirementAge,
             customAllocationWeights: resolvedAllocation,
-            withdrawalConfig: config
+            withdrawalConfig: config,
+            incomeSchedule: incomeSchedule
         )
         
         Task {
@@ -736,6 +740,21 @@ struct SimulationSetupView: View {
         } else {
             return portfolioVM.totalValue * withdrawalRate
         }
+    }
+    
+    // Calculate the total fixed income from benefit manager's plans
+    // Note: This is a first-year estimate assuming all income is active
+    // The actual simulation uses time-aware scheduling
+    private var storedRealBucket: Double {
+        benefitManager.plans
+            .filter { $0.inflationAdjusted }
+            .reduce(0) { $0 + $1.annualBenefit }
+    }
+    
+    private var storedNominalBucket: Double {
+        benefitManager.plans
+            .filter { !$0.inflationAdjusted }
+            .reduce(0) { $0 + $1.annualBenefit }
     }
 
     // MARK: - Custom Allocation Helpers
@@ -799,7 +818,8 @@ struct SimulationSetupView: View {
     SimulationSetupView(
         portfolioVM: PortfolioViewModel(portfolio: .sample),
         simulationVM: SimulationViewModel(),
-        showingResults: .constant(false)
+        benefitManager: DefinedBenefitManager(),
+        showingResults: Binding.constant(false)
     )
 }
 

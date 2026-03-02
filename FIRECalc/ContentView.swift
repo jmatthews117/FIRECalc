@@ -139,6 +139,7 @@ struct DashboardTabView: View {
                 SimulationSetupView(
                     portfolioVM: portfolioVM,
                     simulationVM: simulationVM,
+                    benefitManager: benefitManager,
                     showingResults: $showingResults
                 )
                 .keyboardDoneButton()
@@ -485,6 +486,7 @@ struct PortfolioTabView: View {
 struct SimulationsTab: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var simulationVM: SimulationViewModel
+    @ObservedObject var benefitManager: DefinedBenefitManager
     @State private var showingSetup = false
     @State private var showingResults = false
     @State private var showingManualReturns = false
@@ -517,6 +519,7 @@ struct SimulationsTab: View {
             SimulationSetupView(
                 portfolioVM: portfolioVM,
                 simulationVM: simulationVM,
+                benefitManager: benefitManager,
                 showingResults: $showingResults
             )
             .keyboardDoneButton()
@@ -787,7 +790,7 @@ struct ToolsTabView: View {
         NavigationView {
             List {
                 Section("Simulations") {
-                    NavigationLink(destination: SimulationsTab(portfolioVM: portfolioVM, simulationVM: simulationVM)) {
+                    NavigationLink(destination: SimulationsTab(portfolioVM: portfolioVM, simulationVM: simulationVM, benefitManager: benefitManager)) {
                         HStack {
                             Image(systemName: "waveform.path.ecg")
                                 .foregroundColor(.blue)

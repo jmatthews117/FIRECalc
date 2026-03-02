@@ -13,12 +13,15 @@ struct WithdrawalCalculator {
     
     /// Calculate withdrawal amount in REAL dollars (today's purchasing power)
     /// Since the Monte Carlo engine works in real terms, we don't need inflation adjustments
+    ///
+    /// - Parameter scheduledIncome: Optional time-aware income that may vary by year (replaces simple fixedIncome offset)
     func calculateWithdrawal(
         currentBalance: Double,
         year: Int,
         baselineWithdrawal: Double,
         initialBalance: Double,
-        config: WithdrawalConfiguration
+        config: WithdrawalConfiguration,
+        scheduledIncome: Double = 0
     ) -> Double {
         
         var withdrawal: Double
@@ -50,25 +53,26 @@ struct WithdrawalCalculator {
             )
         }
         
-        // Subtract fixed income from required withdrawal in REAL dollars.
-        //
-        // COLA plans (fixedIncomeReal): real value is constant — subtract the
-        // face value directly every year.
-        //
-        // Nominal plans (fixedIncomeNominal): the pension pays fixed dollars, so
-        // its real purchasing power erodes with inflation. Divide by
-        // (1 + r)^(year-1) to get the real equivalent for this year.
-        // Year 1 is un-eroded (divide by 1), year 2 loses one year of inflation, etc.
-        var totalRealOffset = config.fixedIncomeReal ?? 0
-
-        if let nominal = config.fixedIncomeNominal, nominal > 0 {
-            let inflation = config.inflationRate ?? 0
-            let erosionFactor = pow(1 + inflation, Double(year - 1))
-            totalRealOffset += nominal / erosionFactor
+        // Subtract scheduled income (time-aware, already in real terms)
+        // This replaces the old fixedIncome logic with proper time-based handling
+        if scheduledIncome > 0 {
+            withdrawal = max(0, withdrawal - scheduledIncome)
         }
-
-        if totalRealOffset > 0 {
-            withdrawal = max(0, withdrawal - totalRealOffset)
+        
+        // BACKWARD COMPATIBILITY: Still support legacy fixedIncome fields
+        // for existing configurations that haven't migrated to scheduledIncome
+        if scheduledIncome == 0 {
+            var totalRealOffset = config.fixedIncomeReal ?? 0
+            
+            if let nominal = config.fixedIncomeNominal, nominal > 0 {
+                let inflation = config.inflationRate ?? 0
+                let erosionFactor = pow(1 + inflation, Double(year - 1))
+                totalRealOffset += nominal / erosionFactor
+            }
+            
+            if totalRealOffset > 0 {
+                withdrawal = max(0, withdrawal - totalRealOffset)
+            }
         }
 
         return withdrawal
@@ -270,7 +274,8 @@ extension WithdrawalCalculator {
         initialBalance: Double,
         years: Int,
         config: WithdrawalConfiguration,
-        assumedRealReturn: Double  // This should be a REAL return (e.g., 0.05 for 5% real)
+        assumedRealReturn: Double,  // This should be a REAL return (e.g., 0.05 for 5% real)
+        incomeByYear: [Double] = []  // Scheduled income for each year (optional)
     ) -> [Double] {
         
         var balance = initialBalance
@@ -278,12 +283,15 @@ extension WithdrawalCalculator {
         var baselineWithdrawal: Double = 0
         
         for year in 1...years {
+            let scheduledIncome = incomeByYear.indices.contains(year - 1) ? incomeByYear[year - 1] : 0
+            
             let withdrawal = calculateWithdrawal(
                 currentBalance: balance,
                 year: year,
                 baselineWithdrawal: baselineWithdrawal,
                 initialBalance: initialBalance,
-                config: config
+                config: config,
+                scheduledIncome: scheduledIncome
             )
             
             if year == 1 {

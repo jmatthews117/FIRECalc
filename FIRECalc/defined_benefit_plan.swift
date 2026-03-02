@@ -211,6 +211,8 @@ class DefinedBenefitManager: ObservableObject {
     /// Pre-computed income buckets ready to stamp into a WithdrawalConfiguration.
     /// COLA plans → fixedIncomeReal (constant real value).
     /// Non-COLA plans → fixedIncomeNominal (erodes with inflation).
+    ///
+    /// DEPRECATED: Use `createIncomeSchedule()` instead for time-aware income handling.
     var simulationIncomeBuckets: (real: Double, nominal: Double) {
         var real = 0.0
         var nominal = 0.0
@@ -222,6 +224,12 @@ class DefinedBenefitManager: ObservableObject {
             }
         }
         return (real, nominal)
+    }
+    
+    /// Create a time-aware income schedule for Monte Carlo simulations.
+    /// This properly handles when each income source starts based on age.
+    func createIncomeSchedule() -> [ScheduledIncome] {
+        return SimulationParameters.createIncomeSchedule(from: plans)
     }
 
     func totalPresentValue(currentAge: Int, lifeExpectancy: Int = 90) -> Double {
