@@ -10,6 +10,10 @@ import Foundation
 actor AlternativePriceService {
     static let shared = AlternativePriceService()
     
+    /// Toggle to use Marketstack Test Service instead of real Marketstack (for Phase 1 testing)
+    /// Set to true to use mock data, false to use real Marketstack API
+    nonisolated(unsafe) static var useMarketstackTest: Bool = false
+    
     private init() {}
     
     // MARK: - Price Dictionary (Fallback when no API key)
@@ -48,37 +52,19 @@ actor AlternativePriceService {
     
     /// Fetch both price and daily change percentage for any asset
     func fetchPriceAndChange(for asset: Asset) async throws -> (price: Double, changePercent: Double?) {
-        // DEBUG: Show what we received
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("🔍 [AlternativePriceService.fetchPriceAndChange] CALLED")
-        print("   Asset Name: \(asset.name)")
-        print("   Asset Class: \(asset.assetClass)")
-        print("   Asset Ticker: \(asset.ticker ?? "nil")")
-        print("   Asset ID: \(asset.id)")
-        
         guard let ticker = asset.ticker else {
-            print("❌ No ticker found - throwing error")
             throw PriceServiceError.noIdentifier
         }
         
         let cleanTicker = ticker.uppercased().trimmingCharacters(in: .whitespaces)
-        print("   Clean Ticker: '\(cleanTicker)'")
         
         // Try Yahoo Finance first (no API key needed!)
         do {
-            print("   🌐 Attempting Yahoo Finance fetch...")
             let result = try await fetchFromYahooWithChange(for: asset, ticker: cleanTicker)
-            print("   ✅ SUCCESS: Got price $\(result.price), change: \(result.changePercent?.toPercent() ?? "nil")")
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return result
         } catch {
-            print("   ❌ Yahoo Finance FAILED: \(error.localizedDescription)")
-            print("   📦 Falling back to demo prices...")
-            
             // Use fallback prices (no change data available)
             let fallbackPrice = try fetchFromFallback(ticker: cleanTicker)
-            print("   ✅ Fallback price: $\(fallbackPrice)")
-            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return (fallbackPrice, nil)
         }
     }
@@ -89,31 +75,43 @@ actor AlternativePriceService {
     }
     
     private func fetchFromYahooWithChange(for asset: Asset, ticker: String) async throws -> (price: Double, changePercent: Double?) {
-        print("   ├─ [fetchFromYahooWithChange] Starting...")
-        print("   ├─ Ticker: '\(ticker)'")
-        print("   ├─ Asset Class: \(asset.assetClass)")
+        // PHASE 1/2: Use Marketstack Test Service if enabled
+        if AlternativePriceService.useMarketstackTest {
+            let testService = MarketstackTestService.shared
+            
+            switch asset.assetClass {
+            case .crypto:
+                let quote = try await testService.fetchCryptoQuote(symbol: ticker)
+                return (quote.latestPrice, nil)
+                
+            case .stocks, .bonds, .reits, .preciousMetals:
+                let quote = try await testService.fetchQuote(ticker: ticker)
+                return (quote.latestPrice, quote.changePercent)
+                
+            default:
+                throw PriceServiceError.noPricingAvailable
+            }
+        }
         
-        let yahooService = YahooFinanceService.shared
+        // PRODUCTION: Use Real Marketstack (Phase 2)
+        let marketstackService = MarketstackService.shared
         
         switch asset.assetClass {
         case .crypto:
-            print("   ├─ 🪙 CRYPTO PATH SELECTED")
-            print("   ├─ Calling YahooFinanceService.fetchCryptoQuote(symbol: '\(ticker)')")
-            let quote = try await yahooService.fetchCryptoQuote(symbol: ticker)
-            print("   ├─ ✅ Got crypto quote: $\(quote.latestPrice)")
-            // Crypto quote doesn't include change data in current implementation
-            // We'd need to fetch the full quote to get that
-            return (quote.latestPrice, nil)
+            // Note: Marketstack free tier may not support crypto
+            do {
+                let quote = try await marketstackService.fetchCryptoQuote(symbol: ticker)
+                return (quote.latestPrice, nil)
+            } catch {
+                // Crypto not supported on free tier - throw error
+                throw PriceServiceError.noPricingAvailable
+            }
             
         case .stocks, .bonds, .reits, .preciousMetals:
-            print("   ├─ 📈 STOCK/BOND PATH SELECTED")
-            print("   ├─ Calling YahooFinanceService.fetchQuote(ticker: '\(ticker)')")
-            let quote = try await yahooService.fetchQuote(ticker: ticker)
-            print("   ├─ ✅ Got quote: $\(quote.latestPrice), change: \(quote.changePercent?.toPercent() ?? "nil")")
+            let quote = try await marketstackService.fetchQuote(ticker: ticker)
             return (quote.latestPrice, quote.changePercent)
             
         default:
-            print("   ├─ ❌ Unsupported asset class: \(asset.assetClass)")
             throw PriceServiceError.noPricingAvailable
         }
     }

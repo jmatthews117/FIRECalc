@@ -35,14 +35,15 @@ class PortfolioViewModel: ObservableObject {
     init(portfolio: Portfolio? = nil) {
         if let savedPortfolio = try? persistence.loadPortfolio() {
             self.portfolio = savedPortfolio
-            print("📂 Loaded saved portfolio with \(savedPortfolio.assets.count) assets")
         } else if let provided = portfolio {
             self.portfolio = provided
         } else {
             self.portfolio = Portfolio(name: "My Portfolio")
         }
         
-        print("📊 Using Yahoo Finance (no API key required)")
+        // PHASE 2: Enable REAL Marketstack (set to true for test mode)
+        AlternativePriceService.useMarketstackTest = false
+        print("📡 LIVE MODE - Using real Marketstack API with 15-min cache")
         
         // Automatically refresh prices on launch if we have stale data
         Task {
@@ -54,27 +55,21 @@ class PortfolioViewModel: ObservableObject {
     func refreshPricesIfNeeded() async {
         // PERFORMANCE FIX: Prevent multiple simultaneous refresh attempts
         if isUpdatingPrices {
-            print("⏭️ Already updating prices - skipping")
             return
         }
         
         // PERFORMANCE FIX: Don't refresh if we just did it recently (within 5 minutes)
         if let lastRefresh = lastRefreshTime, Date().timeIntervalSince(lastRefresh) < 300 {
-            print("⏭️ Prices refreshed recently - skipping")
             return
         }
         
         let assetsNeedingUpdate = portfolio.assetsNeedingPriceUpdate
-        
-        // Also refresh if we have tickers but no price data at all
         let assetsWithoutPrices = portfolio.assetsWithTickers.filter { $0.currentPrice == nil }
         
         guard !assetsNeedingUpdate.isEmpty || !assetsWithoutPrices.isEmpty else {
-            print("✅ All prices are fresh")
             return
         }
         
-        print("🔄 Auto-refreshing \(max(assetsNeedingUpdate.count, assetsWithoutPrices.count)) stale/missing prices on launch...")
         await refreshPrices()
     }
     
@@ -131,7 +126,6 @@ class PortfolioViewModel: ObservableObject {
         
         // Don't allow overlapping refreshes
         guard !isUpdatingPrices else {
-            print("⏭️ Price refresh already in progress - skipping")
             return
         }
         
@@ -144,37 +138,12 @@ class PortfolioViewModel: ObservableObject {
     }
     
     private func performRefresh() async {
-        
-        print("\n" + String(repeating: "=", count: 60))
-        print("🔄 REFRESH PRICES STARTED")
-        print(String(repeating: "=", count: 60))
-        print("📅 Time: \(Date())")
-        
         // PERFORMANCE FIX: Record when we started this refresh
         lastRefreshTime = Date()
-        print("📊 Total assets in portfolio: \(portfolio.assets.count)")
-        print("🎯 Assets with tickers: \(portfolio.assetsWithTickers.count)")
-        
-        // Debug: List all assets
-        print("\n📋 All Assets:")
-        for (index, asset) in portfolio.assets.enumerated() {
-            print("   \(index + 1). \(asset.name)")
-            print("      - Asset Class: \(asset.assetClass.rawValue)")
-            print("      - Ticker: \(asset.ticker ?? "NONE")")
-            print("      - Current Price: \(asset.currentPrice?.description ?? "nil")")
-            print("      - Last Updated: \(asset.lastUpdated?.description ?? "nil")")
-            print("      - Quantity: \(asset.quantity)")
-        }
         
         guard !portfolio.assetsWithTickers.isEmpty else {
-            print("\n⚠️ NO ASSETS WITH TICKERS - EXITING")
-            print(String(repeating: "=", count: 60) + "\n")
             return
         }
-        
-        // Debug: Print tickers we're trying to update
-        let tickers = portfolio.assetsWithTickers.compactMap { $0.ticker }
-        print("\n🎯 Tickers to update: \(tickers.joined(separator: ", "))")
         
         isUpdatingPrices = true
         errorMessage = nil
@@ -183,22 +152,14 @@ class PortfolioViewModel: ObservableObject {
         var failCount = 0
         var failedTickers: [String] = []
         
-        print("\n" + String(repeating: "-", count: 60))
-        print("🚀 BEGINNING API CALLS (BATCHED)")
-        print(String(repeating: "-", count: 60))
-        
         // EFFICIENCY: Batch requests in groups of 5 for parallel execution
-        // This is 5-7× faster than sequential while respecting rate limits
         let batchSize = 5
         let assetsToUpdate = portfolio.assetsWithTickers.filter { $0.ticker != nil }
         let batches = stride(from: 0, to: assetsToUpdate.count, by: batchSize).map {
             Array(assetsToUpdate[$0..<min($0 + batchSize, assetsToUpdate.count)])
         }
         
-        print("📦 Processing \(assetsToUpdate.count) assets in \(batches.count) batches of ~\(batchSize)")
-        
         for (batchIndex, batch) in batches.enumerated() {
-            print("\n📦 Batch \(batchIndex + 1)/\(batches.count) - \(batch.count) assets")
             
             // Process batch in parallel - UNIFIED: Use AlternativePriceService for ALL assets
             await withTaskGroup(of: (Asset, Double?, Double?, Error?).self) { group in
@@ -221,28 +182,20 @@ class PortfolioViewModel: ObservableObject {
                 for await (asset, price, changePercent, error) in group {
                     if let price = price {
                         var updatedAsset = asset
-                        // Update with both price and daily change percentage
                         updatedAsset = updatedAsset.updatedWithLivePrice(price, change: changePercent)
                         portfolio.updateAsset(updatedAsset)
                         successCount += 1
-                        if let change = changePercent {
-                            print("   ✅ \(asset.ticker!): $\(price) (\(change >= 0 ? "+" : "")\(String(format: "%.2f%%", change * 100)))")
-                        } else {
-                            print("   ✅ \(asset.ticker!): $\(price)")
-                        }
                     } else {
                         failCount += 1
                         if let ticker = asset.ticker {
                             failedTickers.append(ticker)
                         }
-                        print("   ❌ \(asset.ticker!): \(error?.localizedDescription ?? "Failed")")
                     }
                 }
             }
             
-            // Small delay only between batches, not individual requests
+            // Small delay only between batches
             if batchIndex < batches.count - 1 {
-                print("   ⏸️  Waiting 200ms before next batch...")
                 do {
                     try await Task.sleep(nanoseconds: 200_000_000) // 200ms
                 } catch {
@@ -251,34 +204,31 @@ class PortfolioViewModel: ObservableObject {
             }
         }
         
-        print("\n" + String(repeating: "-", count: 60))
-        print("💾 SAVING PORTFOLIO")
-        print(String(repeating: "-", count: 60))
         savePortfolio()
         invalidateCache()
-        print("✅ Portfolio saved")
         
-        print("\n" + String(repeating: "=", count: 60))
-        print("📊 FINAL RESULTS")
-        print(String(repeating: "=", count: 60))
-        print("✅ Successful updates: \(successCount)")
-        print("❌ Failed updates: \(failCount)")
-        if !failedTickers.isEmpty {
-            print("❌ Failed tickers: \(failedTickers.joined(separator: ", "))")
-        }
-        
-        // Save performance snapshot after refresh (regardless of success/fail)
+        // Save performance snapshot after refresh
         savePerformanceSnapshot()
+        
+        // Print API usage
+        if AlternativePriceService.useMarketstackTest {
+            Task {
+                let apiCalls = await MarketstackTestService.shared.getCallCount()
+                print("📊 Mock API Calls This Session: \(apiCalls)")
+            }
+        } else {
+            Task {
+                let stats = await MarketstackService.shared.getUsageStats()
+                print("📊 API Calls: \(stats.thisMonth)/\(stats.limit) this month")
+            }
+        }
         
         // Show appropriate message
         if successCount > 0 && failCount == 0 {
-            print("🎉 All prices updated successfully!")
             show(success: "All prices updated successfully")
         } else if successCount > 0 {
-            print("⚠️ Partial success: \(successCount) of \(portfolio.assetsWithTickers.count)")
             show(success: "\(successCount) of \(portfolio.assetsWithTickers.count) prices updated")
         } else {
-            print("💔 All updates failed!")
             // All failed - provide helpful error
             if !failedTickers.isEmpty {
                 show(error: "Unable to update: \(failedTickers.prefix(3).joined(separator: ", "))\(failedTickers.count > 3 ? " + \(failedTickers.count - 3) more" : "")")
@@ -286,8 +236,6 @@ class PortfolioViewModel: ObservableObject {
                 show(error: "Unable to update prices. Check your internet connection.")
             }
         }
-        
-        print(String(repeating: "=", count: 60) + "\n")
         
         isUpdatingPrices = false
     }
@@ -426,19 +374,16 @@ class PortfolioViewModel: ObservableObject {
     private func savePerformanceSnapshot() {
         // Only save if portfolio has value
         guard totalValue > 0 else {
-            print("⏭️ Skipping snapshot - portfolio has no value")
             return
         }
         
         // Check if we recently saved a snapshot (within last 15 minutes)
-        // This prevents duplicate snapshots if user refreshes multiple times quickly
         if let existingSnapshots = try? persistence.loadSnapshots(),
            let lastSnapshot = existingSnapshots.last {
             let timeSinceLastSnapshot = Date().timeIntervalSince(lastSnapshot.date)
             
             // Skip if last snapshot was within 15 minutes
             if timeSinceLastSnapshot < 15 * 60 {
-                print("⏭️ Skipping snapshot - last snapshot was \(Int(timeSinceLastSnapshot/60)) minutes ago")
                 return
             }
         }
@@ -452,9 +397,7 @@ class PortfolioViewModel: ObservableObject {
         
         do {
             try persistence.saveSnapshot(snapshot)
-            print("📸 Performance snapshot saved: \(totalValue.toCurrency())")
         } catch {
-            print("⚠️ Failed to save performance snapshot: \(error.localizedDescription)")
             // Don't show error to user - this is a background operation
         }
     }

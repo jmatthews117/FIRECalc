@@ -67,15 +67,29 @@ struct AddAssetView: View {
                                 .focused($focusedField, equals: .ticker)
                                 .onChange(of: ticker) { oldValue, newValue in
                                     if oldValue != newValue {
+                                        // Reset price when ticker changes
                                         autoLoadedPrice = nil
                                         priceError = nil
                                         assetName = ""
                                         
-                                        if !newValue.isEmpty && newValue.count >= 1 {
-                                            scheduleAutoLoad()
-                                        }
+                                        // Don't auto-load - user must click button
                                     }
                                 }
+                            
+                            // Manual price load button
+                            if !ticker.isEmpty && autoLoadedPrice == nil && !isLoadingPrice {
+                                Button(action: {
+                                    loadPrice()
+                                }) {
+                                    HStack {
+                                        Image(systemName: "arrow.down.circle.fill")
+                                        Text("Load Price for \(ticker.uppercased())")
+                                    }
+                                    .font(.caption)
+                                }
+                                .buttonStyle(.bordered)
+                                .tint(.blue)
+                            }
                             
                             // Price loading feedback
                             if isLoadingPrice {
@@ -337,14 +351,6 @@ struct AddAssetView: View {
     
     // MARK: - Actions
     
-    private func scheduleAutoLoad() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            if ticker.uppercased() != lastLoadedTicker && !ticker.isEmpty {
-                loadPrice()
-            }
-        }
-    }
-    
     private func loadPrice() {
         guard !ticker.isEmpty else { return }
         
@@ -356,11 +362,6 @@ struct AddAssetView: View {
         priceError = nil
         autoLoadedPrice = nil
         
-        // DEBUG: Log crypto price fetch
-        if selectedAssetClass == .crypto {
-            print("🔍 Fetching price for crypto: [\(cleanTicker)] assetClass=\(selectedAssetClass)")
-        }
-        
         Task {
             do {
                 let tempAsset = Asset(
@@ -370,11 +371,6 @@ struct AddAssetView: View {
                     quantity: 1,
                     unitValue: 0
                 )
-                
-                // DEBUG: Show which ticker will be used for Yahoo Finance
-                if selectedAssetClass == .crypto {
-                    print("   📌 Will use Yahoo Finance ticker: \(tempAsset.yahooFinanceTicker ?? "nil")")
-                }
                 
                 let price = try await AlternativePriceService.shared.fetchPrice(for: tempAsset)
                 
