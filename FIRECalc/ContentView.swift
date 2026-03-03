@@ -462,11 +462,9 @@ struct PortfolioTabView: View {
                     
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: { showingAddAsset = true }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "plus.circle")
-                                Text("Add Asset")
-                            }
-                            .font(.headline)
+                            Image(systemName: "plus")
+                                .font(.title3)
+                                .fontWeight(.medium)
                         }
                     }
                 }
@@ -1471,32 +1469,34 @@ struct QuickEditQuantitiesView: View {
                             
                             Divider()
                             
-                            // Price per unit
-                            HStack {
-                                Text("Price")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                                if let currentPrice = asset.currentPrice {
-                                    VStack(alignment: .trailing, spacing: 2) {
-                                        Text(currentPrice.toPreciseCurrency())
-                                            .font(.subheadline)
-                                            .foregroundColor(.blue)
-                                        Text("Live")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
-                                    }
-                                } else {
-                                    Text(asset.unitValue.toPreciseCurrency())
+                            // Price per unit (hidden for cash)
+                            if asset.assetClass != .cash {
+                                HStack {
+                                    Text("Price")
                                         .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    if let currentPrice = asset.currentPrice {
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            Text(currentPrice.toPreciseCurrency())
+                                                .font(.subheadline)
+                                                .foregroundColor(.blue)
+                                            Text("Live")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    } else {
+                                        Text(asset.unitValue.toPreciseCurrency())
+                                            .font(.subheadline)
+                                    }
                                 }
+                                
+                                Divider()
                             }
                             
-                            Divider()
-                            
-                            // Quantity (Editable)
+                            // Quantity (Editable) - For cash, this represents the dollar amount
                             HStack {
-                                Text("Quantity")
+                                Text(asset.assetClass == .cash ? "Amount" : "Quantity")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                 
@@ -1558,7 +1558,13 @@ struct QuickEditQuantitiesView: View {
     private func quantityBinding(for asset: Asset) -> Binding<String> {
         Binding(
             get: {
-                editedQuantities[asset.id] ?? String(asset.quantity)
+                // For cash, show the total value (since unitValue = total and quantity = 1)
+                // For other assets, show the actual quantity
+                if asset.assetClass == .cash {
+                    return editedQuantities[asset.id] ?? String(asset.unitValue)
+                } else {
+                    return editedQuantities[asset.id] ?? String(asset.quantity)
+                }
             },
             set: { newValue in
                 editedQuantities[asset.id] = newValue
@@ -1569,20 +1575,33 @@ struct QuickEditQuantitiesView: View {
     
     private func hasChanged(for asset: Asset) -> Bool {
         guard let editedValue = editedQuantities[asset.id],
-              let newQuantity = Double(editedValue) else {
+              let newValue = Double(editedValue) else {
             return false
         }
-        return newQuantity != asset.quantity
+        
+        // For cash, compare against unitValue (the total)
+        // For other assets, compare against quantity
+        if asset.assetClass == .cash {
+            return newValue != asset.unitValue
+        } else {
+            return newValue != asset.quantity
+        }
     }
     
     private func calculatedValue(for asset: Asset) -> Double {
         guard let editedValue = editedQuantities[asset.id],
-              let newQuantity = Double(editedValue) else {
+              let newValue = Double(editedValue) else {
             return asset.totalValue
         }
         
+        // For cash, the edited value IS the total value
+        if asset.assetClass == .cash {
+            return newValue
+        }
+        
+        // For other assets, multiply quantity by price
         let price = asset.currentPrice ?? asset.unitValue
-        return newQuantity * price
+        return newValue * price
     }
     
     private func updateHasChanges() {
@@ -1595,9 +1614,18 @@ struct QuickEditQuantitiesView: View {
         for asset in portfolioVM.portfolio.assets {
             if hasChanged(for: asset),
                let editedValue = editedQuantities[asset.id],
-               let newQuantity = Double(editedValue) {
+               let newValue = Double(editedValue) {
                 var updatedAsset = asset
-                updatedAsset.quantity = newQuantity
+                
+                // For cash: store as unitValue with quantity = 1
+                // For other assets: store as quantity with unitValue unchanged
+                if asset.assetClass == .cash {
+                    updatedAsset.unitValue = newValue
+                    updatedAsset.quantity = 1.0
+                } else {
+                    updatedAsset.quantity = newValue
+                }
+                
                 portfolioVM.updateAsset(updatedAsset)
             }
         }

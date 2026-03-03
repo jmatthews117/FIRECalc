@@ -7,12 +7,31 @@
 import SwiftUI
 import Charts
 
+enum AssetSortOption: String, CaseIterable, Identifiable {
+    case valueHighToLow = "Value: High to Low"
+    case valueLowToHigh = "Value: Low to High"
+    case nameAZ = "Name: A-Z"
+    case nameZA = "Name: Z-A"
+    
+    var id: String { rawValue }
+    
+    var iconName: String {
+        switch self {
+        case .valueHighToLow: return "arrow.down.circle"
+        case .valueLowToHigh: return "arrow.up.circle"
+        case .nameAZ: return "textformat.abc"
+        case .nameZA: return "textformat.abc"
+        }
+    }
+}
+
 struct GroupedPortfolioView: View {
     @ObservedObject var portfolioVM: PortfolioViewModel
     @State private var selectedAssetClass: AssetClass?
     @State private var showingBondCalculator = false
     @State private var selectedAsset: Asset?
     @State private var showDollarGain = false
+    @State private var sortOption: AssetSortOption = .valueHighToLow
 
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
     @AppStorage(AppConstants.UserDefaultsKeys.withdrawalPercentage) private var storedWithdrawalRate: Double = 0
@@ -24,6 +43,20 @@ struct GroupedPortfolioView: View {
         return storedAnnualSpend / rate
     }
     
+    /// Sort assets based on the selected sort option
+    private func sortedAssets(_ assets: [Asset]) -> [Asset] {
+        switch sortOption {
+        case .valueHighToLow:
+            return assets.sorted { $0.totalValue > $1.totalValue }
+        case .valueLowToHigh:
+            return assets.sorted { $0.totalValue < $1.totalValue }
+        case .nameAZ:
+            return assets.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .nameZA:
+            return assets.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedDescending }
+        }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -33,8 +66,8 @@ struct GroupedPortfolioView: View {
                 // Interactive Pie Chart
                 interactivePieChart
                 
-                // Gain Display Toggle
-                gainDisplayToggle
+                // Gain Display Toggle and Sort Controls
+                controlsBar
                 
                 // Grouped Assets
                 if let selected = selectedAssetClass {
@@ -262,27 +295,48 @@ struct GroupedPortfolioView: View {
         .shadow(radius: 4)
     }
     
-    // MARK: - Gain Display Toggle
+    // MARK: - Controls Bar (Gain Display + Sort)
     
-    private var gainDisplayToggle: some View {
-        HStack {
-            Text("Show asset gains as")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+    private var controlsBar: some View {
+        HStack(spacing: 16) {
+            // Show gains as toggle
+            HStack(spacing: 8) {
+                Text("Show gains as")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 12) {
+                    Text("%")
+                        .font(.subheadline)
+                        .foregroundColor(showDollarGain ? .secondary : .primary)
+                    
+                    Toggle("", isOn: $showDollarGain)
+                        .labelsHidden()
+                    
+                    Text("$")
+                        .font(.subheadline)
+                        .foregroundColor(showDollarGain ? .primary : .secondary)
+                }
+            }
             
             Spacer()
             
-            HStack(spacing: 12) {
-                Text("%")
-                    .font(.subheadline)
-                    .foregroundColor(showDollarGain ? .secondary : .primary)
-                
-                Toggle("", isOn: $showDollarGain)
-                    .labelsHidden()
-                
-                Text("Dollar")
-                    .font(.subheadline)
-                    .foregroundColor(showDollarGain ? .primary : .secondary)
+            // Sort menu
+            Menu {
+                Picker("Sort By", selection: $sortOption) {
+                    ForEach(AssetSortOption.allCases) { option in
+                        Label(option.rawValue, systemImage: option.iconName)
+                            .tag(option)
+                    }
+                }
+                .pickerStyle(.inline)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.arrow.down")
+                    Text("Sort")
+                }
+                .font(.subheadline)
+                .foregroundColor(.blue)
             }
         }
         .padding()
@@ -349,7 +403,7 @@ struct GroupedPortfolioView: View {
     }
     
     private func assetGroupSection(for assetClass: AssetClass) -> some View {
-        let assetsInClass = portfolioVM.portfolio.assets(for: assetClass)
+        let assetsInClass = sortedAssets(portfolioVM.portfolio.assets(for: assetClass))
         let totalValue = portfolioVM.portfolio.totalValue(for: assetClass)
         let percentage = portfolioVM.totalValue > 0 ? totalValue / portfolioVM.totalValue : 0
         
@@ -460,6 +514,7 @@ struct AssetRowView2: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
+                // Always show gain/loss if available (not just after refresh)
                 if let change = asset.priceChange {
                     HStack(spacing: 2) {
                         Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
@@ -476,6 +531,11 @@ struct AssetRowView2: View {
                         }
                     }
                     .foregroundColor(change >= 0 ? .green : .red)
+                } else if asset.hasLiveData {
+                    // Show a placeholder if we have live data but no change info yet
+                    Text("--")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
         }
