@@ -372,7 +372,8 @@ struct AddAssetView: View {
                     unitValue: 0
                 )
                 
-                let price = try await AlternativePriceService.shared.fetchPrice(for: tempAsset)
+                // Bypass cooldown when adding new assets - user expects immediate price
+                let price = try await AlternativePriceService.shared.fetchPrice(for: tempAsset, bypassCooldown: true)
                 
                 // DEBUG: Log fetched crypto price
                 if selectedAssetClass == .crypto {

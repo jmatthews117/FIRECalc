@@ -32,6 +32,7 @@ struct GroupedPortfolioView: View {
     @State private var selectedAsset: Asset?
     @State private var showDollarGain = false
     @State private var sortOption: AssetSortOption = .valueHighToLow
+    @State private var refreshStatus: RefreshStatus?
 
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
     @AppStorage(AppConstants.UserDefaultsKeys.withdrawalPercentage) private var storedWithdrawalRate: Double = 0
@@ -60,6 +61,11 @@ struct GroupedPortfolioView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                // Refresh cooldown banner (when active)
+                if let status = refreshStatus, !status.isAvailable {
+                    refreshCooldownBanner(status: status)
+                }
+                
                 // Portfolio Summary
                 portfolioSummaryCard
                 
@@ -82,7 +88,22 @@ struct GroupedPortfolioView: View {
             // Use Task.detached to prevent SwiftUI from cancelling the refresh
             await Task.detached { @MainActor in
                 await portfolioVM.refreshPrices()
+                
+                // Update refresh status after attempting refresh
+                await loadRefreshStatus()
             }.value
+        }
+        .task {
+            // Load refresh status when view appears
+            await loadRefreshStatus()
+        }
+        .onChange(of: portfolioVM.isUpdatingPrices) { _, isUpdating in
+            if !isUpdating {
+                // Refresh status after update completes
+                Task {
+                    await loadRefreshStatus()
+                }
+            }
         }
         .navigationTitle("Portfolio")
         .toolbar {
@@ -102,6 +123,50 @@ struct GroupedPortfolioView: View {
         .sheet(item: $selectedAsset) { asset in
             AssetDetailView(asset: asset, portfolioVM: portfolioVM)
         }
+    }
+    
+    // MARK: - Helper Methods
+    
+    // Load refresh status from MarketstackService
+    private func loadRefreshStatus() async {
+        let status = await MarketstackService.shared.getRefreshStatus()
+        await MainActor.run {
+            refreshStatus = status
+        }
+    }
+    
+    // Refresh cooldown banner
+    private func refreshCooldownBanner(status: RefreshStatus) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock.fill")
+                .font(.title3)
+                .foregroundColor(.orange)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Refresh Cooldown Active")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Text(status.displayText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                if case .cooldownActive(let nextDate, _) = status {
+                    Text("Available at \(nextDate.formatted(date: .omitted, time: .shortened))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .background(Color.orange.opacity(0.15))
+        .cornerRadius(AppConstants.UI.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppConstants.UI.cornerRadius)
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+        )
     }
     
     // MARK: - Portfolio Summary Card
@@ -198,15 +263,55 @@ struct GroupedPortfolioView: View {
             }
 
             if portfolioVM.hasAssets {
-                Text("Pull to refresh")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    // Show refresh status if cooldown is active
+                    if let status = refreshStatus, !status.isAvailable {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock.fill")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                            Text(status.displayText)
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                    } else {
+                        Text("Pull to refresh")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Show last update time for assets with live prices
+                    if let mostRecentUpdate = portfolioVM.portfolio.assetsWithTickers
+                        .compactMap({ $0.lastUpdated })
+                        .max() {
+                        Text("Updated \(timeAgo(from: mostRecentUpdate))")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
         }
         .padding()
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 4)
+    }
+    
+    // Helper to display relative time
+    private func timeAgo(from date: Date) -> String {
+        let seconds = Date().timeIntervalSince(date)
+        if seconds < 60 {
+            return "just now"
+        } else if seconds < 3600 {
+            let minutes = Int(seconds / 60)
+            return "\(minutes)m ago"
+        } else if seconds < 86400 {
+            let hours = Int(seconds / 3600)
+            return "\(hours)h ago"
+        } else {
+            let days = Int(seconds / 86400)
+            return "\(days)d ago"
+        }
     }
     
     // MARK: - Interactive Pie Chart

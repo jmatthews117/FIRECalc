@@ -358,6 +358,7 @@ enum MarketstackError: LocalizedError {
     case networkError(Error)
     case invalidResponse
     case planLimitReached  // Free tier limitations
+    case refreshCooldownActive(remainingTime: TimeInterval)
     
     var errorDescription: String? {
         switch self {
@@ -373,6 +374,14 @@ enum MarketstackError: LocalizedError {
             return "Invalid response from Marketstack API"
         case .planLimitReached:
             return "API request limit reached for your plan. Consider upgrading or waiting until the next billing cycle."
+        case .refreshCooldownActive(let remaining):
+            let hours = Int(remaining) / 3600
+            let minutes = (Int(remaining) % 3600) / 60
+            if hours > 0 {
+                return "Refresh cooldown active. Next refresh available in \(hours)h \(minutes)m."
+            } else {
+                return "Refresh cooldown active. Next refresh available in \(minutes)m."
+            }
         }
     }
 }

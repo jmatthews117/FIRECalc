@@ -87,6 +87,7 @@ struct DashboardTabView: View {
     @State private var showingSimulationSetup = false
     @State private var showingResults = false
     @State private var showDollarGain = false
+    @State private var refreshStatus: RefreshStatus?
     
     // MEMORY FIX: Limit retained simulation results in memory
     // Keep only lightweight summary data, not full simulation runs
@@ -100,6 +101,11 @@ struct DashboardTabView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
+                    // Refresh cooldown banner (when active)
+                    if let status = refreshStatus, !status.isAvailable {
+                        refreshCooldownBanner(status: status)
+                    }
+                    
                     portfolioOverviewCard
                     
                     if (storedAnnualSpend > 0 || storedRetirementTarget > 0) && portfolioVM.hasAssets {
@@ -132,6 +138,9 @@ struct DashboardTabView: View {
                 // when user scrolls or interacts during refresh
                 await Task.detached { @MainActor in
                     await portfolioVM.refreshPrices()
+                    
+                    // Update refresh status after attempting refresh
+                    await loadRefreshStatus()
                 }.value
             }
             .navigationTitle("Dashboard")
@@ -248,9 +257,21 @@ struct DashboardTabView: View {
                     
                     if portfolioVM.hasAssets {
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text("Pull to refresh")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            // Show refresh status if cooldown is active
+                            if let status = refreshStatus, !status.isAvailable {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "clock.fill")
+                                        .font(.caption2)
+                                        .foregroundColor(.orange)
+                                    Text(status.displayText)
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                }
+                            } else {
+                                Text("Pull to refresh")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                             
                             // Show last update time for assets with live prices
                             if let mostRecentUpdate = portfolioVM.portfolio.assetsWithTickers
@@ -270,6 +291,26 @@ struct DashboardTabView: View {
             .shadow(radius: AppConstants.UI.shadowRadius)
         }
         .buttonStyle(.plain)
+        .task {
+            // Load refresh status when view appears
+            await loadRefreshStatus()
+        }
+        .onChange(of: portfolioVM.isUpdatingPrices) { _, isUpdating in
+            if !isUpdating {
+                // Refresh status after update completes
+                Task {
+                    await loadRefreshStatus()
+                }
+            }
+        }
+    }
+    
+    // Load refresh status from MarketstackService
+    private func loadRefreshStatus() async {
+        let status = await MarketstackService.shared.getRefreshStatus()
+        await MainActor.run {
+            refreshStatus = status
+        }
     }
     
     // Helper to display relative time
@@ -302,6 +343,40 @@ struct DashboardTabView: View {
             }
         }
         .buttonStyle(.plain)
+    }
+    
+    // Refresh cooldown banner
+    private func refreshCooldownBanner(status: RefreshStatus) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock.fill")
+                .font(.title3)
+                .foregroundColor(.orange)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Refresh Cooldown Active")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Text(status.displayText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                if case .cooldownActive(let nextDate, _) = status {
+                    Text("Available at \(nextDate.formatted(date: .omitted, time: .shortened))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .background(Color.orange.opacity(0.15))
+        .cornerRadius(AppConstants.UI.cornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppConstants.UI.cornerRadius)
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+        )
     }
     
     private var quickActionsCard: some View {

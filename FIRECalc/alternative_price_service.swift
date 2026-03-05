@@ -20,7 +20,7 @@ actor AlternativePriceService {
     
     private let fallbackPrices: [String: Double] = [
         // Major Stocks & ETFs
-        "SPY": 485.50, "VTI": 245.80, "QQQ": 415.30, "DIA": 385.20,
+        "SPY": 485.50, "VTI": 338.19, "QQQ": 415.30, "DIA": 385.20,
         "AAPL": 185.50, "MSFT": 380.20, "AMZN": 155.80, "GOOGL": 140.50,
         "TSLA": 245.30, "NVDA": 495.20, "META": 425.60, "BRK.B": 385.40,
         "UBER": 68.50, "LYFT": 15.20, "NFLX": 485.60, "DIS": 95.30,
@@ -45,36 +45,45 @@ actor AlternativePriceService {
     // MARK: - Main Price Fetcher
     
     /// Fetch price for any asset - tries Yahoo Finance API first, falls back to static prices
-    func fetchPrice(for asset: Asset) async throws -> Double {
-        let (price, _) = try await fetchPriceAndChange(for: asset)
+    /// - Parameter bypassCooldown: If true, bypasses 12-hour cooldown (for adding new assets)
+    func fetchPrice(for asset: Asset, bypassCooldown: Bool = false) async throws -> Double {
+        let (price, _) = try await fetchPriceAndChange(for: asset, bypassCooldown: bypassCooldown)
         return price
     }
     
     /// Fetch both price and daily change percentage for any asset
-    func fetchPriceAndChange(for asset: Asset) async throws -> (price: Double, changePercent: Double?) {
+    /// - Parameter bypassCooldown: If true, bypasses 12-hour cooldown (for adding new assets)
+    func fetchPriceAndChange(for asset: Asset, bypassCooldown: Bool = false) async throws -> (price: Double, changePercent: Double?) {
         guard let ticker = asset.ticker else {
             throw PriceServiceError.noIdentifier
         }
         
         let cleanTicker = ticker.uppercased().trimmingCharacters(in: .whitespaces)
         
+        print("🔍 AlternativePriceService fetching price for: \(cleanTicker) (bypass: \(bypassCooldown))")
+        
         // Try Yahoo Finance first (no API key needed!)
         do {
-            let result = try await fetchFromYahooWithChange(for: asset, ticker: cleanTicker)
+            let result = try await fetchFromYahooWithChange(for: asset, ticker: cleanTicker, bypassCooldown: bypassCooldown)
+            print("✅ Got price from Marketstack/Yahoo: \(cleanTicker) = $\(result.price)")
             return result
         } catch {
+            print("⚠️ Marketstack/Yahoo failed for \(cleanTicker): \(error.localizedDescription)")
+            print("   Falling back to hardcoded price...")
+            
             // Use fallback prices (no change data available)
             let fallbackPrice = try fetchFromFallback(ticker: cleanTicker)
+            print("📦 Using fallback price: \(cleanTicker) = $\(fallbackPrice)")
             return (fallbackPrice, nil)
         }
     }
     
-    private func fetchFromYahoo(for asset: Asset, ticker: String) async throws -> Double {
-        let (price, _) = try await fetchFromYahooWithChange(for: asset, ticker: ticker)
+    private func fetchFromYahoo(for asset: Asset, ticker: String, bypassCooldown: Bool = false) async throws -> Double {
+        let (price, _) = try await fetchFromYahooWithChange(for: asset, ticker: ticker, bypassCooldown: bypassCooldown)
         return price
     }
     
-    private func fetchFromYahooWithChange(for asset: Asset, ticker: String) async throws -> (price: Double, changePercent: Double?) {
+    private func fetchFromYahooWithChange(for asset: Asset, ticker: String, bypassCooldown: Bool = false) async throws -> (price: Double, changePercent: Double?) {
         // PHASE 1/2: Use Marketstack Test Service if enabled
         if AlternativePriceService.useMarketstackTest {
             let testService = MarketstackTestService.shared
@@ -100,7 +109,7 @@ actor AlternativePriceService {
         case .crypto:
             // Note: Marketstack free tier may not support crypto
             do {
-                let quote = try await marketstackService.fetchCryptoQuote(symbol: ticker)
+                let quote = try await marketstackService.fetchCryptoQuote(symbol: ticker, bypassCooldown: bypassCooldown)
                 return (quote.latestPrice, nil)
             } catch {
                 // Crypto not supported on free tier - throw error
@@ -108,7 +117,7 @@ actor AlternativePriceService {
             }
             
         case .stocks, .bonds, .reits, .preciousMetals:
-            let quote = try await marketstackService.fetchQuote(ticker: ticker)
+            let quote = try await marketstackService.fetchQuote(ticker: ticker, bypassCooldown: bypassCooldown)
             return (quote.latestPrice, quote.changePercent)
             
         default:

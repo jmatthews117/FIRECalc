@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		9C21F6DB2F268A6E004B6016 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		9C21F6CA2F268A6C004B6016 /* FIRECalc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FIRECalc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6DA2F268A6E004B6016 /* FIRECalcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6E42F268A6E004B6016 /* FIRECalcUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REFRESH_COOLDOWN_IMPLEMENTATION.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -92,6 +97,7 @@
 				9C21F6E72F268A6E004B6016 /* FIRECalcUITests */,
 				9C21F6CB2F268A6C004B6016 /* Products */,
 				9C21F6CC2F268A6C004B6016 /* FIRECalc */,
+				9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -225,6 +231,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
