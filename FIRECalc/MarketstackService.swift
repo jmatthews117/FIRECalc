@@ -91,15 +91,23 @@ actor MarketstackService {
     
     /// Check if we can make an API call (respects 12-hour cooldown)
     /// - Parameter allowBypass: If true, allows bypassing cooldown for critical operations
-    private func canMakeAPICall(allowBypass: Bool = false) -> Bool {
-        // Allow bypass for single asset lookups (like adding new assets)
+    private func canMakeAPICall(allowBypass: Bool = false) async -> Bool {
+        // SUBSCRIPTION CHECK: Free users cannot access stock quotes at all
+        let isPro = await MainActor.run { SubscriptionManager.shared.isProSubscriber }
+        
+        if !isPro {
+            print("🚫 Free tier - stock quotes disabled")
+            return false
+        }
+        
+        // Pro users: Allow bypass for single asset lookups (like adding new assets)
         if allowBypass {
-            print("✅ Cooldown bypass allowed for single asset lookup")
+            print("✅ Pro user - Cooldown bypass allowed for single asset lookup")
             return true
         }
         
         guard let lastRefresh = lastRefreshTime else {
-            print("✅ No previous refresh - allowing API call")
+            print("✅ Pro user - No previous refresh - allowing API call")
             return true
         }
         
@@ -107,10 +115,10 @@ actor MarketstackService {
         let canRefresh = elapsed >= globalRefreshCooldown
         
         if canRefresh {
-            print("✅ Cooldown expired (\(formatDuration(elapsed)) elapsed) - allowing API call")
+            print("✅ Pro user - Cooldown expired (\(formatDuration(elapsed)) elapsed) - allowing API call")
         } else {
             let remaining = globalRefreshCooldown - elapsed
-            print("⏳ Cooldown active - \(formatDuration(remaining)) remaining until next refresh")
+            print("⏳ Pro user - Cooldown active - \(formatDuration(remaining)) remaining until next refresh")
         }
         
         return canRefresh
@@ -156,8 +164,8 @@ actor MarketstackService {
             print("❌ Cache MISS for \(cleanTicker) (not in cache)")
         }
         
-        // Check if we can make API call (12-hour cooldown check)
-        guard canMakeAPICall(allowBypass: bypassCooldown) else {
+        // Check if we can make API call (12-hour cooldown check + subscription check)
+        guard await canMakeAPICall(allowBypass: bypassCooldown) else {
             // Return stale cache if available, or throw error
             if let cached = quoteCache[cleanTicker] {
                 let age = Date().timeIntervalSince(cached.timestamp)
@@ -257,8 +265,8 @@ actor MarketstackService {
             return results
         }
         
-        // Check if we can make API call (12-hour cooldown check)
-        guard canMakeAPICall() else {
+        // Check if we can make API call (12-hour cooldown check + subscription check)
+        guard await canMakeAPICall() else {
             print("⏳ Cooldown active - returning cached data only (\(results.count)/\(cleanTickers.count) tickers)")
             
             // Return any stale cache we have for the missing tickers

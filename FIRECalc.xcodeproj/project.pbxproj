@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9C027ED02F5B106F00E0D831 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C027ECF2F5B106F00E0D831 /* SubscriptionManager.swift */; };
+		9C027ED22F5B108F00E0D831 /* SubscriptionPaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C027ED12F5B108F00E0D831 /* SubscriptionPaywallView.swift */; };
+		9C027ED42F5B113500E0D831 /* SUBSCRIPTION_IMPLEMENTATION_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027ED32F5B113500E0D831 /* SUBSCRIPTION_IMPLEMENTATION_GUIDE.md */; };
+		9C027ED62F5B114900E0D831 /* APP_INITIALIZATION_NOTE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C027ED52F5B114900E0D831 /* APP_INITIALIZATION_NOTE.swift */; };
+		9C027ED82F5B117300E0D831 /* TESTING_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027ED72F5B117300E0D831 /* TESTING_CHECKLIST.md */; };
+		9C027EDA2F5B11AC00E0D831 /* SUBSCRIPTION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027ED92F5B11AC00E0D831 /* SUBSCRIPTION_SUMMARY.md */; };
+		9C027EDC2F5B11F700E0D831 /* SUBSCRIPTION_FLOW_DIAGRAM.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027EDB2F5B11F700E0D831 /* SUBSCRIPTION_FLOW_DIAGRAM.md */; };
+		9C027EDE2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027EDD2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md */; };
+		9C027EE02F5B153D00E0D831 /* FIRECalcProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 9C027EDF2F5B153D00E0D831 /* FIRECalcProducts.storekit */; };
+		9C027EE22F5B173300E0D831 /* FREE_TRIAL_UPDATES.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027EE12F5B173300E0D831 /* FREE_TRIAL_UPDATES.md */; };
 		9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +38,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9C027ECF2F5B106F00E0D831 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
+		9C027ED12F5B108F00E0D831 /* SubscriptionPaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionPaywallView.swift; sourceTree = "<group>"; };
+		9C027ED32F5B113500E0D831 /* SUBSCRIPTION_IMPLEMENTATION_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SUBSCRIPTION_IMPLEMENTATION_GUIDE.md; sourceTree = "<group>"; };
+		9C027ED52F5B114900E0D831 /* APP_INITIALIZATION_NOTE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APP_INITIALIZATION_NOTE.swift; sourceTree = "<group>"; };
+		9C027ED72F5B117300E0D831 /* TESTING_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TESTING_CHECKLIST.md; sourceTree = "<group>"; };
+		9C027ED92F5B11AC00E0D831 /* SUBSCRIPTION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SUBSCRIPTION_SUMMARY.md; sourceTree = "<group>"; };
+		9C027EDB2F5B11F700E0D831 /* SUBSCRIPTION_FLOW_DIAGRAM.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SUBSCRIPTION_FLOW_DIAGRAM.md; sourceTree = "<group>"; };
+		9C027EDD2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_REVIEW.md; sourceTree = "<group>"; };
+		9C027EDF2F5B153D00E0D831 /* FIRECalcProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = FIRECalcProducts.storekit; sourceTree = "<group>"; };
+		9C027EE12F5B173300E0D831 /* FREE_TRIAL_UPDATES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FREE_TRIAL_UPDATES.md; sourceTree = "<group>"; };
 		9C21F6CA2F268A6C004B6016 /* FIRECalc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FIRECalc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6DA2F268A6E004B6016 /* FIRECalcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6E42F268A6E004B6016 /* FIRECalcUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,11 +113,21 @@
 		9C21F6C12F268A6B004B6016 = {
 			isa = PBXGroup;
 			children = (
+				9C027EDF2F5B153D00E0D831 /* FIRECalcProducts.storekit */,
 				9C21F6DD2F268A6E004B6016 /* FIRECalcTests */,
 				9C21F6E72F268A6E004B6016 /* FIRECalcUITests */,
 				9C21F6CB2F268A6C004B6016 /* Products */,
 				9C21F6CC2F268A6C004B6016 /* FIRECalc */,
 				9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */,
+				9C027ECF2F5B106F00E0D831 /* SubscriptionManager.swift */,
+				9C027ED12F5B108F00E0D831 /* SubscriptionPaywallView.swift */,
+				9C027ED32F5B113500E0D831 /* SUBSCRIPTION_IMPLEMENTATION_GUIDE.md */,
+				9C027ED52F5B114900E0D831 /* APP_INITIALIZATION_NOTE.swift */,
+				9C027ED72F5B117300E0D831 /* TESTING_CHECKLIST.md */,
+				9C027ED92F5B11AC00E0D831 /* SUBSCRIPTION_SUMMARY.md */,
+				9C027EDB2F5B11F700E0D831 /* SUBSCRIPTION_FLOW_DIAGRAM.md */,
+				9C027EDD2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md */,
+				9C027EE12F5B173300E0D831 /* FREE_TRIAL_UPDATES.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -231,6 +261,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C027ED42F5B113500E0D831 /* SUBSCRIPTION_IMPLEMENTATION_GUIDE.md in Resources */,
+				9C027EE22F5B173300E0D831 /* FREE_TRIAL_UPDATES.md in Resources */,
+				9C027EDE2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md in Resources */,
+				9C027EE02F5B153D00E0D831 /* FIRECalcProducts.storekit in Resources */,
+				9C027EDC2F5B11F700E0D831 /* SUBSCRIPTION_FLOW_DIAGRAM.md in Resources */,
+				9C027EDA2F5B11AC00E0D831 /* SUBSCRIPTION_SUMMARY.md in Resources */,
+				9C027ED82F5B117300E0D831 /* TESTING_CHECKLIST.md in Resources */,
 				9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -256,6 +293,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C027ED62F5B114900E0D831 /* APP_INITIALIZATION_NOTE.swift in Sources */,
+				9C027ED22F5B108F00E0D831 /* SubscriptionPaywallView.swift in Sources */,
+				9C027ED02F5B106F00E0D831 /* SubscriptionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

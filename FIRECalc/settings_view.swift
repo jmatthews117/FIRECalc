@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit  // Required for UIApplication.shared.open()
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -34,8 +35,92 @@ struct SettingsView: View {
     
     var body: some View {
         Form {
-                // Retirement Planning Section
-                Section {
+            // SUBSCRIPTION SECTION
+            Section {
+                if SubscriptionManager.shared.isProSubscriber {
+                    // Active subscription
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.title3)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("FIRECalc Pro")
+                                .font(.headline)
+                            Text(SubscriptionManager.shared.subscriptionDisplayText)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    
+                    Button(action: {
+                        // Open App Store subscription management
+                        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Text("Manage Subscription")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.caption)
+                        }
+                    }
+                } else {
+                    // Free tier - upgrade prompt
+                    NavigationLink(destination: SubscriptionPaywallView()) {
+                        HStack {
+                            ZStack {
+                                Circle()
+                                    .fill(LinearGradient(
+                                        colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ))
+                                    .frame(width: 50, height: 50)
+                                
+                                Image(systemName: "star.fill")
+                                    .foregroundColor(.orange)
+                                    .font(.title3)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Upgrade to Pro")
+                                    .font(.headline)
+                                Text("Get live stock prices and portfolio tracking")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("7 Days FREE")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.green)
+                                Text("Then $1.99/mo")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                Text("or $19.99/yr")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+            } header: {
+                Text("Subscription")
+            } footer: {
+                if !SubscriptionManager.shared.isProSubscriber {
+                    Text("Start with a 7-day free trial. Pro features include: automatic stock price updates, ticker symbol search, real-time portfolio values, and cryptocurrency tracking.")
+                }
+            }
+            
+            // Retirement Planning Section
+            Section {
                     // Current Age
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Current Age")

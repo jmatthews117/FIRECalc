@@ -257,20 +257,37 @@ struct DashboardTabView: View {
                     
                     if portfolioVM.hasAssets {
                         VStack(alignment: .trailing, spacing: 2) {
-                            // Show refresh status if cooldown is active
-                            if let status = refreshStatus, !status.isAvailable {
+                            // SUBSCRIPTION STATUS
+                            if !SubscriptionManager.shared.isProSubscriber {
                                 HStack(spacing: 4) {
-                                    Image(systemName: "clock.fill")
+                                    Image(systemName: "lock.fill")
                                         .font(.caption2)
                                         .foregroundColor(.orange)
-                                    Text(status.displayText)
+                                    Text("Upgrade for live prices")
                                         .font(.caption)
                                         .foregroundColor(.orange)
                                 }
                             } else {
-                                Text("Pull to refresh")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                // Show refresh status if cooldown is active
+                                if let status = refreshStatus, !status.isAvailable {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "clock.fill")
+                                            .font(.caption2)
+                                            .foregroundColor(.orange)
+                                        Text(status.displayText)
+                                            .font(.caption)
+                                            .foregroundColor(.orange)
+                                    }
+                                } else {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "star.fill")
+                                            .font(.caption2)
+                                            .foregroundColor(.blue)
+                                        Text("Pull to refresh")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
                             }
                             
                             // Show last update time for assets with live prices

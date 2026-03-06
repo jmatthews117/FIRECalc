@@ -121,6 +121,12 @@ class PortfolioViewModel: ObservableObject {
     // MARK: - Price Updates
     
     func refreshPrices() async {
+        // SUBSCRIPTION CHECK: Free users cannot refresh prices
+        guard SubscriptionManager.shared.isProSubscriber else {
+            show(error: "Stock price updates require FIRECalc Pro. Upgrade to access live portfolio tracking.")
+            return
+        }
+        
         // PERFORMANCE FIX: Cancel any pending refresh and debounce rapid calls
         refreshTask?.cancel()
         

@@ -59,68 +59,118 @@ struct AddAssetView: View {
                 
                 // Ticker Input (for stocks, bonds, REITs, crypto, precious metals)
                 if selectedAssetClass.supportsTicker || selectedAssetClass == .bonds || selectedAssetClass == .corporateBonds || selectedAssetClass == .preciousMetals {
-                    Section("Ticker Symbol\n(Input Custom Label if no Ticker)") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            TextField("e.g., AAPL, SPY, GLD or [My Label]", text: $ticker)
-                                .textInputAutocapitalization(.characters)
-                                .autocorrectionDisabled()
-                                .focused($focusedField, equals: .ticker)
-                                .onChange(of: ticker) { oldValue, newValue in
-                                    if oldValue != newValue {
-                                        // Reset price when ticker changes
-                                        autoLoadedPrice = nil
-                                        priceError = nil
-                                        assetName = ""
-                                        
-                                        // Don't auto-load - user must click button
-                                    }
+                    Section {
+                        // SUBSCRIPTION GATE: Show upgrade prompt for free users
+                        if !SubscriptionManager.shared.isProSubscriber {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundColor(.orange)
+                                    Text("Ticker Symbol (Pro Only)")
+                                        .font(.headline)
                                 }
-                            
-                            // Manual price load button
-                            if !ticker.isEmpty && autoLoadedPrice == nil && !isLoadingPrice {
-                                Button(action: {
-                                    loadPrice()
-                                }) {
+                                
+                                Text("Upgrade to FIRECalc Pro to automatically track stocks, ETFs, crypto, and other assets by ticker symbol.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                NavigationLink(destination: SubscriptionPaywallView()) {
                                     HStack {
-                                        Image(systemName: "arrow.down.circle.fill")
-                                        Text("Load Price for \(ticker.uppercased())")
+                                        Image(systemName: "star.fill")
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Start 7-Day Free Trial")
+                                                .fontWeight(.semibold)
+                                            Text("Then $1.99/mo")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
                                     }
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(Color.blue.opacity(0.1))
+                                    .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Divider()
+                                
+                                Text("For now, manually enter your asset value below.")
                                     .font(.caption)
-                                }
-                                .buttonStyle(.bordered)
-                                .tint(.blue)
+                                    .foregroundColor(.secondary)
                             }
-                            
-                            // Price loading feedback
-                            if isLoadingPrice {
-                                HStack {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                    Text("Loading...")
+                            .padding(.vertical, 4)
+                        } else {
+                            // Pro users: Show ticker input
+                            VStack(alignment: .leading, spacing: 8) {
+                                TextField("e.g., AAPL, SPY, GLD or [My Label]", text: $ticker)
+                                    .textInputAutocapitalization(.characters)
+                                    .autocorrectionDisabled()
+                                    .focused($focusedField, equals: .ticker)
+                                    .onChange(of: ticker) { oldValue, newValue in
+                                        if oldValue != newValue {
+                                            // Reset price when ticker changes
+                                            autoLoadedPrice = nil
+                                            priceError = nil
+                                            assetName = ""
+                                            
+                                            // Don't auto-load - user must click button
+                                        }
+                                    }
+                                
+                                // Manual price load button
+                                if !ticker.isEmpty && autoLoadedPrice == nil && !isLoadingPrice {
+                                    Button(action: {
+                                        loadPrice()
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "arrow.down.circle.fill")
+                                            Text("Load Price for \(ticker.uppercased())")
+                                        }
                                         .font(.caption)
-                                        .foregroundColor(.blue)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .tint(.blue)
                                 }
-                            } else if let price = autoLoadedPrice {
-                                HStack {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
-                                    Text("\(assetName.isEmpty ? ticker.uppercased() : assetName) • \(price.toPreciseCurrency())")
-                                        .font(.caption)
-                                        .foregroundColor(.green)
+                                
+                                // Price loading feedback
+                                if isLoadingPrice {
+                                    HStack {
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                        Text("Loading...")
+                                            .font(.caption)
+                                            .foregroundColor(.blue)
+                                    }
+                                } else if let price = autoLoadedPrice {
+                                    HStack {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                        Text("\(assetName.isEmpty ? ticker.uppercased() : assetName) • \(price.toPreciseCurrency())")
+                                            .font(.caption)
+                                            .foregroundColor(.green)
+                                    }
+                                } else if let error = priceError {
+                                    HStack {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.orange)
+                                        Text(error)
+                                            .font(.caption)
+                                            .foregroundColor(.orange)
+                                    }
                                 }
-                            } else if let error = priceError {
-                                HStack {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.orange)
-                                    Text(error)
-                                        .font(.caption)
-                                        .foregroundColor(.orange)
-                                }
+                                
+                                Text(tickerSuggestion)
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
                             }
-                            
-                            Text(tickerSuggestion)
-                                .font(.caption)
-                                .foregroundColor(.blue)
+                        }
+                    } header: {
+                        if SubscriptionManager.shared.isProSubscriber {
+                            Text("Ticker Symbol\n(Input Custom Label if no Ticker)")
                         }
                     }
                 }
