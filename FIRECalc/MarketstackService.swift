@@ -15,28 +15,8 @@ actor MarketstackService {
     
     // MARK: - Configuration
     
-    /// Marketstack API key - fetched from remote config
-    /// This allows rotating the key without app updates
-    private var apiKey: String?
-    
-    /// Get API key (fetches from remote config on first use)
-    private func getAPIKey() async -> String {
-        if let key = apiKey {
-            return key
-        }
-        
-        // Fetch from remote config
-        let key = await MarketstackConfig.shared.getAPIKey()
-        apiKey = key
-        return key
-    }
-    
-    /// Base URL for Marketstack API
-    /// NOTE: Free tier uses HTTP which requires Info.plist configuration
-    /// If you get ATS errors, see FIX_ATS_ISSUE.md for Info.plist setup
-    /// Alternative: Use test mode or upgrade to paid tier for HTTPS
-    private let baseURL = "http://api.marketstack.com/v1"  // Free tier (HTTP)
-    // private let baseURL = "https://api.marketstack.com/v1"  // Paid tier (HTTPS - works without ATS config)
+    /// Backend proxy handles API calls - no API key needed in app!
+    /// MarketstackConfig.shared manages communication with our secure backend
     
     /// Cache duration in seconds (15 minutes for individual quote display)
     private let cacheDuration: TimeInterval = 900
@@ -395,143 +375,25 @@ actor MarketstackService {
     // MARK: - API Calls
     
     private func fetchQuoteFromAPI(ticker: String) async throws -> MarketstackQuote {
-        // Marketstack endpoint: /eod/latest?symbols=AAPL
-        let endpoint = "\(baseURL)/eod/latest"
-        
-        let apiKey = await getAPIKey()
-        
-        var components = URLComponents(string: endpoint)
-        components?.queryItems = [
-            URLQueryItem(name: "access_key", value: apiKey),
-            URLQueryItem(name: "symbols", value: ticker),
-            URLQueryItem(name: "limit", value: "1")
-        ]
-        
-        guard let url = components?.url else {
-            throw MarketstackError.invalidResponse
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw MarketstackError.invalidResponse
-        }
-        
-        print("📡 Marketstack response for \(ticker): HTTP \(httpResponse.statusCode)")
-        
-        // Check for errors
-        if httpResponse.statusCode == 401 {
-            throw MarketstackError.invalidAPIKey
-        } else if httpResponse.statusCode == 429 {
-            throw MarketstackError.rateLimitExceeded
-        } else if httpResponse.statusCode == 403 {
-            throw MarketstackError.planLimitReached
-        } else if httpResponse.statusCode != 200 {
-            // Try to parse error message from response
-            if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ Marketstack error response: \(errorString)")
-            }
-            throw MarketstackError.invalidResponse
-        }
-        
-        // Parse response
-        let decoder = JSONDecoder()
-        
+        // Call our backend proxy instead of Marketstack directly
         do {
-            let apiResponse = try decoder.decode(MarketstackAPIResponse.self, from: data)
-            
-            guard let quote = apiResponse.data.first else {
-                print("⚠️ No data returned for ticker: \(ticker)")
-                print("   This ticker may not be supported on free tier or doesn't exist")
-                throw MarketstackError.invalidTicker(ticker)
-            }
-            
-            // DEBUG: Log the actual data returned from Marketstack
-            print("📊 Marketstack data for \(ticker):")
-            print("   Symbol: \(quote.symbol)")
-            print("   Close: $\(quote.close)")
-            print("   Open: $\(quote.open ?? 0)")
-            print("   Date: \(quote.date)")
-            print("   Exchange: \(quote.exchange ?? "N/A")")
-            
+            let quote = try await MarketstackConfig.shared.fetchQuote(symbol: ticker)
+            print("✅ Received quote from backend for \(ticker): $\(quote.close)")
             return quote
-        } catch {
-            if let decodingError = error as? DecodingError {
-                print("❌ Failed to decode response for \(ticker): \(decodingError)")
-            }
-            throw MarketstackError.invalidResponse
+        } catch let error as ConfigError {
+            print("❌ Backend error for \(ticker): \(error.localizedDescription)")
+            throw MarketstackError.networkError(error)
         }
     }
-    
     private func fetchBatchQuotesFromAPI(tickers: [String]) async throws -> [MarketstackQuote] {
-        // Marketstack supports multiple symbols: /eod/latest?symbols=AAPL,MSFT,GOOGL
-        let endpoint = "\(baseURL)/eod/latest"
-        let symbolsString = tickers.joined(separator: ",")
-        
-        let apiKey = await getAPIKey()
-        
-        var components = URLComponents(string: endpoint)
-        components?.queryItems = [
-            URLQueryItem(name: "access_key", value: apiKey),
-            URLQueryItem(name: "symbols", value: symbolsString),
-            URLQueryItem(name: "limit", value: "1")
-        ]
-        
-        guard let url = components?.url else {
-            throw MarketstackError.invalidResponse
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw MarketstackError.invalidResponse
-        }
-        
-        print("📡 Marketstack batch response: HTTP \(httpResponse.statusCode)")
-        
-        // Check for errors
-        if httpResponse.statusCode == 401 {
-            throw MarketstackError.invalidAPIKey
-        } else if httpResponse.statusCode == 429 {
-            throw MarketstackError.rateLimitExceeded
-        } else if httpResponse.statusCode == 403 {
-            throw MarketstackError.planLimitReached
-        } else if httpResponse.statusCode != 200 {
-            // Try to parse error message from response
-            if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ Marketstack batch error response: \(errorString)")
-            }
-            throw MarketstackError.invalidResponse
-        }
-        
-        // Parse response
-        let decoder = JSONDecoder()
-        
+        // Call our backend proxy for batch quotes
         do {
-            let apiResponse = try decoder.decode(MarketstackAPIResponse.self, from: data)
-            
-            if apiResponse.data.isEmpty {
-                print("⚠️ No data returned for any tickers in batch")
-                print("   Requested: \(tickers.joined(separator: ", "))")
-            } else {
-                let returnedSymbols = apiResponse.data.map { $0.symbol }
-                print("✅ Got data for: \(returnedSymbols.joined(separator: ", "))")
-            }
-            
-            return apiResponse.data
-        } catch {
-            if let decodingError = error as? DecodingError {
-                print("❌ Failed to decode batch response: \(decodingError)")
-            }
-            throw MarketstackError.invalidResponse
+            let quotes = try await MarketstackConfig.shared.fetchQuotes(symbols: tickers)
+            print("✅ Received \(quotes.count) quotes from backend")
+            return quotes
+        } catch let error as ConfigError {
+            print("❌ Backend error for batch: \(error.localizedDescription)")
+            throw MarketstackError.networkError(error)
         }
     }
     

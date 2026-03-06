@@ -2,8 +2,8 @@
 //  MarketstackConfig.swift
 //  FIRECalc
 //
-//  Remote API key configuration for Marketstack
-//  Fetches API key from remote source to allow rotation without app updates
+//  Backend proxy configuration for Marketstack API
+//  App communicates with your backend, which securely stores the API key
 //
 
 import Foundation
@@ -13,121 +13,124 @@ actor MarketstackConfig {
     
     // MARK: - Configuration
     
-    /// URL to your remote config file (host this on GitHub, your server, etc.)
-    /// Example: https://raw.githubusercontent.com/yourusername/yourrepo/main/config/marketstack.json
-    private let remoteConfigURL = "YOUR_REMOTE_CONFIG_URL_HERE"
+    /// Your backend proxy URL (deployed on Render, Heroku, Cloudflare, etc.)
+    /// Example: https://firecalc-proxy.onrender.com
+    /// TODO: Update this with your actual backend URL after deployment
+    private let backendURL = "https://firecalc-backend.onrender.com"
     
-    /// Fallback API key (hardcoded as backup, but rotated remotely)
-    /// This is used if remote fetch fails
-    private let fallbackAPIKey = "f1d8fa1b993a683099be615d3c37f058"
-    
-    /// Cache the fetched API key in memory
-    private var cachedAPIKey: String?
-    private var lastFetchTime: Date?
-    
-    /// Cache duration (1 hour - fetch new key every hour to stay updated)
-    private let cacheDuration: TimeInterval = 3600
+    /// No API key needed in the app! It's stored securely on your backend.
     
     private init() {
-        print("🔐 MarketstackConfig initialized - will fetch remote API key")
+        print("🔐 MarketstackConfig initialized - using secure backend proxy")
     }
     
-    // MARK: - API Key Retrieval
+    // MARK: - API Methods
     
-    /// Get the current API key (from cache, remote, or fallback)
-    func getAPIKey() async -> String {
-        // Check cache first
-        if let cached = cachedAPIKey,
-           let lastFetch = lastFetchTime,
-           Date().timeIntervalSince(lastFetch) < cacheDuration {
-            print("🔐 Using cached API key")
-            return cached
-        }
-        
-        // Try to fetch from remote
-        do {
-            let remoteKey = try await fetchRemoteAPIKey()
-            cachedAPIKey = remoteKey
-            lastFetchTime = Date()
-            print("🔐 ✅ Fetched API key from remote config")
-            return remoteKey
-        } catch {
-            print("🔐 ⚠️ Failed to fetch remote API key: \(error.localizedDescription)")
-            print("🔐 Using fallback API key")
-            return fallbackAPIKey
-        }
-    }
-    
-    /// Force refresh the API key from remote (useful after rotation)
-    func refreshAPIKey() async throws -> String {
-        let remoteKey = try await fetchRemoteAPIKey()
-        cachedAPIKey = remoteKey
-        lastFetchTime = Date()
-        print("🔐 ✅ Force refreshed API key from remote")
-        return remoteKey
-    }
-    
-    // MARK: - Remote Fetching
-    
-    private func fetchRemoteAPIKey() async throws -> String {
-        guard let url = URL(string: remoteConfigURL) else {
+    /// Fetch a single stock quote from backend
+    func fetchQuote(symbol: String) async throws -> MarketstackQuote {
+        let urlString = "\(backendURL)/api/quote/\(symbol)"
+        guard let url = URL(string: urlString) else {
             throw ConfigError.invalidURL
         }
         
         var request = URLRequest(url: url)
-        request.timeoutInterval = 10 // 10 second timeout
-        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 10
+        request.httpMethod = "GET"
+        request.setValue("FIRECalc_2026_SecretKey_8j3k2h1k9", forHTTPHeaderField: "x-api-key") // ← ADD THIS LINE
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw ConfigError.fetchFailed
         }
         
-        // Parse JSON response
-        let decoder = JSONDecoder()
-        let config = try decoder.decode(RemoteConfig.self, from: data)
-        
-        guard !config.marketstackAPIKey.isEmpty else {
-            throw ConfigError.emptyKey
+        guard httpResponse.statusCode == 200 else {
+            // Try to parse error message from backend
+            if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
+                throw ConfigError.backendError(errorResponse.error)
+            }
+            throw ConfigError.fetchFailed
         }
         
-        return config.marketstackAPIKey
+        // Decode the response (uses existing MarketstackAPIResponse from MarketstackService)
+        let apiResponse = try JSONDecoder().decode(BackendAPIResponse.self, from: data)
+        
+        guard let quote = apiResponse.data.first else {
+            throw ConfigError.noDataAvailable
+        }
+        
+        return quote
     }
     
-    /// Clear cached key (forces re-fetch on next request)
-    func clearCache() {
-        cachedAPIKey = nil
-        lastFetchTime = nil
-        print("🔐 API key cache cleared")
+    /// Fetch multiple stock quotes (batch request) from backend
+    func fetchQuotes(symbols: [String]) async throws -> [MarketstackQuote] {
+        let symbolsString = symbols.joined(separator: ",")
+        let urlString = "\(backendURL)/api/quotes?symbols=\(symbolsString)"
+        
+        guard let url = URL(string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "") else {
+            throw ConfigError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 15
+        request.httpMethod = "GET"
+        request.setValue("FIRECalc_2026_SecretKey_8j3k2h1k9", forHTTPHeaderField: "x-api-key") // ← ADD THIS LINE
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw ConfigError.fetchFailed
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
+                throw ConfigError.backendError(errorResponse.error)
+            }
+            throw ConfigError.fetchFailed
+        }
+        
+        // Decode the response
+        let apiResponse = try JSONDecoder().decode(BackendAPIResponse.self, from: data)
+        return apiResponse.data
     }
 }
 
-// MARK: - Models
+// MARK: - Backend Response Models
 
-private struct RemoteConfig: Codable {
-    let marketstackAPIKey: String
-    let version: Int?  // Optional versioning
-    let active: Bool?  // Optional kill switch
+/// Response structure from our backend (matches Marketstack API format)
+private struct BackendAPIResponse: Codable {
+    let data: [MarketstackQuote]
+    let pagination: BackendPagination?
+}
+
+private struct BackendPagination: Codable {
+    let limit: Int
+    let offset: Int
+    let count: Int
+    let total: Int
+}
+
+/// Error response from backend
+private struct BackendErrorResponse: Codable {
+    let error: String
 }
 
 enum ConfigError: LocalizedError {
     case invalidURL
     case fetchFailed
-    case emptyKey
-    case deactivated
+    case backendError(String)
+    case noDataAvailable
     
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid config URL"
+            return "Invalid backend URL"
         case .fetchFailed:
-            return "Failed to fetch remote config"
-        case .emptyKey:
-            return "Remote config returned empty API key"
-        case .deactivated:
-            return "Service deactivated via remote config"
+            return "Failed to fetch from backend"
+        case .backendError(let message):
+            return "Backend error: \(message)"
+        case .noDataAvailable:
+            return "No data available from backend"
         }
     }
 }
