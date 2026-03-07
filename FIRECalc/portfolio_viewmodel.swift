@@ -17,6 +17,7 @@ class PortfolioViewModel: ObservableObject {
     @Published var isUpdatingPrices: Bool = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
+    @Published var lastSuccessfulRefresh: Date?
     
     private let persistence = PersistenceService.shared
     /// Kept so that rapid successive operations cancel the previous auto-dismiss.
@@ -32,6 +33,10 @@ class PortfolioViewModel: ObservableObject {
     private var cachedAllocation: [(AssetClass, Double)]?
     private var lastPortfolioHash: Int?
     
+    // MARK: - UserDefaults Keys
+    
+    private let lastRefreshKey = "portfolio_last_successful_refresh"
+    
     init(portfolio: Portfolio? = nil) {
         if let savedPortfolio = try? persistence.loadPortfolio() {
             self.portfolio = savedPortfolio
@@ -41,12 +46,23 @@ class PortfolioViewModel: ObservableObject {
             self.portfolio = Portfolio(name: "My Portfolio")
         }
         
+        // Load last successful refresh timestamp
+        let timestamp = UserDefaults.standard.double(forKey: lastRefreshKey)
+        if timestamp > 0 {
+            self.lastSuccessfulRefresh = Date(timeIntervalSince1970: timestamp)
+        }
+        
         // PHASE 2: Enable REAL Marketstack (set to true for test mode)
         AlternativePriceService.useMarketstackTest = false
         print("📡 LIVE MODE - Using real Marketstack API with 15-min cache")
         
         // Automatically refresh prices on launch if we have stale data
+        // SUBSCRIPTION FIX: Wait for subscription status to load first to avoid
+        // showing "must upgrade" error to paid users on startup
         Task {
+            // Give SubscriptionManager time to load subscription status
+            // This prevents race condition where refresh happens before subscription check completes
+            try? await Task.sleep(for: .seconds(0.5))
             await refreshPricesIfNeeded()
         }
     }
@@ -67,6 +83,26 @@ class PortfolioViewModel: ObservableObject {
         let assetsWithoutPrices = portfolio.assetsWithTickers.filter { $0.currentPrice == nil }
         
         guard !assetsNeedingUpdate.isEmpty || !assetsWithoutPrices.isEmpty else {
+            return
+        }
+        
+        // SUBSCRIPTION FIX: For automatic refresh, check subscription status silently
+        // Don't show error message since this is background refresh, not user-initiated
+        let subscriptionManager = SubscriptionManager.shared
+        
+        // If subscription manager is still loading, wait briefly
+        if subscriptionManager.isLoading {
+            // Wait up to 1 second for subscription status to load
+            for _ in 0..<10 {
+                if !subscriptionManager.isLoading {
+                    break
+                }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+        
+        // Silently skip if not a pro subscriber (don't show error for automatic refresh)
+        guard subscriptionManager.isProSubscriber else {
             return
         }
         
@@ -122,7 +158,23 @@ class PortfolioViewModel: ObservableObject {
     
     func refreshPrices() async {
         // SUBSCRIPTION CHECK: Free users cannot refresh prices
-        guard SubscriptionManager.shared.isProSubscriber else {
+        // SUBSCRIPTION FIX: Skip check if subscription manager is still loading (isLoading)
+        // to avoid false negatives during app startup
+        let subscriptionManager = SubscriptionManager.shared
+        
+        // If subscription manager is loading, wait briefly for it to complete
+        if subscriptionManager.isLoading {
+            // Wait up to 1 second for subscription status to load
+            for _ in 0..<10 {
+                if !subscriptionManager.isLoading {
+                    break
+                }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+        
+        // Now check subscription status
+        guard subscriptionManager.isProSubscriber else {
             show(error: "Stock price updates require FIRECalc Pro. Upgrade to access live portfolio tracking.")
             return
         }
@@ -288,6 +340,13 @@ class PortfolioViewModel: ObservableObject {
             if failCount > assetsToUpdate.count / 2 {
                 AppLogger.warning("⚠️ DIAGNOSTIC: More than 50% failed - check network/API")
             }
+        }
+        
+        // Update last successful refresh timestamp if we updated any prices
+        if successCount > 0 {
+            lastSuccessfulRefresh = Date()
+            // Persist to UserDefaults
+            UserDefaults.standard.set(lastSuccessfulRefresh?.timeIntervalSince1970 ?? 0, forKey: lastRefreshKey)
         }
         
         savePortfolio()

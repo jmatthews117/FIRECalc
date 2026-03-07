@@ -33,6 +33,9 @@ struct GroupedPortfolioView: View {
     @State private var showDollarGain = false
     @State private var sortOption: AssetSortOption = .valueHighToLow
     @State private var refreshStatus: RefreshStatus?
+    
+    // AUTO-REFRESH: Track scene phase to refresh when returning to foreground
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
     @AppStorage(AppConstants.UserDefaultsKeys.withdrawalPercentage) private var storedWithdrawalRate: Double = 0
@@ -61,10 +64,10 @@ struct GroupedPortfolioView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Refresh cooldown banner (when active)
-                if let status = refreshStatus, !status.isAvailable {
-                    refreshCooldownBanner(status: status)
-                }
+                // SILENCED: Refresh cooldown banner (keeping code for potential re-enable)
+                // if let status = refreshStatus, !status.isAvailable {
+                //     refreshCooldownBanner(status: status)
+                // }
                 
                 // Portfolio Summary
                 portfolioSummaryCard
@@ -84,6 +87,9 @@ struct GroupedPortfolioView: View {
             }
             .padding()
         }
+        // PULL-TO-REFRESH DISABLED: Auto-refresh on app open/foreground instead
+        // Keeping code here for potential future re-enable
+        /*
         .refreshable {
             // Use Task.detached to prevent SwiftUI from cancelling the refresh
             await Task.detached { @MainActor in
@@ -93,9 +99,20 @@ struct GroupedPortfolioView: View {
                 await loadRefreshStatus()
             }.value
         }
+        */
         .task {
             // Load refresh status when view appears
             await loadRefreshStatus()
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // AUTO-REFRESH: Attempt refresh when app becomes active (subject to cooldown)
+            if newPhase == .active {
+                Task {
+                    print("📱 Portfolio active - attempting auto-refresh (subject to cooldown)")
+                    await portfolioVM.refreshPricesIfNeeded()
+                    await loadRefreshStatus()
+                }
+            }
         }
         .onChange(of: portfolioVM.isUpdatingPrices) { _, isUpdating in
             if !isUpdating {
@@ -275,13 +292,14 @@ struct GroupedPortfolioView: View {
                                 .foregroundColor(.orange)
                         }
                     } else {
-                        Text("Pull to refresh")
+                        Text("Auto-refreshes on open")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     
                     // Show last update time for assets with live prices
                     if let mostRecentUpdate = portfolioVM.portfolio.assetsWithTickers
+                        .filter({ $0.currentPrice != nil }) // Only assets that have been successfully updated
                         .compactMap({ $0.lastUpdated })
                         .max() {
                         Text("Updated \(timeAgo(from: mostRecentUpdate))")

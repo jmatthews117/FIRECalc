@@ -89,6 +89,9 @@ struct DashboardTabView: View {
     @State private var showDollarGain = false
     @State private var refreshStatus: RefreshStatus?
     
+    // AUTO-REFRESH: Track scene phase to refresh when returning to foreground
+    @Environment(\.scenePhase) private var scenePhase
+    
     // SUBSCRIPTION FIX: Observe subscription manager so UI updates when status changes
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     
@@ -104,10 +107,10 @@ struct DashboardTabView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Refresh cooldown banner (when active)
-                    if let status = refreshStatus, !status.isAvailable {
-                        refreshCooldownBanner(status: status)
-                    }
+                    // SILENCED: Refresh cooldown banner (keeping code for potential re-enable)
+                    // if let status = refreshStatus, !status.isAvailable {
+                    //     refreshCooldownBanner(status: status)
+                    // }
                     
                     portfolioOverviewCard
                     
@@ -127,6 +130,9 @@ struct DashboardTabView: View {
                 }
                 .padding()
             }
+            // PULL-TO-REFRESH DISABLED: Auto-refresh on app open/foreground instead
+            // Keeping code here for potential future re-enable
+            /*
             .refreshable {
                 // PERFORMANCE FIX: Debounce pull-to-refresh
                 // Prevent users from accidentally triggering multiple refreshes
@@ -146,6 +152,7 @@ struct DashboardTabView: View {
                     await loadRefreshStatus()
                 }.value
             }
+            */
             .navigationTitle("Dashboard")
             .sheet(isPresented: $showingSimulationSetup) {
                 SimulationSetupView(
@@ -286,18 +293,20 @@ struct DashboardTabView: View {
                                         Image(systemName: "star.fill")
                                             .font(.caption2)
                                             .foregroundColor(.blue)
-                                        Text("Pull to refresh")
+                                        Text("Auto-refreshes on open")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
                                 }
                             }
                             
-                            // Show last update time for assets with live prices
-                            if let mostRecentUpdate = portfolioVM.portfolio.assetsWithTickers
-                                .compactMap({ $0.lastUpdated })
-                                .max() {
-                                Text("Updated \(timeAgo(from: mostRecentUpdate))")
+                            // Show last update time based on actual API refresh
+                            if let lastRefresh = portfolioVM.lastSuccessfulRefresh {
+                                Text("Updated \(timeAgo(from: lastRefresh))")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            } else if subscriptionManager.isProSubscriber && portfolioVM.hasAssets {
+                                Text("Pull to refresh prices")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
@@ -314,6 +323,16 @@ struct DashboardTabView: View {
         .task {
             // Load refresh status when view appears
             await loadRefreshStatus()
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // AUTO-REFRESH: Attempt refresh when app becomes active (subject to cooldown)
+            if newPhase == .active {
+                Task {
+                    print("📱 Dashboard active - attempting auto-refresh (subject to cooldown)")
+                    await portfolioVM.refreshPricesIfNeeded()
+                    await loadRefreshStatus()
+                }
+            }
         }
         .onChange(of: portfolioVM.isUpdatingPrices) { _, isUpdating in
             if !isUpdating {

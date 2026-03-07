@@ -112,7 +112,9 @@ actor MarketstackService {
         }
         
         let elapsed = Date().timeIntervalSince(lastRefresh)
-        let canRefresh = elapsed >= globalRefreshCooldown
+        // BUG FIX: Use a small epsilon to handle floating point precision issues
+        // Allow refresh if within 1 second of cooldown expiring to prevent "0m remaining" still blocking
+        let canRefresh = elapsed >= (globalRefreshCooldown - 1.0)
         
         if canRefresh {
             print("✅ Pro user - Cooldown expired (\(formatDuration(elapsed)) elapsed) - allowing API call")
@@ -455,7 +457,8 @@ actor MarketstackService {
     func getRefreshStatus() -> RefreshStatus {
         if let nextRefresh = getNextRefreshDate() {
             let remaining = nextRefresh.timeIntervalSince(Date())
-            if remaining > 0 {
+            // BUG FIX: Use same 1-second epsilon as canMakeAPICall to prevent "0m remaining" showing as active
+            if remaining > 1.0 {
                 return .cooldownActive(nextRefreshDate: nextRefresh, remainingTime: remaining)
             }
         }
