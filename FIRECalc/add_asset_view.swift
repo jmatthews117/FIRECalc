@@ -12,6 +12,9 @@ struct AddAssetView: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focusedField: Field?
     
+    // SUBSCRIPTION FIX: Observe subscription manager so UI updates when status changes
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    
     @State private var assetName: String = ""
     @State private var selectedAssetClass: AssetClass = .stocks
     @State private var ticker: String = ""
@@ -61,7 +64,7 @@ struct AddAssetView: View {
                 if selectedAssetClass.supportsTicker || selectedAssetClass == .bonds || selectedAssetClass == .corporateBonds || selectedAssetClass == .preciousMetals {
                     Section {
                         // SUBSCRIPTION GATE: Show upgrade prompt for free users
-                        if !SubscriptionManager.shared.isProSubscriber {
+                        if !subscriptionManager.isProSubscriber {
                             VStack(alignment: .leading, spacing: 12) {
                                 HStack {
                                     Image(systemName: "lock.fill")
@@ -169,7 +172,7 @@ struct AddAssetView: View {
                             }
                         }
                     } header: {
-                        if SubscriptionManager.shared.isProSubscriber {
+                        if subscriptionManager.isProSubscriber {
                             Text("Ticker Symbol\n(Input Custom Label if no Ticker)")
                         }
                     }

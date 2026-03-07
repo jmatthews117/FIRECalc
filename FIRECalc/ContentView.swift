@@ -89,6 +89,9 @@ struct DashboardTabView: View {
     @State private var showDollarGain = false
     @State private var refreshStatus: RefreshStatus?
     
+    // SUBSCRIPTION FIX: Observe subscription manager so UI updates when status changes
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    
     // MEMORY FIX: Limit retained simulation results in memory
     // Keep only lightweight summary data, not full simulation runs
     @AppStorage(AppConstants.UserDefaultsKeys.expectedAnnualSpend) private var storedAnnualSpend: Double = 0
@@ -258,7 +261,7 @@ struct DashboardTabView: View {
                     if portfolioVM.hasAssets {
                         VStack(alignment: .trailing, spacing: 2) {
                             // SUBSCRIPTION STATUS
-                            if !SubscriptionManager.shared.isProSubscriber {
+                            if !subscriptionManager.isProSubscriber {
                                 HStack(spacing: 4) {
                                     Image(systemName: "lock.fill")
                                         .font(.caption2)

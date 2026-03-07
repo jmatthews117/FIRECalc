@@ -159,13 +159,42 @@ struct SubscriptionPaywallView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal)
             
-            ForEach(subscriptionManager.availableProducts, id: \.id) { product in
-                SubscriptionPlanCard(
-                    product: product,
-                    isSelected: selectedProduct?.id == product.id,
-                    savingsText: subscriptionManager.savingsText(for: product)
-                ) {
-                    selectedProduct = product
+            if subscriptionManager.availableProducts.isEmpty {
+                // Show helpful message when products aren't loading
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundColor(.orange)
+                    
+                    Text("Unable to Load Subscription Options")
+                        .font(.headline)
+                    
+                    Text("Please check your internet connection and try again.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    
+                    Button("Retry") {
+                        Task {
+                            await subscriptionManager.loadProducts()
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .padding(.top, 8)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .cornerRadius(12)
+                .padding(.horizontal)
+            } else {
+                ForEach(subscriptionManager.availableProducts, id: \.id) { product in
+                    SubscriptionPlanCard(
+                        product: product,
+                        isSelected: selectedProduct?.id == product.id,
+                        savingsText: subscriptionManager.savingsText(for: product)
+                    ) {
+                        selectedProduct = product
+                    }
                 }
             }
         }

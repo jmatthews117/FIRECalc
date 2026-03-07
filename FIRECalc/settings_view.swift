@@ -7,11 +7,15 @@
 
 import SwiftUI
 import UIKit  // Required for UIApplication.shared.open()
+import StoreKit  // Required for Transaction.currentEntitlements
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var portfolioVM: PortfolioViewModel
     @ObservedObject var benefitManager: DefinedBenefitManager
+    
+    // SUBSCRIPTION FIX: Observe subscription manager so UI updates when status changes
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
 
     // Simulation defaults
     @State private var defaultRuns: Double = 10000
@@ -37,7 +41,7 @@ struct SettingsView: View {
         Form {
             // SUBSCRIPTION SECTION
             Section {
-                if SubscriptionManager.shared.isProSubscriber {
+                if subscriptionManager.isProSubscriber {
                     // Active subscription
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
@@ -114,10 +118,62 @@ struct SettingsView: View {
             } header: {
                 Text("Subscription")
             } footer: {
-                if !SubscriptionManager.shared.isProSubscriber {
+                if !subscriptionManager.isProSubscriber {
                     Text("Start with a 7-day free trial. Pro features include: automatic stock price updates, ticker symbol search, real-time portfolio values, and cryptocurrency tracking.")
                 }
             }
+            
+            // DEBUG SECTION - Remove this in production
+            #if DEBUG
+            Section("Debug Info") {
+                HStack {
+                    Text("Pro Subscriber")
+                    Spacer()
+                    Text(subscriptionManager.isProSubscriber ? "✅ YES" : "❌ NO")
+                        .foregroundColor(subscriptionManager.isProSubscriber ? .green : .red)
+                        .fontWeight(.semibold)
+                }
+                
+                HStack {
+                    Text("Status")
+                    Spacer()
+                    switch subscriptionManager.subscriptionStatus {
+                    case .notSubscribed:
+                        Text("Not Subscribed")
+                            .foregroundColor(.secondary)
+                    case .subscribed(let productID, _):
+                        Text("Active: \(productID)")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                    case .expired:
+                        Text("Expired")
+                            .foregroundColor(.orange)
+                    case .inGracePeriod:
+                        Text("Grace Period")
+                            .foregroundColor(.orange)
+                    }
+                }
+                
+                Button("Refresh Subscription Status") {
+                    Task {
+                        await subscriptionManager.updateSubscriptionStatus()
+                    }
+                }
+                
+                Button("Check Current Entitlements") {
+                    Task {
+                        print("🔍 Checking current entitlements...")
+                        for await result in Transaction.currentEntitlements {
+                            if case .verified(let transaction) = result {
+                                print("✅ Entitlement: \(transaction.productID)")
+                                print("   - Purchase Date: \(transaction.purchaseDate)")
+                                print("   - Expiration: \(transaction.expirationDate?.description ?? "none")")
+                            }
+                        }
+                    }
+                }
+            }
+            #endif
             
             // Retirement Planning Section
             Section {

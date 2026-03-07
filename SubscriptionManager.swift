@@ -79,17 +79,28 @@ class SubscriptionManager: ObservableObject {
             // Request products from the App Store
             let products = try await Product.products(for: productIDs)
             
-            // Sort: monthly first, then yearly
-            self.availableProducts = products.sorted { product1, product2 in
-                if product1.id == monthlyProductID { return true }
-                if product2.id == monthlyProductID { return false }
-                return product1.id < product2.id
+            if products.isEmpty {
+                print("⚠️ No products returned from App Store")
+                print("   Product IDs requested: \(productIDs)")
+                print("   Make sure these IDs match your App Store Connect configuration")
+                errorMessage = "No subscription products available. Please ensure the app is properly configured."
+            } else {
+                // Sort: monthly first, then yearly
+                self.availableProducts = products.sorted { product1, product2 in
+                    if product1.id == monthlyProductID { return true }
+                    if product2.id == monthlyProductID { return false }
+                    return product1.id < product2.id
+                }
+                
+                print("✅ Loaded \(products.count) subscription products:")
+                for product in products {
+                    print("   - \(product.id): \(product.displayName) - \(product.displayPrice)")
+                }
             }
-            
-            print("✅ Loaded \(products.count) subscription products")
         } catch {
             print("❌ Failed to load products: \(error)")
-            errorMessage = "Unable to load subscription options. Please try again."
+            print("   Error details: \(error.localizedDescription)")
+            errorMessage = "Unable to load subscription options. Please check your internet connection and try again."
         }
         
         isLoading = false
@@ -101,22 +112,35 @@ class SubscriptionManager: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        print("🛒 Attempting to purchase: \(product.displayName) (\(product.id))")
+        
         do {
             // Attempt the purchase
             let result = try await product.purchase()
             
             switch result {
             case .success(let verificationResult):
+                print("✅ Purchase result: success")
+                
                 // Check verification
                 switch verificationResult {
                 case .verified(let transaction):
+                    print("✅ Transaction verified")
+                    print("   - Product ID: \(transaction.productID)")
+                    print("   - Transaction ID: \(transaction.id)")
+                    print("   - Purchase Date: \(transaction.purchaseDate)")
+                    
                     // Transaction is verified, finish it
                     await transaction.finish()
+                    print("✅ Transaction finished")
                     
                     // Update subscription status
+                    print("🔄 Updating subscription status...")
                     await updateSubscriptionStatus()
                     
-                    print("✅ Purchase successful: \(product.displayName)")
+                    // Verify the update worked
+                    print("📊 After update - isProSubscriber: \(isProSubscriber)")
+                    
                     isLoading = false
                     return true
                     
@@ -147,7 +171,8 @@ class SubscriptionManager: ObservableObject {
                 return false
             }
         } catch {
-            print("❌ Purchase failed: \(error)")
+            print("❌ Purchase failed with error: \(error)")
+            print("   Error description: \(error.localizedDescription)")
             errorMessage = "Purchase failed. Please try again."
             isLoading = false
             return false
@@ -184,68 +209,95 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Subscription Status
     
     func updateSubscriptionStatus() async {
-        // Check for active subscriptions
-        var activeSubscription: Product.SubscriptionInfo.Status?
+        print("🔍 Checking subscription status...")
         
-        for productID in productIDs {
-            // Get the subscription status for this product
-            if let statuses = try? await Product.SubscriptionInfo.status(for: productID),
-               let status = statuses.first {
+        // METHOD 1: Check currentEntitlements (works for both StoreKit testing and production)
+        var hasActiveSubscription = false
+        var activeProductID: String?
+        var expirationDate: Date?
+        
+        for await result in Transaction.currentEntitlements {
+            // Verify the transaction
+            guard case .verified(let transaction) = result else {
+                print("⚠️ Unverified transaction found")
+                continue
+            }
+            
+            // Check if this is one of our subscription products
+            if productIDs.contains(transaction.productID) {
+                print("✅ Found active entitlement for: \(transaction.productID)")
+                print("   - Purchase Date: \(transaction.purchaseDate)")
+                print("   - Expiration Date: \(transaction.expirationDate?.description ?? "none")")
+                print("   - Revocation Date: \(transaction.revocationDate?.description ?? "none")")
                 
-                // Check if this subscription is active
-                switch status.state {
-                case .subscribed, .inGracePeriod:
-                    activeSubscription = status
-                    break
-                default:
-                    continue
+                // Check if subscription is still valid (not revoked and not expired)
+                if transaction.revocationDate == nil {
+                    if let expiration = transaction.expirationDate {
+                        // Has expiration date - check if it's in the future
+                        if expiration > Date() {
+                            hasActiveSubscription = true
+                            activeProductID = transaction.productID
+                            expirationDate = expiration
+                            print("✅ Subscription is active (expires: \(expiration))")
+                        } else {
+                            print("❌ Subscription expired on: \(expiration)")
+                        }
+                    } else {
+                        // No expiration date means it's a lifetime purchase or active subscription
+                        hasActiveSubscription = true
+                        activeProductID = transaction.productID
+                        print("✅ Subscription is active (no expiration)")
+                    }
+                } else {
+                    print("❌ Subscription was revoked")
                 }
             }
         }
         
         // Update published properties
-        if let subscription = activeSubscription {
-            // Verify the transaction and renewal info
-            guard case .verified(let transaction) = subscription.transaction,
-                  case .verified(let renewalInfo) = subscription.renewalInfo else {
-                isProSubscriber = false
-                subscriptionStatus = .notSubscribed
-                print("⚠️ Could not verify subscription transaction")
-                return
-            }
-            
-            switch subscription.state {
-            case .subscribed:
-                isProSubscriber = true
-                
-                // RenewalInfo uses renewalDate for the next renewal
-                // For expiration, we can use renewalInfo.renewalDate or leave it nil for auto-renewing
-                subscriptionStatus = .subscribed(
-                    productID: transaction.productID,
-                    expirationDate: renewalInfo.renewalDate
-                )
-                
-                print("✅ Active subscription: \(transaction.productID)")
-                
-            case .inGracePeriod:
-                isProSubscriber = true
-                subscriptionStatus = .inGracePeriod
-                print("⚠️ Subscription in grace period")
-                
-            case .expired:
-                isProSubscriber = false
-                subscriptionStatus = .expired
-                print("ℹ️ Subscription expired")
-                
-            default:
-                isProSubscriber = false
-                subscriptionStatus = .notSubscribed
-                print("ℹ️ No active subscription")
-            }
+        if hasActiveSubscription, let productID = activeProductID {
+            isProSubscriber = true
+            subscriptionStatus = .subscribed(productID: productID, expirationDate: expirationDate)
+            print("✅ User is Pro subscriber")
         } else {
             isProSubscriber = false
             subscriptionStatus = .notSubscribed
-            print("ℹ️ No active subscription found")
+            print("❌ No active subscription found")
+        }
+        
+        // METHOD 2: Also check subscription status (for production, provides more details)
+        // This will give us grace period, billing issues, etc.
+        for productID in productIDs {
+            if let statuses = try? await Product.SubscriptionInfo.status(for: productID) {
+                for status in statuses {
+                    print("📊 Subscription status for \(productID):")
+                    print("   - State: \(status.state)")
+                    
+                    switch status.state {
+                    case .subscribed, .inGracePeriod:
+                        // Double-check with verification
+                        if case .verified(let transaction) = status.transaction {
+                            isProSubscriber = true
+                            if status.state == .inGracePeriod {
+                                subscriptionStatus = .inGracePeriod
+                                print("⚠️ Subscription in grace period")
+                            } else {
+                                if let renewalInfo = try? status.renewalInfo.payloadValue {
+                                    subscriptionStatus = .subscribed(
+                                        productID: transaction.productID,
+                                        expirationDate: renewalInfo.renewalDate
+                                    )
+                                }
+                                print("✅ Active subscription via SubscriptionInfo")
+                            }
+                        }
+                    case .expired, .revoked:
+                        print("❌ Subscription \(status.state)")
+                    default:
+                        break
+                    }
+                }
+            }
         }
     }
     

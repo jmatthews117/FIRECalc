@@ -5,6 +5,12 @@
       location = "self:">
    </FileRef>
    <FileRef
-      location = "group:FINDING_INFO_PLIST.md">
+      location = "group:SUBSCRIPTION_FIX_SUMMARY.md">
+   </FileRef>
+   <FileRef
+      location = "group:SUBSCRIPTION_TEST_CHECKLIST.md">
+   </FileRef>
+   <FileRef
+      location = "group:SUBSCRIPTION_FLOW_DIAGRAM.md">
    </FileRef>
 </Workspace>
