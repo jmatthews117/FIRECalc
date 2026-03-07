@@ -123,58 +123,7 @@ struct SettingsView: View {
                 }
             }
             
-            // DEBUG SECTION - Remove this in production
-            #if DEBUG
-            Section("Debug Info") {
-                HStack {
-                    Text("Pro Subscriber")
-                    Spacer()
-                    Text(subscriptionManager.isProSubscriber ? "✅ YES" : "❌ NO")
-                        .foregroundColor(subscriptionManager.isProSubscriber ? .green : .red)
-                        .fontWeight(.semibold)
-                }
-                
-                HStack {
-                    Text("Status")
-                    Spacer()
-                    switch subscriptionManager.subscriptionStatus {
-                    case .notSubscribed:
-                        Text("Not Subscribed")
-                            .foregroundColor(.secondary)
-                    case .subscribed(let productID, _):
-                        Text("Active: \(productID)")
-                            .foregroundColor(.green)
-                            .font(.caption)
-                    case .expired:
-                        Text("Expired")
-                            .foregroundColor(.orange)
-                    case .inGracePeriod:
-                        Text("Grace Period")
-                            .foregroundColor(.orange)
-                    }
-                }
-                
-                Button("Refresh Subscription Status") {
-                    Task {
-                        await subscriptionManager.updateSubscriptionStatus()
-                    }
-                }
-                
-                Button("Check Current Entitlements") {
-                    Task {
-                        print("🔍 Checking current entitlements...")
-                        for await result in Transaction.currentEntitlements {
-                            if case .verified(let transaction) = result {
-                                print("✅ Entitlement: \(transaction.productID)")
-                                print("   - Purchase Date: \(transaction.purchaseDate)")
-                                print("   - Expiration: \(transaction.expirationDate?.description ?? "none")")
-                            }
-                        }
-                    }
-                }
-            }
-            #endif
-            
+
             // Retirement Planning Section
             Section {
                     // Current Age
@@ -536,6 +485,55 @@ struct SettingsView: View {
                     Text("Simulation history is automatically limited to 20 results to conserve storage. Clearing history frees up disk space but doesn't affect your current result.")
                 }
                 
+                // Legal Section
+                Section {
+                    if let privacyURL = URL(string: "https://yourwebsite.com/privacy") {
+                        Link(destination: privacyURL) {
+                            HStack {
+                                Label("Privacy Policy", systemImage: "hand.raised.fill")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
+                    if let termsURL = URL(string: "https://yourwebsite.com/terms") {
+                        Link(destination: termsURL) {
+                            HStack {
+                                Label("Terms of Service", systemImage: "doc.text.fill")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
+                    Button {
+                        showingDisclaimer = true
+                    } label: {
+                        Label("Legal Disclaimer", systemImage: "exclamationmark.shield")
+                    }
+                    
+                    if let supportURL = URL(string: "mailto:support@yourapp.com?subject=FICalc%20Support") {
+                        Link(destination: supportURL) {
+                            HStack {
+                                Label("Contact Support", systemImage: "envelope.fill")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Legal & Support")
+                } footer: {
+                    Text("FICalc is provided for educational purposes only and does not constitute financial advice. Please consult a qualified financial advisor before making investment decisions.")
+                }
+                
                 // App Info
                 Section {
                     HStack {
@@ -544,13 +542,24 @@ struct SettingsView: View {
                         Text("\(AppConstants.appVersion) (\(AppConstants.buildNumber))")
                             .foregroundColor(.secondary)
                     }
-                    Button {
-                        showingDisclaimer = true
-                    } label: {
-                        Label("Legal Disclaimer", systemImage: "exclamationmark.shield")
+                    
+                    HStack {
+                        Text("Build Date")
+                        Spacer()
+                        Text("March 2026")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Data Version")
+                        Spacer()
+                        Text("1926-2024")
+                            .foregroundColor(.secondary)
                     }
                 } header: {
                     Text("About")
+                } footer: {
+                    Text("© 2026 FICalc. All rights reserved.")
                 }
             }
             .navigationTitle("Settings")

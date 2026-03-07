@@ -34,6 +34,12 @@
 		9C6585B22F5C8171009E8496 /* SUBSCRIPTION_STARTUP_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585B12F5C8171009E8496 /* SUBSCRIPTION_STARTUP_FIX.md */; };
 		9C6585B42F5C826B009E8496 /* SUBSCRIPTION_CHECK_VERIFICATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585B32F5C826B009E8496 /* SUBSCRIPTION_CHECK_VERIFICATION.md */; };
 		9C6585B62F5C8367009E8496 /* AUTO_REFRESH_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585B52F5C8367009E8496 /* AUTO_REFRESH_IMPLEMENTATION.md */; };
+		9C6585BC2F5CA350009E8496 /* PRIVACY_POLICY.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585BB2F5CA350009E8496 /* PRIVACY_POLICY.md */; };
+		9C6585BE2F5CA3A7009E8496 /* TERMS_OF_SERVICE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585BD2F5CA3A7009E8496 /* TERMS_OF_SERVICE.md */; };
+		9C6585C02F5CA3EE009E8496 /* HOSTING_LEGAL_DOCS_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585BF2F5CA3EE009E8496 /* HOSTING_LEGAL_DOCS_GUIDE.md */; };
+		9C6585C22F5CA413009E8496 /* privacy_template.html in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585C12F5CA412009E8496 /* privacy_template.html */; };
+		9C6585C42F5CA438009E8496 /* terms_template.html in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585C32F5CA438009E8496 /* terms_template.html */; };
+		9C6585C62F5CA47C009E8496 /* LEGAL_QUICK_START.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585C52F5CA47C009E8496 /* LEGAL_QUICK_START.md */; };
 		9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */; };
 /* End PBXBuildFile section */
 
@@ -85,6 +91,12 @@
 		9C6585B12F5C8171009E8496 /* SUBSCRIPTION_STARTUP_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SUBSCRIPTION_STARTUP_FIX.md; sourceTree = "<group>"; };
 		9C6585B32F5C826B009E8496 /* SUBSCRIPTION_CHECK_VERIFICATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SUBSCRIPTION_CHECK_VERIFICATION.md; sourceTree = "<group>"; };
 		9C6585B52F5C8367009E8496 /* AUTO_REFRESH_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AUTO_REFRESH_IMPLEMENTATION.md; sourceTree = "<group>"; };
+		9C6585BB2F5CA350009E8496 /* PRIVACY_POLICY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PRIVACY_POLICY.md; sourceTree = "<group>"; };
+		9C6585BD2F5CA3A7009E8496 /* TERMS_OF_SERVICE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TERMS_OF_SERVICE.md; sourceTree = "<group>"; };
+		9C6585BF2F5CA3EE009E8496 /* HOSTING_LEGAL_DOCS_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = HOSTING_LEGAL_DOCS_GUIDE.md; sourceTree = "<group>"; };
+		9C6585C12F5CA412009E8496 /* privacy_template.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = privacy_template.html; sourceTree = "<group>"; };
+		9C6585C32F5CA438009E8496 /* terms_template.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = terms_template.html; sourceTree = "<group>"; };
+		9C6585C52F5CA47C009E8496 /* LEGAL_QUICK_START.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LEGAL_QUICK_START.md; sourceTree = "<group>"; };
 		9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REFRESH_COOLDOWN_IMPLEMENTATION.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -179,6 +191,12 @@
 				9C6585B12F5C8171009E8496 /* SUBSCRIPTION_STARTUP_FIX.md */,
 				9C6585B32F5C826B009E8496 /* SUBSCRIPTION_CHECK_VERIFICATION.md */,
 				9C6585B52F5C8367009E8496 /* AUTO_REFRESH_IMPLEMENTATION.md */,
+				9C6585BB2F5CA350009E8496 /* PRIVACY_POLICY.md */,
+				9C6585BD2F5CA3A7009E8496 /* TERMS_OF_SERVICE.md */,
+				9C6585BF2F5CA3EE009E8496 /* HOSTING_LEGAL_DOCS_GUIDE.md */,
+				9C6585C12F5CA412009E8496 /* privacy_template.html */,
+				9C6585C32F5CA438009E8496 /* terms_template.html */,
+				9C6585C52F5CA47C009E8496 /* LEGAL_QUICK_START.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -312,15 +330,21 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9C6585C62F5CA47C009E8496 /* LEGAL_QUICK_START.md in Resources */,
 				9C027ED42F5B113500E0D831 /* SUBSCRIPTION_IMPLEMENTATION_GUIDE.md in Resources */,
 				9C4AE1592F5BE7F800562FA2 /* COOLDOWN_EXPLAINED.md in Resources */,
 				9C4AE14D2F5BE3CD00562FA2 /* IMPLEMENTATION_SUMMARY.md in Resources */,
 				9C4AE14F2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md in Resources */,
 				9C4AE1412F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md in Resources */,
 				9C4AE1552F5BE73C00562FA2 /* BUILD_VERIFICATION.md in Resources */,
+				9C6585BC2F5CA350009E8496 /* PRIVACY_POLICY.md in Resources */,
 				9C4AE15B2F5BE96F00562FA2 /* FALLBACK_PRICES_REMOVED.md in Resources */,
+				9C6585C42F5CA438009E8496 /* terms_template.html in Resources */,
+				9C6585BE2F5CA3A7009E8496 /* TERMS_OF_SERVICE.md in Resources */,
 				9C6585B62F5C8367009E8496 /* AUTO_REFRESH_IMPLEMENTATION.md in Resources */,
+				9C6585C02F5CA3EE009E8496 /* HOSTING_LEGAL_DOCS_GUIDE.md in Resources */,
 				9C6585B42F5C826B009E8496 /* SUBSCRIPTION_CHECK_VERIFICATION.md in Resources */,
+				9C6585C22F5CA413009E8496 /* privacy_template.html in Resources */,
 				9C4AE1512F5BE49900562FA2 /* DEBUG_LOGGING_SUMMARY.md in Resources */,
 				9C4AE1572F5BE76500562FA2 /* IMPLEMENTATION_COMPLETE.md in Resources */,
 				9C4AE1472F5BE34100562FA2 /* DEBUG_LOGGING_GUIDE.md in Resources */,
