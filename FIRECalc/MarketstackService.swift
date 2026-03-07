@@ -469,6 +469,13 @@ actor MarketstackService {
         print("🗑️ Cache cleared")
     }
     
+    /// Clear cooldown timer (useful for testing)
+    /// WARNING: Only use for development/testing!
+    func clearCooldown() {
+        lastRefreshTime = nil
+        print("🗑️ Cooldown cleared - refresh now available")
+    }
+    
     /// Get cache statistics
     func getCacheStats() -> (cached: Int, cacheHitRate: Double) {
         let cache = quoteCache

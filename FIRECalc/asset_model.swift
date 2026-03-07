@@ -56,19 +56,9 @@ struct Asset: Identifiable, Codable, Hashable {
     
     var totalValue: Double {
         if let current = currentPrice {
-            let total = current * quantity
-            // DEBUG: Log for troubleshooting crypto pricing issues
-            if assetClass == .crypto {
-                print("💰 [\(ticker ?? name)] Total: \(total) = currentPrice(\(current)) × quantity(\(quantity))")
-            }
-            return total
+            return current * quantity
         }
-        let total = unitValue * quantity
-        // DEBUG: Log for troubleshooting crypto pricing issues
-        if assetClass == .crypto {
-            print("💰 [\(ticker ?? name)] Total: \(total) = unitValue(\(unitValue)) × quantity(\(quantity))")
-        }
-        return total
+        return unitValue * quantity
     }
     
     var expectedReturn: Double {
@@ -108,13 +98,6 @@ struct Asset: Identifiable, Codable, Hashable {
         updated.currentPrice = price
         updated.lastUpdated = Date()
         updated.priceChange = change
-        
-        // DEBUG: Log price updates for crypto
-        if assetClass == .crypto {
-            print("🔄 [\(ticker ?? name)] Price updated: \(price) (was unitValue: \(unitValue))")
-            print("   📌 Stored ticker: '\(ticker ?? "nil")' | Yahoo Finance ticker: '\(yahooFinanceTicker ?? "nil")'")
-        }
-        
         return updated
     }
 }

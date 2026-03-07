@@ -135,15 +135,29 @@ class PortfolioViewModel: ObservableObject {
             return
         }
         
-        // Create new refresh task
+        // Create new refresh task - manual refresh does NOT bypass cooldown
+        // The 12-hour cooldown applies to ALL refreshes to conserve API usage
         refreshTask = Task { @MainActor in
-            await performRefresh()
+            await performRefresh(bypassCooldown: false)
         }
         
         await refreshTask?.value
     }
     
-    private func performRefresh() async {
+    private func performRefresh(bypassCooldown: Bool = false) async {
+        // Start timing for performance metrics
+        let startTime = Date()
+        
+        // Get ALL assets with tickers - no limit on number of assets
+        let assetsToUpdate = portfolio.assetsWithTickers.filter { $0.ticker != nil }
+        
+        AppLogger.debug("════════════════════════════════════════")
+        AppLogger.debug("🔄 REFRESH: Starting portfolio refresh")
+        AppLogger.debug("🔄 REFRESH: Assets to update: \(assetsToUpdate.count)")
+        AppLogger.debug("🔄 REFRESH: Bypass cooldown: \(bypassCooldown)")
+        AppLogger.debug("🔄 REFRESH: Using BATCH API (1 call for all assets)")
+        AppLogger.debug("════════════════════════════════════════")
+        
         // PERFORMANCE FIX: Record when we started this refresh
         lastRefreshTime = Date()
         
@@ -158,55 +172,121 @@ class PortfolioViewModel: ObservableObject {
         var failCount = 0
         var failedTickers: [String] = []
         
-        // EFFICIENCY: Batch requests in groups of 5 for parallel execution
-        let batchSize = 5
-        let assetsToUpdate = portfolio.assetsWithTickers.filter { $0.ticker != nil }
-        let batches = stride(from: 0, to: assetsToUpdate.count, by: batchSize).map {
-            Array(assetsToUpdate[$0..<min($0 + batchSize, assetsToUpdate.count)])
-        }
-        
-        for (batchIndex, batch) in batches.enumerated() {
+        // OPTIMIZATION: Use MarketstackService batch API to fetch ALL quotes in ONE request
+        // This is much more efficient than individual requests
+        do {
+            // Extract all tickers
+            let tickers = assetsToUpdate.compactMap { $0.ticker }
+            AppLogger.debug("📡 BATCH API: Fetching \(tickers.count) tickers in single request")
             
-            // Process batch in parallel - UNIFIED: Use AlternativePriceService for ALL assets
-            await withTaskGroup(of: (Asset, Double?, Double?, Error?).self) { group in
-                for asset in batch {
-                    guard asset.ticker != nil else { continue }
-                    
-                    group.addTask {
-                        do {
-                            // Use AlternativePriceService which handles crypto correctly with -USD suffix
-                            // and now also fetches daily change percentage
-                            let (price, changePercent) = try await AlternativePriceService.shared.fetchPriceAndChange(for: asset)
-                            return (asset, price, changePercent, nil)
-                        } catch {
-                            return (asset, nil, nil, error)
-                        }
-                    }
-                }
+            // Fetch all quotes in one batch (1 API call!)
+            // Note: This will respect/bypass cooldown based on the bypassCooldown parameter
+            let quotes = try await MarketstackService.shared.fetchBatchQuotes(tickers: tickers)
+            
+            AppLogger.debug("📡 BATCH API: Received \(quotes.count) quotes")
+            
+            // Update each asset with its quote
+            for asset in assetsToUpdate {
+                guard let ticker = asset.ticker else { continue }
                 
-                // Collect results from parallel tasks
-                for await (asset, price, changePercent, error) in group {
-                    if let price = price {
+                if let quote = quotes[ticker.uppercased()] {
+                    var updatedAsset = asset
+                    updatedAsset = updatedAsset.updatedWithLivePrice(quote.latestPrice, change: quote.changePercent)
+                    portfolio.updateAsset(updatedAsset)
+                    successCount += 1
+                    AppLogger.debug("   ✅ [\(ticker)] Updated to $\(String(format: "%.2f", quote.latestPrice))")
+                } else {
+                    // Not in batch results - try individual fetch (for crypto/special assets)
+                    do {
+                        let (price, changePercent) = try await AlternativePriceService.shared.fetchPriceAndChange(for: asset, bypassCooldown: false)
                         var updatedAsset = asset
                         updatedAsset = updatedAsset.updatedWithLivePrice(price, change: changePercent)
                         portfolio.updateAsset(updatedAsset)
                         successCount += 1
-                    } else {
+                        AppLogger.debug("   ✅ [\(ticker)] Updated to $\(String(format: "%.2f", price)) (individual fetch)")
+                    } catch {
                         failCount += 1
-                        if let ticker = asset.ticker {
-                            failedTickers.append(ticker)
-                        }
+                        failedTickers.append(ticker)
+                        AppLogger.debug("   ❌ [\(ticker)] Failed: \(error.localizedDescription)")
                     }
                 }
             }
+        } catch {
+            // Batch API failed - fall back to individual requests but respect cooldown
+            AppLogger.warning("⚠️ Batch API failed: \(error.localizedDescription)")
+            AppLogger.warning("⚠️ Falling back to individual requests (will respect cooldown)")
             
-            // Small delay only between batches
-            if batchIndex < batches.count - 1 {
-                do {
-                    try await Task.sleep(nanoseconds: 200_000_000) // 200ms
-                } catch {
-                    // Sleep was cancelled, continue anyway
+            // Process in smaller batches with cooldown respected
+            let batchSize = 5
+            let batches = stride(from: 0, to: assetsToUpdate.count, by: batchSize).map {
+                Array(assetsToUpdate[$0..<min($0 + batchSize, assetsToUpdate.count)])
+            }
+            
+            for (batchIndex, batch) in batches.enumerated() {
+                AppLogger.debug("📦 FALLBACK BATCH: [\(batchIndex + 1)/\(batches.count)] Processing \(batch.count) assets")
+                
+                // Process batch in parallel but DON'T bypass cooldown for fallback
+                await withTaskGroup(of: (Asset, Double?, Double?, Error?).self) { group in
+                    for asset in batch {
+                        guard asset.ticker != nil else { continue }
+                        
+                        group.addTask {
+                            do {
+                                // Use fallback without bypassing cooldown
+                                let (price, changePercent) = try await AlternativePriceService.shared.fetchPriceAndChange(for: asset, bypassCooldown: false)
+                                return (asset, price, changePercent, nil)
+                            } catch {
+                                return (asset, nil, nil, error)
+                            }
+                        }
+                    }
+                    
+                    // Collect results
+                    for await (asset, price, changePercent, error) in group {
+                        if let price = price {
+                            var updatedAsset = asset
+                            updatedAsset = updatedAsset.updatedWithLivePrice(price, change: changePercent)
+                            portfolio.updateAsset(updatedAsset)
+                            successCount += 1
+                            AppLogger.debug("   ✅ [\(asset.ticker ?? "unknown")] Updated to $\(String(format: "%.2f", price))")
+                        } else {
+                            failCount += 1
+                            if let ticker = asset.ticker {
+                                failedTickers.append(ticker)
+                            }
+                            AppLogger.debug("   ❌ [\(asset.ticker ?? "unknown")] Failed: \(error?.localizedDescription ?? "unknown")")
+                        }
+                    }
                 }
+                
+                // Small delay between batches
+                if batchIndex < batches.count - 1 {
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                }
+            }
+        }
+        
+        // Calculate duration
+        let duration = Date().timeIntervalSince(startTime)
+        
+        // Log completion
+        AppLogger.debug("════════════════════════════════════════")
+        AppLogger.debug("🔄 REFRESH: Complete in \(String(format: "%.2f", duration))s")
+        AppLogger.debug("🔄 REFRESH: Success: \(successCount)/\(assetsToUpdate.count)")
+        AppLogger.debug("🔄 REFRESH: Failed: \(failCount)/\(assetsToUpdate.count)")
+        if successCount > 0 && assetsToUpdate.count > 0 {
+            AppLogger.debug("🔄 REFRESH: Success rate: \(String(format: "%.1f", Double(successCount) / Double(assetsToUpdate.count) * 100))%")
+        }
+        AppLogger.debug("════════════════════════════════════════")
+        
+        // Generate diagnostic info if there were failures
+        if failCount > 0 {
+            AppLogger.warning("⚠️ DIAGNOSTIC: \(failCount) assets failed to update")
+            if !failedTickers.isEmpty {
+                AppLogger.warning("⚠️ DIAGNOSTIC: Failed tickers: \(failedTickers.prefix(5).joined(separator: ", "))\(failedTickers.count > 5 ? " + \(failedTickers.count - 5) more" : "")")
+            }
+            if failCount > assetsToUpdate.count / 2 {
+                AppLogger.warning("⚠️ DIAGNOSTIC: More than 50% failed - check network/API")
             }
         }
         

@@ -2,7 +2,7 @@
 //  AlternativePriceService.swift
 //  FIRECalc
 //
-//  Fetch prices for assets not covered by IEX (gold, silver, etc.)
+//  Fetch prices for assets from Marketstack API
 //
 
 import Foundation
@@ -16,36 +16,11 @@ actor AlternativePriceService {
     
     private init() {}
     
-    // MARK: - Price Dictionary (Fallback when no API key)
-    
-    private let fallbackPrices: [String: Double] = [
-        // Major Stocks & ETFs
-        "SPY": 485.50, "VTI": 338.19, "QQQ": 415.30, "DIA": 385.20,
-        "AAPL": 185.50, "MSFT": 380.20, "AMZN": 155.80, "GOOGL": 140.50,
-        "TSLA": 245.30, "NVDA": 495.20, "META": 425.60, "BRK.B": 385.40,
-        "UBER": 68.50, "LYFT": 15.20, "NFLX": 485.60, "DIS": 95.30,
-        
-        // Bonds
-        "TLT": 95.40, "LQD": 108.50, "HYG": 76.80, "TIP": 103.20,
-        "BND": 72.30, "AGG": 98.50, "VCIT": 79.20, "VCSH": 76.40,
-        
-        // REITs
-        "VNQ": 85.60, "VNQI": 52.30, "O": 58.40, "SPG": 145.20,
-        "EQIX": 785.30, "PSA": 295.60, "AMT": 195.40, "PLD": 125.80,
-        
-        // Precious Metals
-        "GLD": 185.70, "SLV": 21.40, "PPLT": 85.20, "PALL": 95.30,
-        "IAU": 38.50, "GLTR": 85.60,
-        
-        // Crypto (approximate USD values)
-        "BTC": 42500.00, "ETH": 2250.00, "LTC": 75.00, "BCH": 250.00,
-        "ADA": 0.50, "DOT": 7.50, "LINK": 15.00, "XRP": 0.55
-    ]
-    
     // MARK: - Main Price Fetcher
     
-    /// Fetch price for any asset - tries Yahoo Finance API first, falls back to static prices
+    /// Fetch price for any asset from API or cache only
     /// - Parameter bypassCooldown: If true, bypasses 12-hour cooldown (for adding new assets)
+    /// - Throws: If price cannot be fetched (no hardcoded fallbacks)
     func fetchPrice(for asset: Asset, bypassCooldown: Bool = false) async throws -> Double {
         let (price, _) = try await fetchPriceAndChange(for: asset, bypassCooldown: bypassCooldown)
         return price
@@ -53,6 +28,7 @@ actor AlternativePriceService {
     
     /// Fetch both price and daily change percentage for any asset
     /// - Parameter bypassCooldown: If true, bypasses 12-hour cooldown (for adding new assets)
+    /// - Throws: If price cannot be fetched (no hardcoded fallbacks)
     func fetchPriceAndChange(for asset: Asset, bypassCooldown: Bool = false) async throws -> (price: Double, changePercent: Double?) {
         guard let ticker = asset.ticker else {
             throw PriceServiceError.noIdentifier
@@ -60,22 +36,12 @@ actor AlternativePriceService {
         
         let cleanTicker = ticker.uppercased().trimmingCharacters(in: .whitespaces)
         
-        print("🔍 AlternativePriceService fetching price for: \(cleanTicker) (bypass: \(bypassCooldown))")
+        AppLogger.debug("🔍 AlternativePriceService fetching price for: \(cleanTicker) (bypass: \(bypassCooldown))")
         
-        // Try Yahoo Finance first (no API key needed!)
-        do {
-            let result = try await fetchFromYahooWithChange(for: asset, ticker: cleanTicker, bypassCooldown: bypassCooldown)
-            print("✅ Got price from Marketstack/Yahoo: \(cleanTicker) = $\(result.price)")
-            return result
-        } catch {
-            print("⚠️ Marketstack/Yahoo failed for \(cleanTicker): \(error.localizedDescription)")
-            print("   Falling back to hardcoded price...")
-            
-            // Use fallback prices (no change data available)
-            let fallbackPrice = try fetchFromFallback(ticker: cleanTicker)
-            print("📦 Using fallback price: \(cleanTicker) = $\(fallbackPrice)")
-            return (fallbackPrice, nil)
-        }
+        // Fetch from API or cache - NO hardcoded fallbacks
+        let result = try await fetchFromYahooWithChange(for: asset, ticker: cleanTicker, bypassCooldown: bypassCooldown)
+        AppLogger.debug("✅ Got price from API/cache: \(cleanTicker) = $\(result.price)")
+        return result
     }
     
     private func fetchFromYahoo(for asset: Asset, ticker: String, bypassCooldown: Bool = false) async throws -> Double {
@@ -123,13 +89,6 @@ actor AlternativePriceService {
         default:
             throw PriceServiceError.noPricingAvailable
         }
-    }
-    
-    private func fetchFromFallback(ticker: String) throws -> Double {
-        guard let price = fallbackPrices[ticker] else {
-            throw PriceServiceError.tickerNotFound(ticker)
-        }
-        return price
     }
 }
 
@@ -179,7 +138,7 @@ enum PriceServiceError: LocalizedError {
         case .invalidResponse:
             return "Invalid response from pricing service"
         case .tickerNotFound(let ticker):
-            return "Ticker '\(ticker)' not found. Using fallback prices - add IEX API key in Settings for live data."
+            return "Unable to fetch price for '\(ticker)'. Check ticker symbol or try again later."
         }
     }
 }

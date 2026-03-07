@@ -17,6 +17,20 @@
 		9C027EDE2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027EDD2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md */; };
 		9C027EE02F5B153D00E0D831 /* FIRECalcProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 9C027EDF2F5B153D00E0D831 /* FIRECalcProducts.storekit */; };
 		9C027EE22F5B173300E0D831 /* FREE_TRIAL_UPDATES.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C027EE12F5B173300E0D831 /* FREE_TRIAL_UPDATES.md */; };
+		9C4AE1412F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1402F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md */; };
+		9C4AE1432F5BE2AB00562FA2 /* DebugLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C4AE1422F5BE2AB00562FA2 /* DebugLogger.swift */; };
+		9C4AE1452F5BE30900562FA2 /* DebugSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C4AE1442F5BE30900562FA2 /* DebugSettingsView.swift */; };
+		9C4AE1472F5BE34100562FA2 /* DEBUG_LOGGING_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1462F5BE34100562FA2 /* DEBUG_LOGGING_GUIDE.md */; };
+		9C4AE1492F5BE37200562FA2 /* DEBUG_SYSTEM_CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1482F5BE37200562FA2 /* DEBUG_SYSTEM_CHANGELOG.md */; };
+		9C4AE14B2F5BE39600562FA2 /* DEBUG_QUICK_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE14A2F5BE39600562FA2 /* DEBUG_QUICK_REFERENCE.md */; };
+		9C4AE14D2F5BE3CD00562FA2 /* IMPLEMENTATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE14C2F5BE3CD00562FA2 /* IMPLEMENTATION_SUMMARY.md */; };
+		9C4AE14F2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE14E2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md */; };
+		9C4AE1512F5BE49900562FA2 /* DEBUG_LOGGING_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1502F5BE49900562FA2 /* DEBUG_LOGGING_SUMMARY.md */; };
+		9C4AE1532F5BE5F400562FA2 /* API_OPTIMIZATION_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1522F5BE5F400562FA2 /* API_OPTIMIZATION_FIX.md */; };
+		9C4AE1552F5BE73C00562FA2 /* BUILD_VERIFICATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1542F5BE73C00562FA2 /* BUILD_VERIFICATION.md */; };
+		9C4AE1572F5BE76500562FA2 /* IMPLEMENTATION_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1562F5BE76500562FA2 /* IMPLEMENTATION_COMPLETE.md */; };
+		9C4AE1592F5BE7F800562FA2 /* COOLDOWN_EXPLAINED.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE1582F5BE7F800562FA2 /* COOLDOWN_EXPLAINED.md */; };
+		9C4AE15B2F5BE96F00562FA2 /* FALLBACK_PRICES_REMOVED.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C4AE15A2F5BE96F00562FA2 /* FALLBACK_PRICES_REMOVED.md */; };
 		9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */; };
 /* End PBXBuildFile section */
 
@@ -51,6 +65,20 @@
 		9C21F6CA2F268A6C004B6016 /* FIRECalc.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FIRECalc.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6DA2F268A6E004B6016 /* FIRECalcTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C21F6E42F268A6E004B6016 /* FIRECalcUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FIRECalcUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C4AE1402F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REFRESH_LIMIT_FIX.md; sourceTree = "<group>"; };
+		9C4AE1422F5BE2AB00562FA2 /* DebugLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogger.swift; sourceTree = "<group>"; };
+		9C4AE1442F5BE30900562FA2 /* DebugSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSettingsView.swift; sourceTree = "<group>"; };
+		9C4AE1462F5BE34100562FA2 /* DEBUG_LOGGING_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEBUG_LOGGING_GUIDE.md; sourceTree = "<group>"; };
+		9C4AE1482F5BE37200562FA2 /* DEBUG_SYSTEM_CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEBUG_SYSTEM_CHANGELOG.md; sourceTree = "<group>"; };
+		9C4AE14A2F5BE39600562FA2 /* DEBUG_QUICK_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEBUG_QUICK_REFERENCE.md; sourceTree = "<group>"; };
+		9C4AE14C2F5BE3CD00562FA2 /* IMPLEMENTATION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_SUMMARY.md; sourceTree = "<group>"; };
+		9C4AE14E2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEBUG_LOGGING_DEVELOPER_GUIDE.md; sourceTree = "<group>"; };
+		9C4AE1502F5BE49900562FA2 /* DEBUG_LOGGING_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEBUG_LOGGING_SUMMARY.md; sourceTree = "<group>"; };
+		9C4AE1522F5BE5F400562FA2 /* API_OPTIMIZATION_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = API_OPTIMIZATION_FIX.md; sourceTree = "<group>"; };
+		9C4AE1542F5BE73C00562FA2 /* BUILD_VERIFICATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = BUILD_VERIFICATION.md; sourceTree = "<group>"; };
+		9C4AE1562F5BE76500562FA2 /* IMPLEMENTATION_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_COMPLETE.md; sourceTree = "<group>"; };
+		9C4AE1582F5BE7F800562FA2 /* COOLDOWN_EXPLAINED.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = COOLDOWN_EXPLAINED.md; sourceTree = "<group>"; };
+		9C4AE15A2F5BE96F00562FA2 /* FALLBACK_PRICES_REMOVED.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FALLBACK_PRICES_REMOVED.md; sourceTree = "<group>"; };
 		9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REFRESH_COOLDOWN_IMPLEMENTATION.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -128,6 +156,20 @@
 				9C027EDB2F5B11F700E0D831 /* SUBSCRIPTION_FLOW_DIAGRAM.md */,
 				9C027EDD2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md */,
 				9C027EE12F5B173300E0D831 /* FREE_TRIAL_UPDATES.md */,
+				9C4AE1402F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md */,
+				9C4AE1422F5BE2AB00562FA2 /* DebugLogger.swift */,
+				9C4AE1442F5BE30900562FA2 /* DebugSettingsView.swift */,
+				9C4AE1462F5BE34100562FA2 /* DEBUG_LOGGING_GUIDE.md */,
+				9C4AE1482F5BE37200562FA2 /* DEBUG_SYSTEM_CHANGELOG.md */,
+				9C4AE14A2F5BE39600562FA2 /* DEBUG_QUICK_REFERENCE.md */,
+				9C4AE14C2F5BE3CD00562FA2 /* IMPLEMENTATION_SUMMARY.md */,
+				9C4AE14E2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md */,
+				9C4AE1502F5BE49900562FA2 /* DEBUG_LOGGING_SUMMARY.md */,
+				9C4AE1522F5BE5F400562FA2 /* API_OPTIMIZATION_FIX.md */,
+				9C4AE1542F5BE73C00562FA2 /* BUILD_VERIFICATION.md */,
+				9C4AE1562F5BE76500562FA2 /* IMPLEMENTATION_COMPLETE.md */,
+				9C4AE1582F5BE7F800562FA2 /* COOLDOWN_EXPLAINED.md */,
+				9C4AE15A2F5BE96F00562FA2 /* FALLBACK_PRICES_REMOVED.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -262,10 +304,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C027ED42F5B113500E0D831 /* SUBSCRIPTION_IMPLEMENTATION_GUIDE.md in Resources */,
+				9C4AE1592F5BE7F800562FA2 /* COOLDOWN_EXPLAINED.md in Resources */,
+				9C4AE14D2F5BE3CD00562FA2 /* IMPLEMENTATION_SUMMARY.md in Resources */,
+				9C4AE14F2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md in Resources */,
+				9C4AE1412F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md in Resources */,
+				9C4AE1552F5BE73C00562FA2 /* BUILD_VERIFICATION.md in Resources */,
+				9C4AE15B2F5BE96F00562FA2 /* FALLBACK_PRICES_REMOVED.md in Resources */,
+				9C4AE1512F5BE49900562FA2 /* DEBUG_LOGGING_SUMMARY.md in Resources */,
+				9C4AE1572F5BE76500562FA2 /* IMPLEMENTATION_COMPLETE.md in Resources */,
+				9C4AE1472F5BE34100562FA2 /* DEBUG_LOGGING_GUIDE.md in Resources */,
+				9C4AE14B2F5BE39600562FA2 /* DEBUG_QUICK_REFERENCE.md in Resources */,
 				9C027EE22F5B173300E0D831 /* FREE_TRIAL_UPDATES.md in Resources */,
 				9C027EDE2F5B138600E0D831 /* IMPLEMENTATION_REVIEW.md in Resources */,
 				9C027EE02F5B153D00E0D831 /* FIRECalcProducts.storekit in Resources */,
 				9C027EDC2F5B11F700E0D831 /* SUBSCRIPTION_FLOW_DIAGRAM.md in Resources */,
+				9C4AE1492F5BE37200562FA2 /* DEBUG_SYSTEM_CHANGELOG.md in Resources */,
+				9C4AE1532F5BE5F400562FA2 /* API_OPTIMIZATION_FIX.md in Resources */,
 				9C027EDA2F5B11AC00E0D831 /* SUBSCRIPTION_SUMMARY.md in Resources */,
 				9C027ED82F5B117300E0D831 /* TESTING_CHECKLIST.md in Resources */,
 				9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */,
@@ -294,8 +348,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C027ED62F5B114900E0D831 /* APP_INITIALIZATION_NOTE.swift in Sources */,
+				9C4AE1432F5BE2AB00562FA2 /* DebugLogger.swift in Sources */,
 				9C027ED22F5B108F00E0D831 /* SubscriptionPaywallView.swift in Sources */,
 				9C027ED02F5B106F00E0D831 /* SubscriptionManager.swift in Sources */,
+				9C4AE1452F5BE30900562FA2 /* DebugSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
