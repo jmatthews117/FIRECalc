@@ -373,7 +373,7 @@ struct AddAssetView: View {
         case .preciousMetals:
             return "e.g., GLD (Gold), SLV (Silver), PPLT (Platinum)"
         case .crypto:
-            return "e.g., BTC, ETH, LTC, BCH"
+            return "e.g., IBIT, FBTC, ETHA, GDLC"
         default:
             return ""
         }
