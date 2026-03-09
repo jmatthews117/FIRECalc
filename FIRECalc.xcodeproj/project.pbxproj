@@ -41,6 +41,7 @@
 		9C6585C42F5CA438009E8496 /* terms_template.html in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585C32F5CA438009E8496 /* terms_template.html */; };
 		9C6585C62F5CA47C009E8496 /* LEGAL_QUICK_START.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6585C52F5CA47C009E8496 /* LEGAL_QUICK_START.md */; };
 		9C6D61D72F59444F004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */; };
+		9CF4B4902F5E2EDC00C5BA6D /* REFRESH_SESSION_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 9CF4B48F2F5E2EDC00C5BA6D /* REFRESH_SESSION_FIX.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +99,7 @@
 		9C6585C32F5CA438009E8496 /* terms_template.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = terms_template.html; sourceTree = "<group>"; };
 		9C6585C52F5CA47C009E8496 /* LEGAL_QUICK_START.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LEGAL_QUICK_START.md; sourceTree = "<group>"; };
 		9C6D61D62F59444E004C341C /* REFRESH_COOLDOWN_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REFRESH_COOLDOWN_IMPLEMENTATION.md; sourceTree = "<group>"; };
+		9CF4B48F2F5E2EDC00C5BA6D /* REFRESH_SESSION_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = REFRESH_SESSION_FIX.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -197,6 +199,7 @@
 				9C6585C12F5CA412009E8496 /* privacy_template.html */,
 				9C6585C32F5CA438009E8496 /* terms_template.html */,
 				9C6585C52F5CA47C009E8496 /* LEGAL_QUICK_START.md */,
+				9CF4B48F2F5E2EDC00C5BA6D /* REFRESH_SESSION_FIX.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -337,6 +340,7 @@
 				9C4AE14F2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md in Resources */,
 				9C4AE1412F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md in Resources */,
 				9C4AE1552F5BE73C00562FA2 /* BUILD_VERIFICATION.md in Resources */,
+				9CF4B4902F5E2EDC00C5BA6D /* REFRESH_SESSION_FIX.md in Resources */,
 				9C6585BC2F5CA350009E8496 /* PRIVACY_POLICY.md in Resources */,
 				9C4AE15B2F5BE96F00562FA2 /* FALLBACK_PRICES_REMOVED.md in Resources */,
 				9C6585C42F5CA438009E8496 /* terms_template.html in Resources */,

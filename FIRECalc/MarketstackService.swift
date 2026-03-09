@@ -22,11 +22,16 @@ actor MarketstackService {
     private let cacheDuration: TimeInterval = 900
     
     /// Global refresh cooldown (12 hours - prevents any API calls within this window)
-    private let globalRefreshCooldown: TimeInterval = 43200  // 12 hours
+    /// Set to 12 hours = 43,200 seconds for production
+    /// Can be reduced to 120 (2 min) or 300 (5 min) for testing
+    private let globalRefreshCooldown: TimeInterval = 43_200  // 12 hours (43,200 seconds)
     
     /// API usage tracking
     private(set) var apiCallCount: Int = 0
     private var callHistory: [Date] = []
+    
+    /// Track if we're currently in a refresh session (to allow fallback fetches)
+    private var isInRefreshSession: Bool = false
     
     // MARK: - Persistence Keys
     
@@ -63,7 +68,8 @@ actor MarketstackService {
     
     private init() {
         print("📡 MarketstackService initialized (LIVE MODE)")
-        print("⚠️ Free tier: 100 calls/month - 12 hour refresh cooldown enabled")
+        print("⚠️ API: 1 call per symbol (100 calls/month free tier)")
+        print("⚠️ Cooldown: 12 hours between portfolio refreshes")
         
         // Log current cooldown status
         if let nextRefresh = getNextRefreshDate() {
@@ -73,6 +79,8 @@ actor MarketstackService {
             } else {
                 print("✅ Refresh available now")
             }
+        } else {
+            print("✅ Refresh available now")
         }
     }
     
@@ -106,6 +114,13 @@ actor MarketstackService {
             return true
         }
         
+        // REFRESH SESSION FIX: If we're in an active refresh session, allow API calls
+        // This ensures fallback logic can complete if the batch API fails
+        if isInRefreshSession {
+            print("✅ Pro user - In active refresh session - allowing API call")
+            return true
+        }
+        
         guard let lastRefresh = lastRefreshTime else {
             print("✅ Pro user - No previous refresh - allowing API call")
             return true
@@ -113,8 +128,9 @@ actor MarketstackService {
         
         let elapsed = Date().timeIntervalSince(lastRefresh)
         // BUG FIX: Use a small epsilon to handle floating point precision issues
-        // Allow refresh if within 1 second of cooldown expiring to prevent "0m remaining" still blocking
-        let canRefresh = elapsed >= (globalRefreshCooldown - 1.0)
+        // Allow refresh if within 5 seconds of cooldown expiring to prevent "0m remaining" still blocking
+        // This handles cases where formatDuration() shows "0m" but there are still a few seconds left
+        let canRefresh = elapsed >= (globalRefreshCooldown - 5.0)
         
         if canRefresh {
             print("✅ Pro user - Cooldown expired (\(formatDuration(elapsed)) elapsed) - allowing API call")
@@ -130,6 +146,19 @@ actor MarketstackService {
     private func recordAPICall() {
         lastRefreshTime = Date()
         print("📝 Recorded API call at \(Date())")
+    }
+    
+    /// End refresh session and record cooldown timestamp
+    /// This should be called after ALL assets (including fallback) are processed
+    func endRefreshSession() {
+        guard isInRefreshSession else {
+            print("⚠️ endRefreshSession called but no session was active")
+            return
+        }
+        
+        isInRefreshSession = false
+        recordAPICall()
+        print("🔄 Ended refresh session - cooldown timer set")
     }
     
     // MARK: - Public API
@@ -225,9 +254,9 @@ actor MarketstackService {
         )
     }
     
-    /// Fetch quotes for multiple tickers in batch (HIGHLY RECOMMENDED for free tier)
-    /// This uses only 1 API call instead of N calls
-    /// Handles partial failures gracefully - returns what it can fetch
+    /// Fetch quotes for multiple tickers (makes individual API calls for each)
+    /// NOTE: Marketstack API charges 1 call per symbol, even with batch endpoints
+    /// Handles failures gracefully - returns what it can fetch
     /// Respects 12-hour global cooldown
     func fetchBatchQuotes(tickers: [String]) async throws -> [String: YFStockQuote] {
         guard !tickers.isEmpty else { return [:] }
@@ -239,12 +268,15 @@ actor MarketstackService {
         
         print("🔍 Checking cache for \(cleanTickers.count) tickers...")
         
+        // Load cache once (performance fix)
+        let cache = quoteCache
+        
         // Check which tickers are cached
         var results: [String: YFStockQuote] = [:]
         var tickersToFetch: [String] = []
         
         for ticker in cleanTickers {
-            if let cached = quoteCache[ticker] {
+            if let cached = cache[ticker] {
                 let age = Date().timeIntervalSince(cached.timestamp)
                 
                 // Within 12-hour cooldown? Always use cache
@@ -273,72 +305,106 @@ actor MarketstackService {
             
             // Return any stale cache we have for the missing tickers
             for ticker in tickersToFetch {
-                if let cached = quoteCache[ticker] {
+                if let cached = cache[ticker] {
                     let age = Date().timeIntervalSince(cached.timestamp)
                     print("⚠️ Returning stale cache for \(ticker) (age: \(formatDuration(age)))")
                     results[ticker] = cached.quote.toStockQuote()
                 }
             }
             
-            // If we have some results, return them; otherwise throw
-            if !results.isEmpty {
-                return results
-            }
-            
-            throw MarketstackError.refreshCooldownActive(remainingTime: timeUntilNextRefresh())
-        }
-        
-        // Fetch uncached tickers from API (1 API call for all)
-        print("📡 🔴 Making API call for \(tickersToFetch.count)/\(cleanTickers.count) tickers: \(tickersToFetch.joined(separator: ", "))")
-        
-        do {
-            let quotes = try await fetchBatchQuotesFromAPI(tickers: tickersToFetch)
-            
-            // Cache all results
-            var updatedCache = quoteCache
-            for quote in quotes {
-                print("💾 Caching \(quote.symbol) at \(Date())")
-                updatedCache[quote.symbol] = CachedQuote(quote: quote, timestamp: Date())
-                results[quote.symbol] = quote.toStockQuote()
-            }
-            quoteCache = updatedCache
-            
-            // Record API call and track usage (1 call for batch)
-            recordAPICall()
-            trackAPICall()
-            
-            // Check for missing tickers
-            let fetchedSymbols = Set(quotes.map { $0.symbol })
-            let requestedSymbols = Set(tickersToFetch)
-            let missingSymbols = requestedSymbols.subtracting(fetchedSymbols)
-            
-            if !missingSymbols.isEmpty {
-                print("⚠️ Some tickers not found: \(missingSymbols.joined(separator: ", "))")
-            }
-            
+            print("⚠️ Returning partial results (\(results.count)/\(cleanTickers.count)) - cooldown prevents fetching \(tickersToFetch.count) missing tickers")
             return results
-            
-        } catch let error as MarketstackError {
-            print("❌ Marketstack batch error: \(error.localizedDescription)")
-            
-            // If batch fails, still return cached results
-            if !results.isEmpty {
-                print("💾 Returning \(results.count) cached results despite batch error")
-                return results
-            }
-            
-            throw error
-        } catch {
-            print("❌ Unknown batch error: \(error.localizedDescription)")
-            
-            // If batch fails, still return cached results
-            if !results.isEmpty {
-                print("💾 Returning \(results.count) cached results despite error")
-                return results
-            }
-            
-            throw MarketstackError.networkError(error)
         }
+        
+        // REFRESH SESSION: Start refresh session BEFORE making API calls
+        // This allows all fetches to complete before cooldown starts
+        isInRefreshSession = true
+        print("🔄 Started refresh session")
+        
+        // Fetch each ticker individually (Marketstack charges per symbol anyway)
+        print("📡 🔴 Making \(tickersToFetch.count) individual API calls for: \(tickersToFetch.prefix(5).joined(separator: ", "))\(tickersToFetch.count > 5 ? "..." : "")")
+        
+        var updatedCache = cache
+        var successCount = 0
+        var failCount = 0
+        
+        // OPTION: Choose between concurrent (fast) or sequential (reliable for cold starts)
+        let useConcurrent = false  // Set to true for speed, false for reliability
+        
+        if useConcurrent {
+            // Fetch all tickers concurrently (faster but can overwhelm cold backend)
+            await withTaskGroup(of: (String, MarketstackQuote?).self) { group in
+                for ticker in tickersToFetch {
+                    group.addTask {
+                        do {
+                            let quote = try await self.fetchQuoteFromAPI(ticker: ticker)
+                            return (ticker, quote)
+                        } catch {
+                            print("⚠️ Failed to fetch \(ticker): \(error.localizedDescription)")
+                            return (ticker, nil)
+                        }
+                    }
+                }
+                
+                // Collect results
+                for await (ticker, quote) in group {
+                    if let quote = quote {
+                        print("💾 Caching \(quote.symbol) at \(Date())")
+                        updatedCache[quote.symbol] = CachedQuote(quote: quote, timestamp: Date())
+                        results[quote.symbol] = quote.toStockQuote()
+                        successCount += 1
+                        
+                        // Track each API call for statistics
+                        trackAPICall()
+                    } else {
+                        failCount += 1
+                        
+                        // Still return stale cache if available
+                        if let cached = cache[ticker] {
+                            let age = Date().timeIntervalSince(cached.timestamp)
+                            print("⚠️ Using stale cache for failed \(ticker) (age: \(formatDuration(age)))")
+                            results[ticker] = cached.quote.toStockQuote()
+                        }
+                    }
+                }
+            }
+        } else {
+            // Fetch tickers sequentially (slower but more reliable for cold backend)
+            print("⚙️ Using sequential fetching (more reliable for cold starts)")
+            
+            for (index, ticker) in tickersToFetch.enumerated() {
+                do {
+                    print("📥 [\(index + 1)/\(tickersToFetch.count)] Fetching \(ticker)...")
+                    let quote = try await fetchQuoteFromAPI(ticker: ticker)
+                    
+                    print("💾 Caching \(quote.symbol) at \(Date())")
+                    updatedCache[quote.symbol] = CachedQuote(quote: quote, timestamp: Date())
+                    results[quote.symbol] = quote.toStockQuote()
+                    successCount += 1
+                    
+                    // Track each API call for statistics
+                    trackAPICall()
+                } catch {
+                    print("⚠️ Failed to fetch \(ticker): \(error.localizedDescription)")
+                    failCount += 1
+                    
+                    // Still return stale cache if available
+                    if let cached = cache[ticker] {
+                        let age = Date().timeIntervalSince(cached.timestamp)
+                        print("⚠️ Using stale cache for failed \(ticker) (age: \(formatDuration(age)))")
+                        results[ticker] = cached.quote.toStockQuote()
+                    }
+                }
+            }
+        }
+        
+        // Save updated cache
+        quoteCache = updatedCache
+        
+        print("✅ Fetched \(successCount)/\(tickersToFetch.count) quotes successfully (\(failCount) failed)")
+        
+        // REFRESH SESSION: Keep session active - ViewModel will end it after fallback logic
+        return results
     }
     
     /// Update all assets in a portfolio (uses efficient batching)
@@ -386,23 +452,17 @@ actor MarketstackService {
     
     private func fetchQuoteFromAPI(ticker: String) async throws -> MarketstackQuote {
         // Call our backend proxy instead of Marketstack directly
+        print("🌐 [API] Fetching \(ticker)...")
+        
         do {
             let quote = try await MarketstackConfig.shared.fetchQuote(symbol: ticker)
-            print("✅ Received quote from backend for \(ticker): $\(quote.close)")
+            print("✅ [API] Received quote for \(ticker): $\(quote.close)")
             return quote
         } catch let error as ConfigError {
-            print("❌ Backend error for \(ticker): \(error.localizedDescription)")
+            print("❌ [API] Backend error for \(ticker): \(error.localizedDescription)")
             throw MarketstackError.networkError(error)
-        }
-    }
-    private func fetchBatchQuotesFromAPI(tickers: [String]) async throws -> [MarketstackQuote] {
-        // Call our backend proxy for batch quotes
-        do {
-            let quotes = try await MarketstackConfig.shared.fetchQuotes(symbols: tickers)
-            print("✅ Received \(quotes.count) quotes from backend")
-            return quotes
-        } catch let error as ConfigError {
-            print("❌ Backend error for batch: \(error.localizedDescription)")
+        } catch {
+            print("❌ [API] Unknown error for \(ticker): \(error.localizedDescription)")
             throw MarketstackError.networkError(error)
         }
     }
@@ -457,8 +517,8 @@ actor MarketstackService {
     func getRefreshStatus() -> RefreshStatus {
         if let nextRefresh = getNextRefreshDate() {
             let remaining = nextRefresh.timeIntervalSince(Date())
-            // BUG FIX: Use same 1-second epsilon as canMakeAPICall to prevent "0m remaining" showing as active
-            if remaining > 1.0 {
+            // BUG FIX: Use same 5-second epsilon as canMakeAPICall to prevent "0m remaining" showing as active
+            if remaining > 5.0 {
                 return .cooldownActive(nextRefreshDate: nextRefresh, remainingTime: remaining)
             }
         }

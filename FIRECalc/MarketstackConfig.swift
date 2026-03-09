@@ -22,6 +22,8 @@ actor MarketstackConfig {
     
     private init() {
         print("🔐 MarketstackConfig initialized - using secure backend proxy")
+        print("🔐 Backend URL: \(backendURL)")
+        print("🔐 Ready to make API calls")
     }
     
     // MARK: - API Methods
@@ -29,37 +31,65 @@ actor MarketstackConfig {
     /// Fetch a single stock quote from backend
     func fetchQuote(symbol: String) async throws -> MarketstackQuote {
         let urlString = "\(backendURL)/api/quote/\(symbol)"
+        
+        print("🌐 [CONFIG] Fetching single quote for: \(symbol)")
+        
         guard let url = URL(string: urlString) else {
+            print("❌ [CONFIG] Invalid URL: \(urlString)")
             throw ConfigError.invalidURL
         }
         
         var request = URLRequest(url: url)
-        request.timeoutInterval = 10
+        request.timeoutInterval = 90 // Increased for Render free tier cold-starts
         request.httpMethod = "GET"
-        request.setValue("FIRECalc_2026_SecretKey_8j3k2h1k9", forHTTPHeaderField: "x-api-key") // ← ADD THIS LINE
+        request.setValue("FIRECalc_2026_SecretKey_8j3k2h1k9", forHTTPHeaderField: "x-api-key")
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        print("🌐 [CONFIG] Sending request (timeout: 90s)...")
+        let startTime = Date()
         
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ConfigError.fetchFailed
-        }
-        
-        guard httpResponse.statusCode == 200 else {
-            // Try to parse error message from backend
-            if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
-                throw ConfigError.backendError(errorResponse.error)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("🌐 [CONFIG] Response received in \(String(format: "%.2f", elapsed))s")
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ [CONFIG] Response is not HTTP")
+                throw ConfigError.fetchFailed
             }
-            throw ConfigError.fetchFailed
+            
+            print("🌐 [CONFIG] HTTP Status: \(httpResponse.statusCode)")
+            
+            guard httpResponse.statusCode == 200 else {
+                // Try to parse error message from backend
+                if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
+                    print("❌ [CONFIG] Backend error: \(errorResponse.error)")
+                    throw ConfigError.backendError(errorResponse.error)
+                }
+                
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("❌ [CONFIG] Raw response: \(responseString.prefix(200))")
+                }
+                
+                throw ConfigError.fetchFailed
+            }
+            
+            // Decode the response
+            let apiResponse = try JSONDecoder().decode(BackendAPIResponse.self, from: data)
+            
+            guard let quote = apiResponse.data.first else {
+                print("❌ [CONFIG] No quote data in response")
+                throw ConfigError.noDataAvailable
+            }
+            
+            print("✅ [CONFIG] Successfully fetched quote for \(symbol): $\(quote.close)")
+            return quote
+            
+        } catch {
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("❌ [CONFIG] Request failed after \(String(format: "%.2f", elapsed))s")
+            print("❌ [CONFIG] Error: \(error.localizedDescription)")
+            throw error
         }
-        
-        // Decode the response (uses existing MarketstackAPIResponse from MarketstackService)
-        let apiResponse = try JSONDecoder().decode(BackendAPIResponse.self, from: data)
-        
-        guard let quote = apiResponse.data.first else {
-            throw ConfigError.noDataAvailable
-        }
-        
-        return quote
     }
     
     /// Fetch multiple stock quotes (batch request) from backend
@@ -67,31 +97,72 @@ actor MarketstackConfig {
         let symbolsString = symbols.joined(separator: ",")
         let urlString = "\(backendURL)/api/quotes?symbols=\(symbolsString)"
         
+        print("🌐 [CONFIG] Building request URL...")
+        print("🌐 [CONFIG] Backend: \(backendURL)")
+        print("🌐 [CONFIG] Symbols: \(symbols.prefix(5).joined(separator: ", "))\(symbols.count > 5 ? "... (\(symbols.count) total)" : "")")
+        
         guard let url = URL(string: urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "") else {
+            print("❌ [CONFIG] Failed to build URL from: \(urlString)")
             throw ConfigError.invalidURL
         }
         
+        print("🌐 [CONFIG] Request URL: \(url.absoluteString.prefix(100))...")
+        
         var request = URLRequest(url: url)
-        request.timeoutInterval = 15
+        request.timeoutInterval = 120 // Increased for Render free tier cold-starts (28 symbols can take time)
         request.httpMethod = "GET"
-        request.setValue("FIRECalc_2026_SecretKey_8j3k2h1k9", forHTTPHeaderField: "x-api-key") // ← ADD THIS LINE
+        request.setValue("FIRECalc_2026_SecretKey_8j3k2h1k9", forHTTPHeaderField: "x-api-key")
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        print("🌐 [CONFIG] Sending request (timeout: 120s)...")
+        let startTime = Date()
         
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ConfigError.fetchFailed
-        }
-        
-        guard httpResponse.statusCode == 200 else {
-            if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
-                throw ConfigError.backendError(errorResponse.error)
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("🌐 [CONFIG] Response received in \(String(format: "%.2f", elapsed))s")
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ [CONFIG] Response is not HTTP")
+                throw ConfigError.fetchFailed
             }
-            throw ConfigError.fetchFailed
+            
+            print("🌐 [CONFIG] HTTP Status: \(httpResponse.statusCode)")
+            print("🌐 [CONFIG] Data size: \(data.count) bytes")
+            
+            guard httpResponse.statusCode == 200 else {
+                // Try to parse error message from backend
+                if let errorResponse = try? JSONDecoder().decode(BackendErrorResponse.self, from: data) {
+                    print("❌ [CONFIG] Backend error: \(errorResponse.error)")
+                    throw ConfigError.backendError(errorResponse.error)
+                }
+                
+                // Try to print raw response for debugging
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("❌ [CONFIG] Raw response: \(responseString.prefix(200))")
+                }
+                
+                throw ConfigError.fetchFailed
+            }
+            
+            // Decode the response
+            print("🌐 [CONFIG] Decoding JSON...")
+            let apiResponse = try JSONDecoder().decode(BackendAPIResponse.self, from: data)
+            print("✅ [CONFIG] Successfully decoded \(apiResponse.data.count) quotes")
+            
+            return apiResponse.data
+            
+        } catch {
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("❌ [CONFIG] Request failed after \(String(format: "%.2f", elapsed))s")
+            print("❌ [CONFIG] Error: \(error.localizedDescription)")
+            
+            if let urlError = error as? URLError {
+                print("❌ [CONFIG] URLError code: \(urlError.code.rawValue)")
+                print("❌ [CONFIG] URLError description: \(urlError.localizedDescription)")
+            }
+            
+            throw error
         }
-        
-        // Decode the response
-        let apiResponse = try JSONDecoder().decode(BackendAPIResponse.self, from: data)
-        return apiResponse.data
     }
 }
 

@@ -250,6 +250,8 @@ class PortfolioViewModel: ObservableObject {
                 } else {
                     // Not in batch results - try individual fetch (for crypto/special assets)
                     do {
+                        // REFRESH SESSION FIX: Fetch uses the refresh session flag, not bypass
+                        // The session allows fallback to continue after batch completes
                         let (price, changePercent) = try await AlternativePriceService.shared.fetchPriceAndChange(for: asset, bypassCooldown: false)
                         var updatedAsset = asset
                         updatedAsset = updatedAsset.updatedWithLivePrice(price, change: changePercent)
@@ -264,11 +266,11 @@ class PortfolioViewModel: ObservableObject {
                 }
             }
         } catch {
-            // Batch API failed - fall back to individual requests but respect cooldown
+            // Batch API failed - fall back to individual requests with refresh session active
             AppLogger.warning("⚠️ Batch API failed: \(error.localizedDescription)")
-            AppLogger.warning("⚠️ Falling back to individual requests (will respect cooldown)")
+            AppLogger.warning("⚠️ Falling back to individual requests (refresh session active)")
             
-            // Process in smaller batches with cooldown respected
+            // Process in smaller batches with refresh session active
             let batchSize = 5
             let batches = stride(from: 0, to: assetsToUpdate.count, by: batchSize).map {
                 Array(assetsToUpdate[$0..<min($0 + batchSize, assetsToUpdate.count)])
@@ -277,14 +279,14 @@ class PortfolioViewModel: ObservableObject {
             for (batchIndex, batch) in batches.enumerated() {
                 AppLogger.debug("📦 FALLBACK BATCH: [\(batchIndex + 1)/\(batches.count)] Processing \(batch.count) assets")
                 
-                // Process batch in parallel but DON'T bypass cooldown for fallback
+                // Process batch in parallel using refresh session (not bypass)
                 await withTaskGroup(of: (Asset, Double?, Double?, Error?).self) { group in
                     for asset in batch {
                         guard asset.ticker != nil else { continue }
                         
                         group.addTask {
                             do {
-                                // Use fallback without bypassing cooldown
+                                // Use refresh session flag instead of bypass
                                 let (price, changePercent) = try await AlternativePriceService.shared.fetchPriceAndChange(for: asset, bypassCooldown: false)
                                 return (asset, price, changePercent, nil)
                             } catch {
@@ -317,6 +319,10 @@ class PortfolioViewModel: ObservableObject {
                 }
             }
         }
+        
+        // REFRESH SESSION FIX: End the refresh session and set cooldown timer
+        // This ensures cooldown starts AFTER all assets are processed
+        await MarketstackService.shared.endRefreshSession()
         
         // Calculate duration
         let duration = Date().timeIntervalSince(startTime)
