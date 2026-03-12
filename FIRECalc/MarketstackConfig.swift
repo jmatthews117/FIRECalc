@@ -28,7 +28,7 @@ actor MarketstackConfig {
     
     // MARK: - API Methods
     
-    /// Fetch a single stock quote from backend
+    /// Fetch a single stock quote from backend (with 2 days of data for accurate daily change)
     func fetchQuote(symbol: String) async throws -> MarketstackQuote {
         let urlString = "\(backendURL)/api/quote/\(symbol)"
         
@@ -73,15 +73,25 @@ actor MarketstackConfig {
                 throw ConfigError.fetchFailed
             }
             
-            // Decode the response
+            // Decode the response (backend now returns 2 days of data with limit=2)
             let apiResponse = try JSONDecoder().decode(BackendAPIResponse.self, from: data)
             
+            // Backend processes the data and returns only today's quote (first element)
+            // but with previousClose, dailyChange, and dailyChangePercent calculated
             guard let quote = apiResponse.data.first else {
                 print("❌ [CONFIG] No quote data in response")
                 throw ConfigError.noDataAvailable
             }
             
-            print("✅ [CONFIG] Successfully fetched quote for \(symbol): $\(quote.close)")
+            // Log the daily change if available
+            if let previousClose = quote.previousClose {
+                let change = quote.close - previousClose
+                let changePercent = (change / previousClose) * 100
+                print("✅ [CONFIG] Successfully fetched quote for \(symbol): $\(quote.close) (\(change >= 0 ? "+" : "")\(String(format: "%.2f", changePercent))%)")
+            } else {
+                print("✅ [CONFIG] Successfully fetched quote for \(symbol): $\(quote.close)")
+            }
+            
             return quote
             
         } catch {

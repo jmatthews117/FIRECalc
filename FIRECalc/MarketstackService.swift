@@ -24,7 +24,7 @@ actor MarketstackService {
     /// Global refresh cooldown (12 hours - prevents any API calls within this window)
     /// Set to 12 hours = 43,200 seconds for production
     /// Can be reduced to 120 (2 min) or 300 (5 min) for testing
-    private let globalRefreshCooldown: TimeInterval = 43_200  // 12 hours (43,200 seconds)
+    private let globalRefreshCooldown: TimeInterval = 43200  // 12 hours (43,200 seconds)
     
     /// API usage tracking
     private(set) var apiCallCount: Int = 0

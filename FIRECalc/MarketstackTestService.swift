@@ -22,10 +22,37 @@ struct MarketstackQuote: Codable {
     let date: String
     let exchange: String?
     
+    // NEW: Backend-calculated fields for accurate daily change
+    let previousClose: Double?
+    let dailyChange: Double?
+    let dailyChangePercent: Double?
+    
     /// Convert to the shared YFStockQuote format for compatibility
-    func toStockQuote() -> YFStockQuote {
-        let change = open.map { close - $0 }
-        let changePercent = open.map { $0 > 0 ? ((close - $0) / $0) : 0 }
+    /// - Parameter previousClose: Optional previous day's close price for accurate daily change calculation
+    func toStockQuote(previousClose: Double? = nil) -> YFStockQuote {
+        let change: Double?
+        let changePercent: Double?
+        
+        // PRIORITY 1: Use backend-calculated daily change (most accurate)
+        if let backendChange = self.dailyChange, let backendChangePercent = self.dailyChangePercent {
+            change = backendChange
+            changePercent = backendChangePercent
+        }
+        // PRIORITY 2: Use provided previous close
+        else if let prevClose = previousClose {
+            change = close - prevClose
+            changePercent = prevClose > 0 ? ((close - prevClose) / prevClose) : 0
+        }
+        // PRIORITY 3: Use stored previous close from struct
+        else if let prevClose = self.previousClose {
+            change = close - prevClose
+            changePercent = prevClose > 0 ? ((close - prevClose) / prevClose) : 0
+        }
+        // FALLBACK: Use today's open (less accurate but better than nothing)
+        else {
+            change = open.map { close - $0 }
+            changePercent = open.map { $0 > 0 ? ((close - $0) / $0) : 0 }
+        }
         
         return YFStockQuote(
             symbol: symbol,
@@ -90,7 +117,10 @@ actor MarketstackTestService {
                 close: 181.25,
                 volume: 52_450_000,
                 date: Self.todayISO(),
-                exchange: "NASDAQ"
+                exchange: "NASDAQ",
+                previousClose: 178.50,
+                dailyChange: 2.75,
+                dailyChangePercent: 0.0154
             )
         case "MSFT":
             return MarketstackQuote(
@@ -101,7 +131,10 @@ actor MarketstackTestService {
                 close: 418.75,
                 volume: 28_340_000,
                 date: Self.todayISO(),
-                exchange: "NASDAQ"
+                exchange: "NASDAQ",
+                previousClose: 415.20,
+                dailyChange: 3.55,
+                dailyChangePercent: 0.0086
             )
         case "GOOGL", "GOOG":
             return MarketstackQuote(
@@ -112,7 +145,10 @@ actor MarketstackTestService {
                 close: 144.25,
                 volume: 21_230_000,
                 date: Self.todayISO(),
-                exchange: "NASDAQ"
+                exchange: "NASDAQ",
+                previousClose: 142.00,
+                dailyChange: 2.25,
+                dailyChangePercent: 0.0158
             )
         case "TSLA":
             return MarketstackQuote(
@@ -123,7 +159,10 @@ actor MarketstackTestService {
                 close: 250.10,
                 volume: 95_670_000,
                 date: Self.todayISO(),
-                exchange: "NASDAQ"
+                exchange: "NASDAQ",
+                previousClose: 245.60,
+                dailyChange: 4.50,
+                dailyChangePercent: 0.0183
             )
         case "SPY":
             return MarketstackQuote(
@@ -134,7 +173,10 @@ actor MarketstackTestService {
                 close: 507.35,
                 volume: 42_100_000,
                 date: Self.todayISO(),
-                exchange: "NYSE"
+                exchange: "NYSE",
+                previousClose: 505.20,
+                dailyChange: 2.15,
+                dailyChangePercent: 0.0043
             )
         case "VTI":
             return MarketstackQuote(
@@ -145,21 +187,29 @@ actor MarketstackTestService {
                 close: 246.85,
                 volume: 3_250_000,
                 date: Self.todayISO(),
-                exchange: "NYSE"
+                exchange: "NYSE",
+                previousClose: 245.80,
+                dailyChange: 1.05,
+                dailyChangePercent: 0.0043
             )
         default:
             // Generic fallback for unknown tickers
             let basePrice = Double.random(in: 50...300)
             let variation = basePrice * 0.02  // ±2% daily range
+            let prevClose = basePrice
+            let currentClose = basePrice + Double.random(in: -variation...variation)
             return MarketstackQuote(
                 symbol: cleanTicker,
                 open: basePrice,
                 high: basePrice + variation,
                 low: basePrice - variation,
-                close: basePrice + Double.random(in: -variation...variation),
+                close: currentClose,
                 volume: Int64.random(in: 1_000_000...50_000_000),
                 date: Self.todayISO(),
-                exchange: "UNKNOWN"
+                exchange: "UNKNOWN",
+                previousClose: prevClose,
+                dailyChange: currentClose - prevClose,
+                dailyChangePercent: (currentClose - prevClose) / prevClose
             )
         }
     }
@@ -181,7 +231,10 @@ actor MarketstackTestService {
                 close: 68500.0,
                 volume: 25_000_000_000,
                 date: Self.todayISO(),
-                exchange: "CRYPTO"
+                exchange: "CRYPTO",
+                previousClose: 67800.0,
+                dailyChange: 700.0,
+                dailyChangePercent: 0.0103
             )
         case "ETH", "ETHUSD":
             return MarketstackQuote(
@@ -192,20 +245,28 @@ actor MarketstackTestService {
                 close: 3475.0,
                 volume: 12_000_000_000,
                 date: Self.todayISO(),
-                exchange: "CRYPTO"
+                exchange: "CRYPTO",
+                previousClose: 3420.0,
+                dailyChange: 55.0,
+                dailyChangePercent: 0.0161
             )
         default:
             let basePrice = Double.random(in: 1...1000)
             let variation = basePrice * 0.05
+            let prevClose = basePrice
+            let currentClose = basePrice + Double.random(in: -variation...variation)
             return MarketstackQuote(
                 symbol: cleanSymbol,
                 open: basePrice,
                 high: basePrice + variation,
                 low: basePrice - variation,
-                close: basePrice + Double.random(in: -variation...variation),
+                close: currentClose,
                 volume: Int64.random(in: 1_000_000...100_000_000),
                 date: Self.todayISO(),
-                exchange: "CRYPTO"
+                exchange: "CRYPTO",
+                previousClose: prevClose,
+                dailyChange: currentClose - prevClose,
+                dailyChangePercent: (currentClose - prevClose) / prevClose
             )
         }
     }
