@@ -359,6 +359,8 @@ enum MarketstackError: LocalizedError {
     case invalidResponse
     case planLimitReached  // Free tier limitations
     case refreshCooldownActive(remainingTime: TimeInterval)
+    case unsupportedMutualFund(original: String, mapping: TickerMapping)
+    case unsupportedCrypto(original: String, mapping: TickerMapping)
     
     var errorDescription: String? {
         switch self {
@@ -382,6 +384,10 @@ enum MarketstackError: LocalizedError {
             } else {
                 return "Refresh cooldown active. Next refresh available in \(minutes)m."
             }
+        case .unsupportedMutualFund(let original, let mapping):
+            return "\(original) is a mutual fund and cannot be tracked with live prices. Consider using \(mapping.etfAlternative) (\(mapping.etfName)) instead. \(mapping.reason)"
+        case .unsupportedCrypto(let original, let mapping):
+            return "\(original) is a cryptocurrency and cannot be tracked via stock market APIs. Consider using \(mapping.etfAlternative) (\(mapping.etfName)) instead. \(mapping.reason)"
         }
     }
 }

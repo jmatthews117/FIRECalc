@@ -28,6 +28,8 @@ struct AddAssetView: View {
     @State private var autoLoadedPrice: Double?
     @State private var priceError: String?
     @State private var lastLoadedTicker: String = ""
+    @State private var tickerMappingSuggestion: TickerMapping?
+    @State private var showMappingSuggestion = false
     
     enum Field {
         case ticker, quantity, unitValue, bondYield
@@ -57,6 +59,8 @@ struct AddAssetView: View {
                         assetName = ""
                         autoLoadedPrice = nil
                         priceError = nil
+                        tickerMappingSuggestion = nil
+                        showMappingSuggestion = false
                     }
                 }
                 
@@ -119,6 +123,8 @@ struct AddAssetView: View {
                                             autoLoadedPrice = nil
                                             priceError = nil
                                             assetName = ""
+                                            tickerMappingSuggestion = nil
+                                            showMappingSuggestion = false
                                             
                                             // Don't auto-load - user must click button
                                         }
@@ -156,6 +162,29 @@ struct AddAssetView: View {
                                             .font(.caption)
                                             .foregroundColor(.green)
                                     }
+                                } else if showMappingSuggestion, let mapping = tickerMappingSuggestion {
+                                    // Show mapping suggestion card with value conversion
+                                    TickerMappingSuggestionCard(
+                                        originalTicker: ticker.uppercased(),
+                                        mapping: mapping,
+                                        assetClass: selectedAssetClass,
+                                        onUseAlternative: { quantity, unitPrice in
+                                            // Update fields with converted values
+                                            ticker = mapping.etfAlternative
+                                            self.quantity = String(format: "%.4f", quantity)
+                                            unitValue = String(format: "%.2f", unitPrice)
+                                            assetName = mapping.etfAlternative
+                                            autoLoadedPrice = unitPrice
+                                            
+                                            // Clear suggestion state
+                                            tickerMappingSuggestion = nil
+                                            showMappingSuggestion = false
+                                        },
+                                        onDismiss: {
+                                            showMappingSuggestion = false
+                                            tickerMappingSuggestion = nil
+                                        }
+                                    )
                                 } else if let error = priceError {
                                     HStack {
                                         Image(systemName: "exclamationmark.triangle.fill")
@@ -445,7 +474,24 @@ struct AddAssetView: View {
                 }
                 
                 await MainActor.run {
-                    priceError = "Could not load price"
+                    // Check if this is a ticker mapping error
+                    if let marketstackError = error as? MarketstackError {
+                        switch marketstackError {
+                        case .unsupportedMutualFund(_, let mapping),
+                             .unsupportedCrypto(_, let mapping):
+                            tickerMappingSuggestion = mapping
+                            showMappingSuggestion = true
+                            priceError = nil
+                        default:
+                            priceError = "Could not load price"
+                            tickerMappingSuggestion = nil
+                            showMappingSuggestion = false
+                        }
+                    } else {
+                        priceError = "Could not load price"
+                        tickerMappingSuggestion = nil
+                        showMappingSuggestion = false
+                    }
                     isLoadingPrice = false
                 }
             }

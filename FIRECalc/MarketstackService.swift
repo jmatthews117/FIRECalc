@@ -177,6 +177,27 @@ actor MarketstackService {
             throw MarketstackError.invalidTicker(ticker)
         }
         
+        // TICKER MAPPING: Check if this is a mutual fund or crypto that should be mapped
+        let mappingResult = await TickerMappingService.shared.checkTicker(cleanTicker)
+        
+        switch mappingResult {
+        case .unsupportedMutualFund(let original, let mapping):
+            print("🚫 Mutual fund intercepted: \(original) → suggest \(mapping.etfAlternative)")
+            throw MarketstackError.unsupportedMutualFund(original: original, mapping: mapping)
+            
+        case .unsupportedCrypto(let original, let mapping):
+            print("🚫 Crypto intercepted: \(original) → suggest \(mapping.etfAlternative)")
+            throw MarketstackError.unsupportedCrypto(original: original, mapping: mapping)
+            
+        case .supported(let ticker):
+            // Continue with normal flow
+            print("✅ Ticker \(ticker) is supported - proceeding with price fetch")
+            
+        case .unknown(let ticker):
+            // Not in our mappings - assume it's supported and let the API decide
+            print("❓ Ticker \(ticker) not in mappings - attempting fetch")
+        }
+        
         // Check cache first - ALWAYS return if we have it and within 12-hour window
         if let cached = quoteCache[cleanTicker] {
             let age = Date().timeIntervalSince(cached.timestamp)
@@ -242,6 +263,24 @@ actor MarketstackService {
         let cleanSymbol = symbol.uppercased()
             .trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: "-USD", with: "")
+        
+        // TICKER MAPPING: Check if this crypto should be mapped to an ETF
+        let mappingResult = await TickerMappingService.shared.checkTicker(cleanSymbol)
+        
+        switch mappingResult {
+        case .unsupportedCrypto(let original, let mapping):
+            print("🚫 Crypto intercepted: \(original) → suggest \(mapping.etfAlternative)")
+            throw MarketstackError.unsupportedCrypto(original: original, mapping: mapping)
+            
+        case .unsupportedMutualFund(let original, let mapping):
+            // Shouldn't happen for crypto, but handle it anyway
+            print("🚫 Mutual fund intercepted in crypto lookup: \(original) → suggest \(mapping.etfAlternative)")
+            throw MarketstackError.unsupportedMutualFund(original: original, mapping: mapping)
+            
+        case .supported, .unknown:
+            // Continue with normal flow
+            break
+        }
         
         // Marketstack has limited crypto support - try as regular ticker
         // Note: Free tier may not support crypto at all
