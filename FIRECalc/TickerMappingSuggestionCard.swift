@@ -14,13 +14,14 @@ struct TickerMappingSuggestionCard: View {
     let originalTicker: String
     let mapping: TickerMapping
     let assetClass: AssetClass
-    let onUseAlternative: (Double, Double) -> Void  // (quantity, unitPrice) -> Void
+    let onUseAlternative: (String, String, Double, Double) -> Void  // (displayName, lookupTicker, quantity, unitPrice) -> Void
     let onDismiss: () -> Void
     
     @State private var holdingsValue: String = ""
     @State private var isLoadingPrice: Bool = false
     @State private var etfPrice: Double?
     @State private var priceError: String?
+    @State private var keepOriginalName: Bool = true  // NEW: Allow user to choose name
     @FocusState private var isValueFieldFocused: Bool
     
     private var calculatedShares: Double? {
@@ -28,13 +29,18 @@ struct TickerMappingSuggestionCard: View {
               let price = etfPrice,
               value > 0,
               price > 0 else {
+            print("❌ calculatedShares = nil: holdingsValue='\(holdingsValue)', etfPrice=\(String(describing: etfPrice))")
             return nil
         }
-        return value / price
+        let shares = value / price
+        print("✅ calculatedShares = \(shares): value=\(value), price=\(price)")
+        return shares
     }
     
     private var isReadyToConvert: Bool {
-        calculatedShares != nil
+        let ready = calculatedShares != nil
+        print("🔘 isReadyToConvert = \(ready)")
+        return ready
     }
     
     var body: some View {
@@ -143,6 +149,9 @@ struct TickerMappingSuggestionCard: View {
                             .keyboardType(.decimalPad)
                             .focused($isValueFieldFocused)
                             .textFieldStyle(.roundedBorder)
+                            .onChange(of: holdingsValue) { oldValue, newValue in
+                                print("💰 holdingsValue changed: '\(oldValue)' → '\(newValue)'")
+                            }
                     }
                     
                     // Show conversion calculation
@@ -174,6 +183,52 @@ struct TickerMappingSuggestionCard: View {
                         }
                     }
                     
+                    // Name preference toggle
+                    Divider()
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Display as")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.secondary)
+                        
+                        Toggle(isOn: $keepOriginalName) {
+                            HStack(spacing: 6) {
+                                Text("Keep original ticker name")
+                                    .font(.subheadline)
+                                Text("(\(originalTicker))")
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .toggleStyle(.switch)
+                        .tint(.blue)
+                        
+                        if keepOriginalName {
+                            HStack(spacing: 6) {
+                                Image(systemName: "info.circle")
+                                    .font(.caption2)
+                                    .foregroundColor(.blue)
+                                Text("Asset will show as \(originalTicker), but prices will be tracked using \(mapping.etfAlternative)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(.leading, 4)
+                        } else {
+                            HStack(spacing: 6) {
+                                Image(systemName: "info.circle")
+                                    .font(.caption2)
+                                    .foregroundColor(.blue)
+                                Text("Asset will show as \(mapping.etfAlternative)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.leading, 4)
+                        }
+                    }
+                    
                     // Error message
                     if let error = priceError {
                         HStack {
@@ -201,14 +256,31 @@ struct TickerMappingSuggestionCard: View {
                 Spacer()
                 
                 Button(action: {
+                    print("🔵 Blue button tapped! isReadyToConvert = \(isReadyToConvert)")
+                    print("   - calculatedShares: \(String(describing: calculatedShares))")
+                    print("   - holdingsValue: '\(holdingsValue)'")
+                    print("   - etfPrice: \(String(describing: etfPrice))")
+                    print("   - keepOriginalName: \(keepOriginalName)")
+                    
                     isValueFieldFocused = false
                     if let shares = calculatedShares, let price = etfPrice {
-                        onUseAlternative(shares, price)
+                        let displayName = keepOriginalName ? originalTicker : mapping.etfAlternative
+                        let lookupTicker = mapping.etfAlternative
+                        print("   - Calling onUseAlternative with:")
+                        print("     - displayName: \(displayName)")
+                        print("     - lookupTicker: \(lookupTicker)")
+                        print("     - shares: \(shares)")
+                        print("     - price: \(price)")
+                        onUseAlternative(displayName, lookupTicker, shares, price)
+                    } else {
+                        print("   - ❌ Button tapped but validation failed!")
+                        print("     - calculatedShares: \(String(describing: calculatedShares))")
+                        print("     - etfPrice: \(String(describing: etfPrice))")
                     }
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
-                        Text("Add as \(mapping.etfAlternative)")
+                        Text(keepOriginalName ? "Add as \(originalTicker)" : "Add as \(mapping.etfAlternative)")
                     }
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -229,11 +301,10 @@ struct TickerMappingSuggestionCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.orange.opacity(0.3), lineWidth: 1.5)
         )
-        .onTapGesture {
-            // Dismiss keyboard when tapping outside text field
-            isValueFieldFocused = false
-        }
+        // REMOVED: .onTapGesture was blocking button taps
+        // The keyboard dismisses when user taps the button anyway
         .onAppear {
+            print("🔔 TickerMappingSuggestionCard appeared for \(originalTicker) → \(mapping.etfAlternative)")
             // Auto-load ETF price when card appears
             loadETFPrice()
         }
@@ -242,6 +313,7 @@ struct TickerMappingSuggestionCard: View {
     // MARK: - Price Loading
     
     private func loadETFPrice() {
+        print("🔄 loadETFPrice called for \(mapping.etfAlternative)")
         isLoadingPrice = true
         priceError = nil
         etfPrice = nil
@@ -256,14 +328,17 @@ struct TickerMappingSuggestionCard: View {
                     unitValue: 0
                 )
                 
+                print("📡 Fetching price for \(mapping.etfAlternative)...")
                 let price = try await AlternativePriceService.shared.fetchPrice(for: tempAsset, bypassCooldown: true)
                 
                 await MainActor.run {
+                    print("✅ Loaded ETF price: \(mapping.etfAlternative) = $\(price)")
                     etfPrice = price
                     isLoadingPrice = false
                 }
             } catch {
                 await MainActor.run {
+                    print("❌ Failed to load ETF price: \(error.localizedDescription)")
                     priceError = "Could not load \(mapping.etfAlternative) price"
                     isLoadingPrice = false
                 }
@@ -284,8 +359,8 @@ struct TickerMappingSuggestionCard: View {
             reason: "Nearly identical holdings and performance"
         ),
         assetClass: .stocks,
-        onUseAlternative: { quantity, price in
-            print("Use VTI: \(quantity) shares @ \(price)")
+        onUseAlternative: { displayName, lookupTicker, quantity, price in
+            print("Display: \(displayName), Lookup: \(lookupTicker), Shares: \(quantity) @ \(price)")
         },
         onDismiss: {
             print("Dismissed")
@@ -304,8 +379,8 @@ struct TickerMappingSuggestionCard: View {
             reason: "Direct Bitcoin exposure via regulated ETF"
         ),
         assetClass: .crypto,
-        onUseAlternative: { quantity, price in
-            print("Use IBIT: \(quantity) shares @ \(price)")
+        onUseAlternative: { displayName, lookupTicker, quantity, price in
+            print("Display: \(displayName), Lookup: \(lookupTicker), Shares: \(quantity) @ \(price)")
         },
         onDismiss: {
             print("Dismissed")
@@ -324,8 +399,8 @@ struct TickerMappingSuggestionCard: View {
             reason: "Tracks S&P 500"
         ),
         assetClass: .stocks,
-        onUseAlternative: { quantity, price in
-            print("Use VOO: \(quantity) shares @ \(price)")
+        onUseAlternative: { displayName, lookupTicker, quantity, price in
+            print("Display: \(displayName), Lookup: \(lookupTicker), Shares: \(quantity) @ \(price)")
         },
         onDismiss: {
             print("Dismissed")

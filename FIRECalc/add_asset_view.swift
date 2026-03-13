@@ -30,6 +30,7 @@ struct AddAssetView: View {
     @State private var lastLoadedTicker: String = ""
     @State private var tickerMappingSuggestion: TickerMapping?
     @State private var showMappingSuggestion = false
+    @State private var isApplyingMapping = false  // NEW: Flag to prevent onChange reset during mapping
     
     enum Field {
         case ticker, quantity, unitValue, bondYield
@@ -118,6 +119,9 @@ struct AddAssetView: View {
                                     .autocorrectionDisabled()
                                     .focused($focusedField, equals: .ticker)
                                     .onChange(of: ticker) { oldValue, newValue in
+                                        // Don't reset if we're applying a mapping conversion
+                                        guard !isApplyingMapping else { return }
+                                        
                                         if oldValue != newValue {
                                             // Reset price when ticker changes
                                             autoLoadedPrice = nil
@@ -168,17 +172,37 @@ struct AddAssetView: View {
                                         originalTicker: ticker.uppercased(),
                                         mapping: mapping,
                                         assetClass: selectedAssetClass,
-                                        onUseAlternative: { quantity, unitPrice in
+                                        onUseAlternative: { displayName, lookupTicker, quantity, unitPrice in
+                                            // Set flag to prevent onChange handler from resetting our values
+                                            isApplyingMapping = true
+                                            
                                             // Update fields with converted values
-                                            ticker = mapping.etfAlternative
+                                            // Use displayName for the asset name (could be FXAIX or VOO based on user choice)
+                                            // Use lookupTicker for the ticker field (always the ETF like VOO)
+                                            assetName = displayName
+                                            ticker = lookupTicker  // This triggers onChange, but flag prevents reset
                                             self.quantity = String(format: "%.4f", quantity)
                                             unitValue = String(format: "%.2f", unitPrice)
-                                            assetName = mapping.etfAlternative
                                             autoLoadedPrice = unitPrice
                                             
                                             // Clear suggestion state
                                             tickerMappingSuggestion = nil
                                             showMappingSuggestion = false
+                                            
+                                            // Clear the flag after a brief delay to allow state to settle
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                isApplyingMapping = false
+                                            }
+                                            
+                                            // DEBUG: Print values for troubleshooting
+                                            print("✅ Mapping accepted:")
+                                            print("   - Display name: \(displayName)")
+                                            print("   - Lookup ticker: \(lookupTicker)")
+                                            print("   - Quantity: \(self.quantity)")
+                                            print("   - Unit value: \(unitValue)")
+                                            print("   - Auto loaded price: \(String(describing: autoLoadedPrice))")
+                                            print("   - Total value: \(String(describing: totalValue))")
+                                            print("   - Is valid: \(isValid)")
                                         },
                                         onDismiss: {
                                             showMappingSuggestion = false
