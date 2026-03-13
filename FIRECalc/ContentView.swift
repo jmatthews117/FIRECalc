@@ -1193,7 +1193,12 @@ struct EditAssetView: View {
         NavigationView {
             Form {
                 Section("Asset Details") {
-                    TextField("Name", text: $name)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Name")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("Asset name", text: $name)
+                    }
                     
                     Picker("Asset Class", selection: $assetClass) {
                         ForEach(AssetClass.allCases) { ac in
@@ -1202,8 +1207,13 @@ struct EditAssetView: View {
                     }
                     
                     if assetClass.supportsTicker {
-                        TextField("Ticker (Optional)", text: $ticker)
-                            .textInputAutocapitalization(.characters)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Ticker (Optional)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            TextField("e.g., AAPL", text: $ticker)
+                                .textInputAutocapitalization(.characters)
+                        }
                     }
                 }
                 
