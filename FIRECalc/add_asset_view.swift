@@ -328,15 +328,6 @@ struct AddAssetView: View {
                     .disabled(!isValid)
                     .fontWeight(.semibold)
                 }
-                
-                ToolbarItem(placement: .keyboard) {
-                    HStack {
-                        Spacer()
-                        Button("Done") {
-                            focusedField = nil
-                        }
-                    }
-                }
             }
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -445,6 +436,34 @@ struct AddAssetView: View {
         autoLoadedPrice = nil
         
         Task {
+            // CHECK TICKER MAPPING FIRST before attempting any API call
+            let mappingResult = await TickerMappingService.shared.checkTicker(cleanTicker)
+            
+            // If it's unsupported, show the suggestion immediately without making API call
+            switch mappingResult {
+            case .unsupportedMutualFund(_, let mapping):
+                await MainActor.run {
+                    tickerMappingSuggestion = mapping
+                    showMappingSuggestion = true
+                    priceError = nil
+                    isLoadingPrice = false
+                }
+                return
+                
+            case .unsupportedCrypto(_, let mapping):
+                await MainActor.run {
+                    tickerMappingSuggestion = mapping
+                    showMappingSuggestion = true
+                    priceError = nil
+                    isLoadingPrice = false
+                }
+                return
+                
+            case .supported, .unknown:
+                // Ticker is supported, continue with price fetch
+                break
+            }
+            
             do {
                 let tempAsset = Asset(
                     name: cleanTicker,

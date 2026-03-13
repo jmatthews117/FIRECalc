@@ -189,7 +189,10 @@ struct TickerMappingSuggestionCard: View {
             
             // Action buttons
             HStack(spacing: 12) {
-                Button(action: onDismiss) {
+                Button(action: {
+                    isValueFieldFocused = false
+                    onDismiss()
+                }) {
                     Text("Cancel")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -198,6 +201,7 @@ struct TickerMappingSuggestionCard: View {
                 Spacer()
                 
                 Button(action: {
+                    isValueFieldFocused = false
                     if let shares = calculatedShares, let price = etfPrice {
                         onUseAlternative(shares, price)
                     }
@@ -225,6 +229,10 @@ struct TickerMappingSuggestionCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.orange.opacity(0.3), lineWidth: 1.5)
         )
+        .onTapGesture {
+            // Dismiss keyboard when tapping outside text field
+            isValueFieldFocused = false
+        }
         .onAppear {
             // Auto-load ETF price when card appears
             loadETFPrice()

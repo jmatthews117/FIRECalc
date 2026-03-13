@@ -67,8 +67,8 @@ actor TickerMappingService {
     // MARK: - Loading
     
     private func loadMappings() {
-        guard let url = Bundle.main.url(forResource: "TickerMappings", withExtension: "json") else {
-            print("⚠️ TickerMappings.json not found in bundle")
+        guard let url = Bundle.main.url(forResource: "TickerMappings (2)", withExtension: "json") else {
+            print("⚠️ TickerMappings (2).json not found in bundle")
             return
         }
         

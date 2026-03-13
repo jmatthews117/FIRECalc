@@ -1,0 +1,5094 @@
+{
+  "mutualFunds": {
+    "VTSAX": {
+      "name": "Vanguard Total Stock Market Index Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Nearly identical holdings and performance"
+    },
+    "VFIAX": {
+      "name": "Vanguard 500 Index Fund",
+      "etfAlternative": "VOO",
+      "etfName": "Vanguard S&P 500 ETF",
+      "reason": "Tracks the same S&P 500 index"
+    },
+    "VTIAX": {
+      "name": "Vanguard Total International Stock Index Fund",
+      "etfAlternative": "VXUS",
+      "etfName": "Vanguard Total International Stock ETF",
+      "reason": "Same international diversification"
+    },
+    "VBTLX": {
+      "name": "Vanguard Total Bond Market Index Fund",
+      "etfAlternative": "BND",
+      "etfName": "Vanguard Total Bond Market ETF",
+      "reason": "Identical bond market exposure"
+    },
+    "VGSLX": {
+      "name": "Vanguard Real Estate Index Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Same REIT exposure"
+    },
+    "VWINX": {
+      "name": "Vanguard Wellesley Income Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF (or 40/60 VIG+BND combo)",
+      "reason": "Conservative income-oriented 38/62 stock/bond allocation"
+    },
+    "VWELX": {
+      "name": "Vanguard Wellington Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF (or 60/40 VTI+BND combo)",
+      "reason": "Balanced 65/35 stock/bond allocation (actively managed)"
+    },
+    "VEXAX": {
+      "name": "Vanguard Extended Market Index Fund",
+      "etfAlternative": "VXF",
+      "etfName": "Vanguard Extended Market ETF",
+      "reason": "Same small and mid-cap coverage"
+    },
+    "VMFXX": {
+      "name": "Vanguard Federal Money Market Fund",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Similar ultra-short-term Treasury exposure"
+    },
+    "FXAIX": {
+      "name": "Fidelity 500 Index Fund",
+      "etfAlternative": "VOO",
+      "etfName": "Vanguard S&P 500 ETF (or SPY/IVV)",
+      "reason": "Tracks S&P 500"
+    },
+    "FSKAX": {
+      "name": "Fidelity Total Market Index Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF (or ITOT)",
+      "reason": "Total US stock market"
+    },
+    "FTIHX": {
+      "name": "Fidelity Total International Index Fund",
+      "etfAlternative": "VXUS",
+      "etfName": "Vanguard Total International Stock ETF (or IXUS)",
+      "reason": "International diversification"
+    },
+    "FXNAX": {
+      "name": "Fidelity US Bond Index Fund",
+      "etfAlternative": "BND",
+      "etfName": "Vanguard Total Bond Market ETF (or AGG)",
+      "reason": "Broad bond exposure"
+    },
+    "SWPPX": {
+      "name": "Schwab S&P 500 Index Fund",
+      "etfAlternative": "VOO",
+      "etfName": "Vanguard S&P 500 ETF (or IVV/SPLG)",
+      "reason": "Tracks the S&P 500 index"
+    },
+    "SWTSX": {
+      "name": "Schwab Total Stock Market Index Fund",
+      "etfAlternative": "SCHB",
+      "etfName": "Schwab U.S. Broad Market ETF (or VTI)",
+      "reason": "Total market coverage"
+    },
+    "SWISX": {
+      "name": "Schwab International Index Fund",
+      "etfAlternative": "SCHF",
+      "etfName": "Schwab International Equity ETF (or VXUS)",
+      "reason": "International diversification"
+    },
+    "SWAGX": {
+      "name": "Schwab U.S. Aggregate Bond Index Fund",
+      "etfAlternative": "SCHZ",
+      "etfName": "Schwab U.S. Aggregate Bond ETF (or BND)",
+      "reason": "Broad bond market"
+    },
+    "PRGFX": {
+      "name": "T. Rowe Price Growth Stock Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF (or VUG)",
+      "reason": "US large-cap growth stock exposure"
+    },
+    "PRWCX": {
+      "name": "T. Rowe Price Capital Appreciation Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF (flexible 60/40 blend)",
+      "reason": "Flexible balanced allocation, typically 60-70% equity"
+    },
+    "PRDGX": {
+      "name": "T. Rowe Price Dividend Growth Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend growth stock exposure"
+    },
+    "TRBCX": {
+      "name": "T. Rowe Price Blue Chip Growth Fund",
+      "etfAlternative": "MGK",
+      "etfName": "Vanguard Mega Cap Growth ETF (or QQQ)",
+      "reason": "Large-cap growth and blue-chip exposure"
+    },
+    "AGTHX": {
+      "name": "American Funds Growth Fund of America",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF (or VUG)",
+      "reason": "US large-cap growth exposure"
+    },
+    "AIVSX": {
+      "name": "American Funds Investment Company of America",
+      "etfAlternative": "SCHD",
+      "etfName": "Schwab U.S. Dividend Equity ETF",
+      "reason": "Blend of growth and income large-cap stocks"
+    },
+    "AMRMX": {
+      "name": "American Funds American Mutual Fund",
+      "etfAlternative": "DVY",
+      "etfName": "iShares Select Dividend ETF",
+      "reason": "Dividend-focused conservative equity"
+    },
+    "ABALX": {
+      "name": "American Funds American Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced stock and bond allocation"
+    },
+    "CWGIX": {
+      "name": "American Funds Capital World Growth and Income Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global equity with income focus"
+    },
+    "NEWFX": {
+      "name": "American Funds New World Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging markets equity exposure"
+    },
+    "ANWPX": {
+      "name": "American Funds New Perspective Fund",
+      "etfAlternative": "ACWI",
+      "etfName": "iShares MSCI ACWI ETF",
+      "reason": "Global growth equity exposure"
+    },
+    "DODGX": {
+      "name": "Dodge & Cox Stock Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF (or VTV)",
+      "reason": "US large-cap value stock exposure"
+    },
+    "DODFX": {
+      "name": "Dodge & Cox International Stock Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF (or VXUS)",
+      "reason": "International developed market value stocks"
+    },
+    "DODIX": {
+      "name": "Dodge & Cox Income Fund",
+      "etfAlternative": "BND",
+      "etfName": "Vanguard Total Bond Market ETF (or AGG)",
+      "reason": "Broad investment-grade bond exposure"
+    },
+    "DODBX": {
+      "name": "Dodge & Cox Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and fixed income"
+    },
+    "FCNTX": {
+      "name": "Fidelity Contrafund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF (or MGK)",
+      "reason": "Large-cap growth stock exposure"
+    },
+    "FBGRX": {
+      "name": "Fidelity Blue Chip Growth Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust (or VUG)",
+      "reason": "Large-cap growth and tech exposure"
+    },
+    "FLPSX": {
+      "name": "Fidelity Low-Priced Stock Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF (or VBR)",
+      "reason": "Small and mid-cap value exposure"
+    },
+    "FMAGX": {
+      "name": "Fidelity Magellan Fund",
+      "etfAlternative": "IVW",
+      "etfName": "iShares S&P 500 Growth ETF",
+      "reason": "Large-cap growth blend exposure"
+    },
+    "FBALX": {
+      "name": "Fidelity Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced stock and bond portfolio"
+    },
+    "FDIVX": {
+      "name": "Fidelity Diversified International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF (or VXUS)",
+      "reason": "International developed market exposure"
+    },
+    "FPURX": {
+      "name": "Fidelity Puritan Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF (or 60/40 VTI+BND blend)",
+      "reason": "Balanced 60/40 stock/bond allocation"
+    },
+    "FGRIX": {
+      "name": "Fidelity Growth & Income Portfolio",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF (or SCHD)",
+      "reason": "Large-cap blend with income focus"
+    },
+    "VWNDX": {
+      "name": "Vanguard Windsor Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF (or IWD)",
+      "reason": "Large-cap value stock exposure"
+    },
+    "VWNAX": {
+      "name": "Vanguard Windsor II Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value exposure"
+    },
+    "VPMAX": {
+      "name": "Vanguard Primecap Fund",
+      "etfAlternative": "VUG",
+      "etfName": "Vanguard Growth ETF (or IWF)",
+      "reason": "Large-cap growth exposure"
+    },
+    "VDIGX": {
+      "name": "Vanguard Dividend Growth Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend growth stock exposure"
+    },
+    "VGHCX": {
+      "name": "Vanguard Health Care Fund",
+      "etfAlternative": "VHT",
+      "etfName": "Vanguard Health Care ETF (or XLV)",
+      "reason": "Healthcare sector exposure"
+    },
+    "VWUSX": {
+      "name": "Vanguard U.S. Growth Fund",
+      "etfAlternative": "VUG",
+      "etfName": "Vanguard Growth ETF (or IWF)",
+      "reason": "Large-cap growth stock exposure"
+    },
+    "VSCGX": {
+      "name": "Vanguard LifeStrategy Conservative Growth Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative balanced allocation"
+    },
+    "VASGX": {
+      "name": "Vanguard LifeStrategy Growth Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Aggressive balanced allocation"
+    },
+    "VSMGX": {
+      "name": "Vanguard LifeStrategy Moderate Growth Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Moderate balanced allocation"
+    },
+    "VMVAX": {
+      "name": "Vanguard Mid-Cap Value Index Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value stock exposure"
+    },
+    "VIMAX": {
+      "name": "Vanguard Mid-Cap Index Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Mid-cap stock exposure"
+    },
+    "VSMAX": {
+      "name": "Vanguard Small-Cap Index Fund",
+      "etfAlternative": "VB",
+      "etfName": "Vanguard Small-Cap ETF (or IWM)",
+      "reason": "Small-cap stock exposure"
+    },
+    "VSIAX": {
+      "name": "Vanguard Small-Cap Value Index Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value stock exposure"
+    },
+    "VIGAX": {
+      "name": "Vanguard Growth Index Fund",
+      "etfAlternative": "VUG",
+      "etfName": "Vanguard Growth ETF",
+      "reason": "Large-cap growth exposure"
+    },
+    "VVIAX": {
+      "name": "Vanguard Value Index Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value exposure"
+    },
+    "VIPSX": {
+      "name": "Vanguard Inflation-Protected Securities Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF (or TIP for all-maturity TIPS)",
+      "reason": "Broad-maturity TIPS/inflation-protected securities"
+    },
+    "VFICX": {
+      "name": "Vanguard Intermediate-Term Bond Index Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term investment-grade bond exposure"
+    },
+    "VFSTX": {
+      "name": "Vanguard Short-Term Investment-Grade Fund",
+      "etfAlternative": "VCSH",
+      "etfName": "Vanguard Short-Term Corporate Bond ETF",
+      "reason": "Short-term investment-grade bond exposure"
+    },
+    "SWLGX": {
+      "name": "Schwab Large-Cap Growth Index Fund",
+      "etfAlternative": "SCHG",
+      "etfName": "Schwab U.S. Large-Cap Growth ETF",
+      "reason": "Large-cap growth stock exposure"
+    },
+    "SWVXX": {
+      "name": "Schwab Value Advantage Money Fund",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Cash-like stable investment"
+    },
+    "SCHBX": {
+      "name": "Schwab U.S. Small-Cap Index Fund",
+      "etfAlternative": "SCHA",
+      "etfName": "Schwab U.S. Small-Cap ETF (or VB)",
+      "reason": "Small-cap stock exposure"
+    },
+    "SFNNX": {
+      "name": "Schwab Fundamental U.S. Large Company Index Fund",
+      "etfAlternative": "FNDX",
+      "etfName": "Schwab Fundamental U.S. Large Company Index ETF",
+      "reason": "Fundamentally weighted large-cap exposure"
+    },
+    "JABAX": {
+      "name": "Janus Henderson Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and fixed income"
+    },
+    "JAGLX": {
+      "name": "Janus Henderson Global Life Sciences Fund",
+      "etfAlternative": "XBI",
+      "etfName": "SPDR S&P Biotech ETF (or VHT)",
+      "reason": "Life sciences and healthcare sector"
+    },
+    "BPTRX": {
+      "name": "Baron Partners Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small and mid-cap growth exposure"
+    },
+    "BGRFX": {
+      "name": "Baron Growth Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth stock exposure"
+    },
+    "CGMFX": {
+      "name": "CGM Focus Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Concentrated large-cap growth"
+    },
+    "LKCFX": {
+      "name": "Longleaf Partners Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Value-oriented large-cap exposure"
+    },
+    "FAIRX": {
+      "name": "Fairholme Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Concentrated value stock exposure"
+    },
+    "SEQUX": {
+      "name": "Sequoia Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Concentrated large-cap growth approach"
+    },
+    "OAKMX": {
+      "name": "Oakmark Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF (or VTV)",
+      "reason": "Large-cap value stock exposure"
+    },
+    "OAKIX": {
+      "name": "Oakmark International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International value stock exposure"
+    },
+    "FPACX": {
+      "name": "FPA Crescent Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Flexible balanced allocation"
+    },
+    "MFEKX": {
+      "name": "Matthews Asia Growth Fund",
+      "etfAlternative": "AAXJ",
+      "etfName": "iShares MSCI All Country Asia ex Japan ETF",
+      "reason": "Asia-Pacific equity exposure"
+    },
+    "MACSX": {
+      "name": "Matthews Asia Growth & Income Fund",
+      "etfAlternative": "AAXJ",
+      "etfName": "iShares MSCI All Country Asia ex Japan ETF",
+      "reason": "Asia-Pacific equity with income"
+    },
+    "PIMIX": {
+      "name": "PIMCO Income Fund",
+      "etfAlternative": "BOND",
+      "etfName": "PIMCO Active Bond ETF (or AGG)",
+      "reason": "Multi-sector income-focused bond exposure"
+    },
+    "PTTRX": {
+      "name": "PIMCO Total Return Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF (or BND)",
+      "reason": "Broad investment-grade bond exposure"
+    },
+    "PFORX": {
+      "name": "PIMCO Foreign Bond Fund",
+      "etfAlternative": "BNDX",
+      "etfName": "Vanguard Total International Bond ETF",
+      "reason": "International bond exposure"
+    },
+    "PONAX": {
+      "name": "PIMCO Income Fund Class A",
+      "etfAlternative": "BOND",
+      "etfName": "PIMCO Active Bond ETF",
+      "reason": "Multi-sector income bond exposure"
+    },
+    "MWTSX": {
+      "name": "Metropolitan West Total Return Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF (or BND)",
+      "reason": "Broad investment-grade bond exposure"
+    },
+    "LSBRX": {
+      "name": "Loomis Sayles Bond Fund",
+      "etfAlternative": "FBND",
+      "etfName": "Fidelity Total Bond ETF (or HYG)",
+      "reason": "Multi-sector bond with credit exposure"
+    },
+    "WBMIX": {
+      "name": "Western Asset Core Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Broad investment-grade bond exposure"
+    },
+    "RPIBX": {
+      "name": "T. Rowe Price International Bond Fund",
+      "etfAlternative": "BNDX",
+      "etfName": "Vanguard Total International Bond ETF",
+      "reason": "International bond exposure"
+    },
+    "RPSIX": {
+      "name": "T. Rowe Price Spectrum Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Multi-asset income allocation"
+    },
+    "TRRIX": {
+      "name": "T. Rowe Price Retirement Income 2020 Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Near-retirement conservative allocation fund"
+    },
+    "RERFX": {
+      "name": "American Funds EuroPacific Growth Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF (or VEA)",
+      "reason": "International developed market exposure"
+    },
+    "SMCWX": {
+      "name": "American Funds SmallCap World Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "Global small-cap equity exposure"
+    },
+    "CAIBX": {
+      "name": "American Funds Capital Income Builder",
+      "etfAlternative": "IDV",
+      "etfName": "iShares International Select Dividend ETF (or SDIV for global dividend)",
+      "reason": "Global income fund holding international dividend-paying equities and bonds"
+    },
+    "AMECX": {
+      "name": "American Funds Income Fund of America",
+      "etfAlternative": "DVY",
+      "etfName": "iShares Select Dividend ETF (or SCHD)",
+      "reason": "Dividend income-focused equity"
+    },
+    "FKINX": {
+      "name": "Franklin Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Multi-asset income allocation"
+    },
+    "TEPLX": {
+      "name": "Templeton Growth Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global equity growth exposure"
+    },
+    "TEMFX": {
+      "name": "Templeton Foreign Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market value"
+    },
+    "VTWAX": {
+      "name": "Vanguard Total World Stock Index Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global all-cap equity exposure"
+    },
+    "VTABX": {
+      "name": "Vanguard Total International Bond Index Fund",
+      "etfAlternative": "BNDX",
+      "etfName": "Vanguard Total International Bond ETF",
+      "reason": "International investment-grade bond exposure"
+    },
+    "VTMGX": {
+      "name": "Vanguard Developed Markets Index Fund",
+      "etfAlternative": "VEA",
+      "etfName": "Vanguard FTSE Developed Markets ETF",
+      "reason": "Developed market international equity"
+    },
+    "VEMAX": {
+      "name": "Vanguard Emerging Markets Stock Index Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging market equity exposure"
+    },
+    "VBIAX": {
+      "name": "Vanguard Balanced Index Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "60/40 balanced index portfolio"
+    },
+    "VBILX": {
+      "name": "Vanguard Intermediate-Term Bond Index Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term bond exposure"
+    },
+    "VBLAX": {
+      "name": "Vanguard Long-Term Bond Index Fund",
+      "etfAlternative": "BLV",
+      "etfName": "Vanguard Long-Term Bond ETF",
+      "reason": "Long-term investment-grade bond exposure"
+    },
+    "VBIRX": {
+      "name": "Vanguard Short-Term Bond Index Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-term investment-grade bond exposure"
+    },
+    "VSBSX": {
+      "name": "Vanguard Short-Term Treasury Index Fund",
+      "etfAlternative": "VGSH",
+      "etfName": "Vanguard Short-Term Treasury ETF",
+      "reason": "Short-term US Treasury exposure"
+    },
+    "VLGSX": {
+      "name": "Vanguard Long-Term Treasury Index Fund",
+      "etfAlternative": "VGLT",
+      "etfName": "Vanguard Long-Term Treasury ETF",
+      "reason": "Long-term US Treasury exposure"
+    },
+    "VSIGX": {
+      "name": "Vanguard Intermediate-Term Treasury Index Fund",
+      "etfAlternative": "VGIT",
+      "etfName": "Vanguard Intermediate-Term Treasury ETF",
+      "reason": "Intermediate-term US Treasury exposure"
+    },
+    "VCOBX": {
+      "name": "Vanguard Core Bond Fund",
+      "etfAlternative": "BND",
+      "etfName": "Vanguard Total Bond Market ETF",
+      "reason": "Broad investment-grade bond exposure"
+    },
+    "VSCSX": {
+      "name": "Vanguard Short-Term Corporate Bond Index Fund",
+      "etfAlternative": "VCSH",
+      "etfName": "Vanguard Short-Term Corporate Bond ETF",
+      "reason": "Short-term corporate bond exposure"
+    },
+    "VICSX": {
+      "name": "Vanguard Intermediate-Term Corporate Bond Index Fund",
+      "etfAlternative": "VCIT",
+      "etfName": "Vanguard Intermediate-Term Corporate Bond ETF",
+      "reason": "Intermediate-term corporate bond exposure"
+    },
+    "VLTCX": {
+      "name": "Vanguard Long-Term Corporate Bond Index Fund",
+      "etfAlternative": "VCLT",
+      "etfName": "Vanguard Long-Term Corporate Bond ETF",
+      "reason": "Long-term corporate bond exposure"
+    },
+    "VMATX": {
+      "name": "Vanguard Massachusetts Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "State municipal bond tax-exempt income"
+    },
+    "VWITX": {
+      "name": "Vanguard Intermediate-Term Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Intermediate-term municipal bond income"
+    },
+    "VWLTX": {
+      "name": "Vanguard Long-Term Tax-Exempt Fund",
+      "etfAlternative": "MLN",
+      "etfName": "VanEck Long Muni ETF",
+      "reason": "Long-term municipal bond income"
+    },
+    "VWSTX": {
+      "name": "Vanguard Short-Term Tax-Exempt Fund",
+      "etfAlternative": "SUB",
+      "etfName": "iShares Short-Term National Muni Bond ETF",
+      "reason": "Short-term municipal bond income"
+    },
+    "VMNVX": {
+      "name": "Vanguard Nevada Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Municipal bond income (state-specific)"
+    },
+    "VCAIX": {
+      "name": "Vanguard California Intermediate-Term Tax-Exempt Fund",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "California municipal bond income"
+    },
+    "VCITX": {
+      "name": "Vanguard California Long-Term Tax-Exempt Fund",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "Long-term California muni bond income"
+    },
+    "VNJTX": {
+      "name": "Vanguard New Jersey Long-Term Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "New Jersey municipal bond income"
+    },
+    "VPAIX": {
+      "name": "Vanguard Pennsylvania Long-Term Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Pennsylvania municipal bond income"
+    },
+    "VOHIX": {
+      "name": "Vanguard Ohio Long-Term Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Ohio municipal bond income"
+    },
+    "VWENX": {
+      "name": "Vanguard Wellington Fund Admiral Shares",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Classic 65/35 balanced active fund"
+    },
+    "VWILX": {
+      "name": "Vanguard International Growth Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "Active international growth equity"
+    },
+    "VMGRX": {
+      "name": "Vanguard Mid-Cap Growth Index Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth stock exposure"
+    },
+    "VSGAX": {
+      "name": "Vanguard Small-Cap Growth Index Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth stock exposure"
+    },
+    "VEIRX": {
+      "name": "Vanguard Equity Income Fund",
+      "etfAlternative": "VYM",
+      "etfName": "Vanguard High Dividend Yield ETF",
+      "reason": "High dividend yield equity income"
+    },
+    "VHGEX": {
+      "name": "Vanguard Global Equity Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Active global equity exposure"
+    },
+    "VSCPX": {
+      "name": "Vanguard Selected Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small and mid-cap value equity"
+    },
+    "VSEQX": {
+      "name": "Vanguard Strategic Equity Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Quantitative small and mid-cap equity"
+    },
+    "VSTCX": {
+      "name": "Vanguard Strategic Small-Cap Equity Fund",
+      "etfAlternative": "VB",
+      "etfName": "Vanguard Small-Cap ETF",
+      "reason": "Small-cap equity with factor tilt"
+    },
+    "VCORX": {
+      "name": "Vanguard Core-Plus Bond Fund",
+      "etfAlternative": "FBND",
+      "etfName": "Fidelity Total Bond ETF",
+      "reason": "Active core-plus bond strategy"
+    },
+    "VFSUX": {
+      "name": "Vanguard Short-Term Investment-Grade Fund Admiral",
+      "etfAlternative": "VCSH",
+      "etfName": "Vanguard Short-Term Corporate Bond ETF",
+      "reason": "Short-term investment-grade bond"
+    },
+    "VWEAX": {
+      "name": "Vanguard High-Yield Corporate Fund Admiral",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield corporate bond exposure"
+    },
+    "VMLTX": {
+      "name": "Vanguard Limited-Term Tax-Exempt Fund",
+      "etfAlternative": "SUB",
+      "etfName": "iShares Short-Term National Muni Bond ETF",
+      "reason": "Limited-term muni bond income"
+    },
+    "VFIDX": {
+      "name": "Vanguard Intermediate-Term Investment-Grade Fund Admiral",
+      "etfAlternative": "VCIT",
+      "etfName": "Vanguard Intermediate-Term Corporate Bond ETF",
+      "reason": "Intermediate-term investment-grade corporate bonds"
+    },
+    "VTINX": {
+      "name": "Vanguard Target Retirement Income Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative income-focused retirement allocation"
+    },
+    "VTWNX": {
+      "name": "Vanguard Target Retirement 2020 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Near-term retirement target-date allocation"
+    },
+    "VTTVX": {
+      "name": "Vanguard Target Retirement 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "VTHRX": {
+      "name": "Vanguard Target Retirement 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "VTTHX": {
+      "name": "Vanguard Target Retirement 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "VFORX": {
+      "name": "Vanguard Target Retirement 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "VTIVX": {
+      "name": "Vanguard Target Retirement 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "VFIFX": {
+      "name": "Vanguard Target Retirement 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "VFFVX": {
+      "name": "Vanguard Target Retirement 2055 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2055 target-date retirement allocation"
+    },
+    "VTTSX": {
+      "name": "Vanguard Target Retirement 2060 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2060 target-date retirement allocation"
+    },
+    "VLXVX": {
+      "name": "Vanguard Target Retirement 2065 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2065 target-date retirement allocation"
+    },
+    "VGENX": {
+      "name": "Vanguard Energy Fund",
+      "etfAlternative": "VDE",
+      "etfName": "Vanguard Energy ETF",
+      "reason": "Energy sector equity exposure"
+    },
+    "VGPMX": {
+      "name": "Vanguard Global Capital Cycles Fund",
+      "etfAlternative": "PICK",
+      "etfName": "iShares MSCI Global Metals & Mining Producers ETF (or XME/VDE)",
+      "reason": "Natural resources and capital cycles: mining, energy, materials"
+    },
+    "VQNPX": {
+      "name": "Vanguard Growth and Income Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Large-cap blend growth and income"
+    },
+    "VTRIX": {
+      "name": "Vanguard International Value Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market value equity"
+    },
+    "VFSVX": {
+      "name": "Vanguard FTSE All-World ex-US Small-Cap Index Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "International small-cap equity exposure"
+    },
+    "VPADX": {
+      "name": "Vanguard Pacific Stock Index Fund",
+      "etfAlternative": "VPL",
+      "etfName": "Vanguard FTSE Pacific ETF",
+      "reason": "Asia-Pacific equity exposure"
+    },
+    "VEURX": {
+      "name": "Vanguard European Stock Index Fund",
+      "etfAlternative": "VGK",
+      "etfName": "Vanguard FTSE Europe ETF",
+      "reason": "European equity exposure"
+    },
+    "VINEX": {
+      "name": "Vanguard International Explorer Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "International small-cap growth equity"
+    },
+    "FZROX": {
+      "name": "Fidelity ZERO Total Market Index Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Zero-expense-ratio total US market index"
+    },
+    "FNILX": {
+      "name": "Fidelity ZERO Large Cap Index Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "Zero-expense-ratio large-cap US index"
+    },
+    "FZIPX": {
+      "name": "Fidelity ZERO Extended Market Index Fund",
+      "etfAlternative": "VXF",
+      "etfName": "Vanguard Extended Market ETF",
+      "reason": "Zero-expense-ratio small/mid-cap index"
+    },
+    "FZILX": {
+      "name": "Fidelity ZERO International Index Fund",
+      "etfAlternative": "VXUS",
+      "etfName": "Vanguard Total International Stock ETF",
+      "reason": "Zero-expense-ratio international index"
+    },
+    "FSPSX": {
+      "name": "Fidelity International Index Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "Developed market international index"
+    },
+    "FSPGX": {
+      "name": "Fidelity Large Cap Growth Index Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth index exposure"
+    },
+    "FLCOX": {
+      "name": "Fidelity Large Cap Value Index Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Large-cap value index exposure"
+    },
+    "FSMDX": {
+      "name": "Fidelity Mid Cap Index Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Mid-cap US index exposure"
+    },
+    "FSSNX": {
+      "name": "Fidelity Small Cap Index Fund",
+      "etfAlternative": "VB",
+      "etfName": "Vanguard Small-Cap ETF",
+      "reason": "Small-cap US index exposure"
+    },
+    "FNCMX": {
+      "name": "Fidelity Nasdaq Composite Index Fund",
+      "etfAlternative": "ONEQ",
+      "etfName": "Fidelity Nasdaq Composite Index ETF (or QQQ)",
+      "reason": "Nasdaq composite index exposure"
+    },
+    "FDGRX": {
+      "name": "Fidelity Growth Company Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Aggressive large-cap growth equity"
+    },
+    "FOCPX": {
+      "name": "Fidelity OTC Portfolio",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Nasdaq/OTC growth stock exposure"
+    },
+    "FDSVX": {
+      "name": "Fidelity Growth Discovery Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth discovery approach"
+    },
+    "FTQGX": {
+      "name": "Fidelity Focused Stock Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Concentrated large-cap growth equity"
+    },
+    "FFIDX": {
+      "name": "Fidelity Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Broad US equity blend"
+    },
+    "FDCAX": {
+      "name": "Fidelity Capital Appreciation Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth and capital appreciation"
+    },
+    "FMILX": {
+      "name": "Fidelity New Millennium Fund",
+      "etfAlternative": "VUG",
+      "etfName": "Vanguard Growth ETF",
+      "reason": "Long-term growth-oriented equity"
+    },
+    "FTRNX": {
+      "name": "Franklin Real Estate Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "FDSSX": {
+      "name": "Fidelity Stock Selector All Cap Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "All-cap active stock selection"
+    },
+    "FDEGX": {
+      "name": "Fidelity Growth Strategies Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small and mid-cap growth equity"
+    },
+    "FSSMX": {
+      "name": "Fidelity Stock Selector Mid Cap Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Active mid-cap equity selection"
+    },
+    "FCPGX": {
+      "name": "Fidelity Small Cap Growth Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "FSLCX": {
+      "name": "Fidelity Small Cap Stock Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Active small-cap equity"
+    },
+    "FDSCX": {
+      "name": "Fidelity Small Cap Discovery Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value discovery"
+    },
+    "FSEVX": {
+      "name": "Fidelity Extended Market Index Fund",
+      "etfAlternative": "VXF",
+      "etfName": "Vanguard Extended Market ETF",
+      "reason": "Small and mid-cap US index"
+    },
+    "FIEUX": {
+      "name": "Fidelity Europe Fund",
+      "etfAlternative": "VGK",
+      "etfName": "Vanguard FTSE Europe ETF",
+      "reason": "European equity exposure"
+    },
+    "FPBFX": {
+      "name": "Fidelity Pacific Basin Fund",
+      "etfAlternative": "VPL",
+      "etfName": "Vanguard FTSE Pacific ETF",
+      "reason": "Asia-Pacific equity exposure"
+    },
+    "FLATX": {
+      "name": "Fidelity Latin America Fund",
+      "etfAlternative": "ILF",
+      "etfName": "iShares Latin America 40 ETF",
+      "reason": "Latin American equity exposure"
+    },
+    "FEMKX": {
+      "name": "Fidelity Emerging Markets Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging market equity exposure"
+    },
+    "FHKCX": {
+      "name": "Fidelity China Region Fund",
+      "etfAlternative": "MCHI",
+      "etfName": "iShares MSCI China ETF",
+      "reason": "China and greater China equity exposure"
+    },
+    "FJPNX": {
+      "name": "Fidelity Japan Fund",
+      "etfAlternative": "EWJ",
+      "etfName": "iShares MSCI Japan ETF",
+      "reason": "Japanese equity exposure"
+    },
+    "FNORX": {
+      "name": "Fidelity Nordic Fund",
+      "etfAlternative": "VGK",
+      "etfName": "Vanguard FTSE Europe ETF (no dedicated Nordic ETF with sufficient liquidity)",
+      "reason": "Nordic/Scandinavian equity (Sweden, Norway, Denmark, Finland); VGK is the most liquid European ETF alternative"
+    },
+    "FIVFX": {
+      "name": "Fidelity International Value Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International value equity"
+    },
+    "FISMX": {
+      "name": "Fidelity International Small Cap Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "International small-cap equity"
+    },
+    "FGILX": {
+      "name": "Fidelity Global ex US Index Fund",
+      "etfAlternative": "VXUS",
+      "etfName": "Vanguard Total International Stock ETF",
+      "reason": "Total ex-US international index"
+    },
+    "FWWFX": {
+      "name": "Fidelity Worldwide Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global equity exposure"
+    },
+    "FGBLX": {
+      "name": "Fidelity Global Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Globally balanced stock and bond portfolio"
+    },
+    "FFGAX": {
+      "name": "Fidelity Freedom 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "FFKAX": {
+      "name": "Fidelity Freedom 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "FFFEX": {
+      "name": "Fidelity Freedom 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "FFFFX": {
+      "name": "Fidelity Freedom 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "FFFHX": {
+      "name": "Fidelity Freedom 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "FFFPX": {
+      "name": "Fidelity Freedom 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "FDEWX": {
+      "name": "Fidelity Freedom 2055 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Active 2055 target-date retirement allocation"
+    },
+    "FDKLX": {
+      "name": "Fidelity Freedom 2060 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2060 target-date retirement allocation"
+    },
+    "FFIJX": {
+      "name": "Fidelity Freedom Income Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative income-focused retirement allocation"
+    },
+    "FIKFX": {
+      "name": "Fidelity Freedom Index 2020 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Index-based 2020 target-date allocation"
+    },
+    "FFIGX": {
+      "name": "Fidelity Freedom Index 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Index-based 2025 target-date allocation"
+    },
+    "FFIPX": {
+      "name": "Fidelity Freedom Index 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Index-based 2030 target-date allocation"
+    },
+    "FFTHX": {
+      "name": "Fidelity Freedom Index 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2035 target-date allocation"
+    },
+    "FFIZX": {
+      "name": "Fidelity Freedom Index 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2040 target-date allocation"
+    },
+    "FIHFX": {
+      "name": "Fidelity Freedom Index 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2045 target-date allocation"
+    },
+    "FIPFX": {
+      "name": "Fidelity Freedom Index 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2050 target-date allocation"
+    },
+    "FCTDX": {
+      "name": "Strategic Advisers Fidelity U.S. Total Stock Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Fund-of-funds total US equity exposure"
+    },
+    "FSAGX": {
+      "name": "Fidelity Select Gold Portfolio",
+      "etfAlternative": "GDX",
+      "etfName": "VanEck Gold Miners ETF",
+      "reason": "Gold and precious metals equity"
+    },
+    "FSELX": {
+      "name": "Fidelity Select Semiconductors Portfolio",
+      "etfAlternative": "SOXX",
+      "etfName": "iShares Semiconductor ETF",
+      "reason": "Semiconductor sector equity"
+    },
+    "FSPHX": {
+      "name": "Fidelity Select Health Care Portfolio",
+      "etfAlternative": "VHT",
+      "etfName": "Vanguard Health Care ETF",
+      "reason": "Broad healthcare sector equity"
+    },
+    "FSPTX": {
+      "name": "Fidelity Select Technology Portfolio",
+      "etfAlternative": "VGT",
+      "etfName": "Vanguard Information Technology ETF",
+      "reason": "Technology sector equity"
+    },
+    "FSCSX": {
+      "name": "Fidelity Select Software and IT Services Portfolio",
+      "etfAlternative": "IGV",
+      "etfName": "iShares Expanded Tech-Software ETF",
+      "reason": "Software and IT services equity"
+    },
+    "FIDSX": {
+      "name": "Fidelity Select Financial Services Portfolio",
+      "etfAlternative": "XLF",
+      "etfName": "Financial Select Sector SPDR ETF",
+      "reason": "Financial services sector equity"
+    },
+    "FSRPX": {
+      "name": "Fidelity Select Retailing Portfolio",
+      "etfAlternative": "XRT",
+      "etfName": "SPDR S&P Retail ETF",
+      "reason": "Consumer retail sector equity"
+    },
+    "FSNGX": {
+      "name": "Fidelity Select Natural Gas Portfolio",
+      "etfAlternative": "FCG",
+      "etfName": "First Trust Natural Gas ETF",
+      "reason": "Natural gas sector equity"
+    },
+    "FSENX": {
+      "name": "Fidelity Select Energy Portfolio",
+      "etfAlternative": "XLE",
+      "etfName": "Energy Select Sector SPDR ETF",
+      "reason": "Energy sector equity exposure"
+    },
+    "FBIOX": {
+      "name": "Fidelity Select Biotechnology Portfolio",
+      "etfAlternative": "XBI",
+      "etfName": "SPDR S&P Biotech ETF",
+      "reason": "Biotechnology sector equity"
+    },
+    "FSHCX": {
+      "name": "Fidelity Select Health Care Services Portfolio",
+      "etfAlternative": "IHF",
+      "etfName": "iShares U.S. Healthcare Providers ETF",
+      "reason": "Healthcare services sector equity"
+    },
+    "FSUTX": {
+      "name": "Fidelity Select Utilities Portfolio",
+      "etfAlternative": "XLU",
+      "etfName": "Utilities Select Sector SPDR ETF",
+      "reason": "Utilities sector equity"
+    },
+    "FSREX": {
+      "name": "Fidelity Select Real Estate Portfolio",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate sector equity"
+    },
+    "FIDPX": {
+      "name": "Fidelity Select Industrials Portfolio",
+      "etfAlternative": "XLI",
+      "etfName": "Industrials Select Sector SPDR ETF",
+      "reason": "Industrials sector equity"
+    },
+    "FWOMX": {
+      "name": "Fidelity Women's Leadership Fund",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG/values-based large-cap equity"
+    },
+    "FLVCX": {
+      "name": "Fidelity Leveraged Company Stock Fund",
+      "etfAlternative": "BKLN",
+      "etfName": "Invesco Senior Loan ETF",
+      "reason": "Leveraged/high-yield equity with loan exposure"
+    },
+    "FSPCX": {
+      "name": "Fidelity Select Insurance Portfolio",
+      "etfAlternative": "IAK",
+      "etfName": "iShares U.S. Insurance ETF",
+      "reason": "Insurance sector equity"
+    },
+    "FBMPX": {
+      "name": "Fidelity Select Medical Technology and Devices Portfolio",
+      "etfAlternative": "IHI",
+      "etfName": "iShares U.S. Medical Devices ETF",
+      "reason": "Medical technology sector equity"
+    },
+    "FCVSX": {
+      "name": "Fidelity Convertible Securities Fund",
+      "etfAlternative": "CWB",
+      "etfName": "SPDR Bloomberg Convertible Securities ETF",
+      "reason": "Convertible securities exposure"
+    },
+    "FFRHX": {
+      "name": "Fidelity Floating Rate High Income Fund",
+      "etfAlternative": "BKLN",
+      "etfName": "Invesco Senior Loan ETF",
+      "reason": "Floating rate senior loan income"
+    },
+    "FAGIX": {
+      "name": "Fidelity Capital & Income Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income with equity upside"
+    },
+    "SPAXX": {
+      "name": "Fidelity Government Money Market Fund",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Government money market cash alternative"
+    },
+    "FZCXX": {
+      "name": "Fidelity Government Cash Reserves",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Institutional government money market fund"
+    },
+    "FDRXX": {
+      "name": "Fidelity Government Money Market Fund (Premium)",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Government money market cash alternative"
+    },
+    "FIPIX": {
+      "name": "Fidelity Inflation-Protected Bond Index Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "TIPS inflation protection exposure"
+    },
+    "FUAMX": {
+      "name": "Fidelity Intermediate Treasury Bond Index Fund",
+      "etfAlternative": "VGIT",
+      "etfName": "Vanguard Intermediate-Term Treasury ETF",
+      "reason": "Intermediate-term Treasury bond exposure"
+    },
+    "FXSTX": {
+      "name": "Fidelity Short-Term Treasury Bond Index Fund",
+      "etfAlternative": "VGSH",
+      "etfName": "Vanguard Short-Term Treasury ETF",
+      "reason": "Short-term Treasury bond exposure"
+    },
+    "FLBAX": {
+      "name": "Fidelity Long-Term Treasury Bond Index Fund",
+      "etfAlternative": "VGLT",
+      "etfName": "Vanguard Long-Term Treasury ETF",
+      "reason": "Long-term Treasury bond exposure"
+    },
+    "FSITX": {
+      "name": "Fidelity Intermediate Bond Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term investment-grade bonds"
+    },
+    "FSHBX": {
+      "name": "Fidelity Short-Term Bond Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-term investment-grade bond exposure"
+    },
+    "FTBFX": {
+      "name": "Fidelity Total Bond Fund",
+      "etfAlternative": "BND",
+      "etfName": "Vanguard Total Bond Market ETF",
+      "reason": "Broad multi-sector bond exposure"
+    },
+    "FHIGX": {
+      "name": "Fidelity High Income Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "FIMIX": {
+      "name": "Fidelity Emerging Markets Debt Fund",
+      "etfAlternative": "EMB",
+      "etfName": "iShares JP Morgan USD Emerging Markets Bond ETF",
+      "reason": "Emerging market debt exposure"
+    },
+    "FNMIX": {
+      "name": "Fidelity New Markets Income Fund",
+      "etfAlternative": "EMB",
+      "etfName": "iShares JP Morgan USD Emerging Markets Bond ETF",
+      "reason": "Emerging market bond income"
+    },
+    "FHIFX": {
+      "name": "Fidelity High Yield Factor ETF (mf proxy)",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond factor exposure"
+    },
+    "FCONX": {
+      "name": "Fidelity Conservative Income Bond Fund",
+      "etfAlternative": "MINT",
+      "etfName": "PIMCO Enhanced Short Maturity Active ETF",
+      "reason": "Conservative ultra-short income"
+    },
+    "FSTGX": {
+      "name": "Fidelity Investment Grade Bond Fund",
+      "etfAlternative": "LQD",
+      "etfName": "iShares iBoxx Investment Grade Corporate Bond ETF",
+      "reason": "Investment-grade corporate bond exposure"
+    },
+    "FMSFX": {
+      "name": "Fidelity Mortgage Securities Fund",
+      "etfAlternative": "MBB",
+      "etfName": "iShares MBS ETF",
+      "reason": "Mortgage-backed securities exposure"
+    },
+    "FIDAX": {
+      "name": "Fidelity Advisor Diversified Stock Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Broadly diversified US equity"
+    },
+    "FITLX": {
+      "name": "Fidelity U.S. Sustainability Index Fund",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-screened US equity index"
+    },
+    "FIWIX": {
+      "name": "Fidelity International Sustainability Index Fund",
+      "etfAlternative": "ESGD",
+      "etfName": "iShares MSCI EAFE ESG Optimized ETF",
+      "reason": "ESG-screened international equity index"
+    },
+    "FSLEX": {
+      "name": "Fidelity Sustainability Bond Index Fund",
+      "etfAlternative": "BGRN",
+      "etfName": "iShares USD Green Bond ETF",
+      "reason": "ESG/green bond exposure"
+    },
+    "FIREX": {
+      "name": "Fidelity Real Estate Index Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Broad US REIT index exposure"
+    },
+    "FRIAX": {
+      "name": "Fidelity Real Estate Income Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "REIT income exposure"
+    },
+    "ANCFX": {
+      "name": "American Funds Fundamental Investors",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap blend value-oriented equity"
+    },
+    "AWSHX": {
+      "name": "American Funds Washington Mutual Investors Fund",
+      "etfAlternative": "SCHD",
+      "etfName": "Schwab U.S. Dividend Equity ETF",
+      "reason": "Conservative large-cap dividend equity"
+    },
+    "AEPGX": {
+      "name": "American Funds EUPAC Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "European and Pacific equity growth"
+    },
+    "ANEFX": {
+      "name": "American Funds New Economy Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Growth-oriented economy equity"
+    },
+    "AMCPX": {
+      "name": "American Funds AMCAP Fund",
+      "etfAlternative": "VUG",
+      "etfName": "Vanguard Growth ETF",
+      "reason": "Large and mid-cap growth equity"
+    },
+    "IGAAX": {
+      "name": "American Funds International Growth and Income Fund",
+      "etfAlternative": "VXUS",
+      "etfName": "Vanguard Total International Stock ETF",
+      "reason": "International equity with income focus"
+    },
+    "GBLAX": {
+      "name": "American Funds Global Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Globally balanced stock and bond portfolio"
+    },
+    "AFCPX": {
+      "name": "American Funds Core Plus Bond Fund",
+      "etfAlternative": "FBND",
+      "etfName": "Fidelity Total Bond ETF",
+      "reason": "Core-plus multi-sector bond strategy"
+    },
+    "BFCAX": {
+      "name": "American Funds Corporate Bond Fund",
+      "etfAlternative": "LQD",
+      "etfName": "iShares iBoxx Investment Grade Corporate Bond ETF",
+      "reason": "Investment-grade corporate bond exposure"
+    },
+    "EBNAX": {
+      "name": "American Funds Emerging Markets Bond Fund",
+      "etfAlternative": "EMB",
+      "etfName": "iShares JP Morgan USD Emerging Markets Bond ETF",
+      "reason": "Emerging market bond exposure"
+    },
+    "BFIAX": {
+      "name": "American Funds Inflation Linked Bond Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "TIPS inflation protection"
+    },
+    "MFAAX": {
+      "name": "American Funds Mortgage Fund",
+      "etfAlternative": "MBB",
+      "etfName": "iShares MBS ETF",
+      "reason": "Mortgage-backed securities exposure"
+    },
+    "DWGAX": {
+      "name": "American Funds Developing World Growth and Income Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging/developing world equity income"
+    },
+    "AANPX": {
+      "name": "American Funds 2025 Target Date Retirement Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "AANQX": {
+      "name": "American Funds 2030 Target Date Retirement Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "AAORX": {
+      "name": "American Funds 2035 Target Date Retirement Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "AAOSX": {
+      "name": "American Funds 2040 Target Date Retirement Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "AAOTX": {
+      "name": "American Funds 2045 Target Date Retirement Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "AAOUX": {
+      "name": "American Funds 2050 Target Date Retirement Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "AAOVX": {
+      "name": "American Funds 2055 Target Date Retirement Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2055 target-date retirement allocation"
+    },
+    "AAOWX": {
+      "name": "American Funds 2060 Target Date Retirement Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2060 target-date retirement allocation"
+    },
+    "TRLGX": {
+      "name": "T. Rowe Price Large-Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "PRSVX": {
+      "name": "T. Rowe Price Small-Cap Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "OTCFX": {
+      "name": "T. Rowe Price OTC Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Nasdaq/OTC growth equity"
+    },
+    "PRNHX": {
+      "name": "T. Rowe Price New Horizons Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Emerging small-cap growth equity"
+    },
+    "PRMTX": {
+      "name": "T. Rowe Price Mid-Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "RPMGX": {
+      "name": "T. Rowe Price Mid-Cap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "PRSIX": {
+      "name": "T. Rowe Price Personal Strategy Income Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative multi-asset income allocation"
+    },
+    "TRPBX": {
+      "name": "T. Rowe Price Personal Strategy Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced multi-asset allocation"
+    },
+    "PRSGX": {
+      "name": "T. Rowe Price Personal Strategy Growth Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Growth multi-asset allocation"
+    },
+    "TRHYX": {
+      "name": "T. Rowe Price High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "PRTIX": {
+      "name": "T. Rowe Price GNMA Fund",
+      "etfAlternative": "GNMA",
+      "etfName": "iShares GNMA Bond ETF",
+      "reason": "GNMA mortgage-backed securities"
+    },
+    "TRFIX": {
+      "name": "T. Rowe Price U.S. Treasury Intermediate Fund",
+      "etfAlternative": "VGIT",
+      "etfName": "Vanguard Intermediate-Term Treasury ETF",
+      "reason": "Intermediate-term US Treasury exposure"
+    },
+    "PREMX": {
+      "name": "T. Rowe Price Emerging Markets Bond Fund",
+      "etfAlternative": "EMB",
+      "etfName": "iShares JP Morgan USD Emerging Markets Bond ETF",
+      "reason": "Emerging market bond exposure"
+    },
+    "PGOVX": {
+      "name": "T. Rowe Price U.S. Treasury Long-Term Fund",
+      "etfAlternative": "VGLT",
+      "etfName": "Vanguard Long-Term Treasury ETF",
+      "reason": "Long-term US Treasury bond exposure"
+    },
+    "PTEAX": {
+      "name": "T. Rowe Price Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Investment-grade municipal bond income"
+    },
+    "PREQX": {
+      "name": "T. Rowe Price Equity Index 500 Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "S&P 500 index exposure"
+    },
+    "TRXFX": {
+      "name": "T. Rowe Price Total Equity Market Index Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Total US stock market index"
+    },
+    "PRIDX": {
+      "name": "T. Rowe Price International Discovery Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "International small and mid-cap equity"
+    },
+    "TRIGX": {
+      "name": "T. Rowe Price International Growth & Income Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International equity with income"
+    },
+    "PRMSX": {
+      "name": "T. Rowe Price Emerging Markets Stock Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging market equity exposure"
+    },
+    "TRIEX": {
+      "name": "T. Rowe Price International Equity Index Fund",
+      "etfAlternative": "VXUS",
+      "etfName": "Vanguard Total International Stock ETF",
+      "reason": "Broad international equity index"
+    },
+    "TREMX": {
+      "name": "T. Rowe Price Emerging Markets Index Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging market index exposure"
+    },
+    "TRATX": {
+      "name": "T. Rowe Price Tax-Efficient Equity Fund",
+      "etfAlternative": "ITOT",
+      "etfName": "iShares Core S&P Total US Stock Market ETF",
+      "reason": "Tax-efficient broad US equity"
+    },
+    "TRREX": {
+      "name": "T. Rowe Price Real Estate Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "REIT and real estate equity"
+    },
+    "PRSCX": {
+      "name": "T. Rowe Price Small-Cap Stock Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Active small-cap equity"
+    },
+    "TRAIX": {
+      "name": "T. Rowe Price Health Sciences Fund",
+      "etfAlternative": "VHT",
+      "etfName": "Vanguard Health Care ETF",
+      "reason": "Healthcare sector equity"
+    },
+    "PRGTX": {
+      "name": "T. Rowe Price Global Technology Fund",
+      "etfAlternative": "IXN",
+      "etfName": "iShares Global Tech ETF",
+      "reason": "Global technology sector equity"
+    },
+    "PRHSX": {
+      "name": "T. Rowe Price Health Sciences Fund",
+      "etfAlternative": "XBI",
+      "etfName": "SPDR S&P Biotech ETF (or VHT)",
+      "reason": "Health sciences and biotech equity"
+    },
+    "PRSAX": {
+      "name": "Putnam Research Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Research-driven broad US equity"
+    },
+    "TRGFX": {
+      "name": "T. Rowe Price Growth & Income Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend growth and income equity"
+    },
+    "PAFVX": {
+      "name": "T. Rowe Price Africa & Middle East Fund",
+      "etfAlternative": "AFK",
+      "etfName": "VanEck Africa Index ETF",
+      "reason": "Africa and Middle East equity"
+    },
+    "TRPDX": {
+      "name": "T. Rowe Price Retirement 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "TRPCX": {
+      "name": "T. Rowe Price Retirement 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "TRPEX": {
+      "name": "T. Rowe Price Retirement 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "TRPFX": {
+      "name": "T. Rowe Price Retirement 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "TRPGX": {
+      "name": "T. Rowe Price Retirement 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "TRPHX": {
+      "name": "T. Rowe Price Retirement 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "TRPJX": {
+      "name": "T. Rowe Price Retirement 2055 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2055 target-date retirement allocation"
+    },
+    "TRPLX": {
+      "name": "T. Rowe Price Retirement 2060 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2060 target-date retirement allocation"
+    },
+    "SWSSX": {
+      "name": "Schwab Small-Cap Index Fund",
+      "etfAlternative": "SCHA",
+      "etfName": "Schwab U.S. Small-Cap ETF",
+      "reason": "Small-cap US index exposure"
+    },
+    "SWMCX": {
+      "name": "Schwab U.S. Mid-Cap Index Fund",
+      "etfAlternative": "SCHM",
+      "etfName": "Schwab U.S. Mid-Cap ETF",
+      "reason": "Mid-cap US index exposure"
+    },
+    "SWHGX": {
+      "name": "Schwab Health Care Fund",
+      "etfAlternative": "VHT",
+      "etfName": "Vanguard Health Care ETF",
+      "reason": "Healthcare sector equity"
+    },
+    "SWTIX": {
+      "name": "Schwab Tax-Free Bond Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Municipal bond income"
+    },
+    "SWJRX": {
+      "name": "Schwab Target 2025 Index Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Index-based 2025 target-date allocation"
+    },
+    "SWKRX": {
+      "name": "Schwab Target 2030 Index Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Index-based 2030 target-date allocation"
+    },
+    "SWLRX": {
+      "name": "Schwab Target 2035 Index Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2035 target-date allocation"
+    },
+    "SWMRX": {
+      "name": "Schwab Target 2040 Index Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2040 target-date allocation"
+    },
+    "SWNRX": {
+      "name": "Schwab Target 2045 Index Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2045 target-date allocation"
+    },
+    "SWPRX": {
+      "name": "Schwab Target 2050 Index Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2050 target-date allocation"
+    },
+    "SWQRX": {
+      "name": "Schwab Target 2055 Index Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2055 target-date allocation"
+    },
+    "SWTGX": {
+      "name": "Schwab Target 2060 Index Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2060 target-date allocation"
+    },
+    "SWIRX": {
+      "name": "Schwab Target 2020 Index Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Index-based 2020 target-date allocation"
+    },
+    "SWHRX": {
+      "name": "Schwab Target 2015 Index Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Index-based 2015 target-date allocation"
+    },
+    "SWRSX": {
+      "name": "Schwab Monthly Income Fund - Maximum Payout",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF (or SCHD+BND combo)",
+      "reason": "Multi-asset income fund with stocks and bonds for maximum monthly distribution"
+    },
+    "SWJSX": {
+      "name": "Schwab Monthly Income Fund - Moderate Payout",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Moderate income multi-asset allocation"
+    },
+    "SWKSX": {
+      "name": "Schwab Monthly Income Fund - Enhanced Payout",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Enhanced income multi-asset allocation"
+    },
+    "SFENX": {
+      "name": "Schwab Fundamental Emerging Markets Large Company Index Fund",
+      "etfAlternative": "FNDE",
+      "etfName": "Schwab Fundamental Emerging Markets Large Company Index ETF",
+      "reason": "Fundamentally weighted EM equity"
+    },
+    "SFILX": {
+      "name": "Schwab Fundamental International Large Company Index Fund",
+      "etfAlternative": "FNDF",
+      "etfName": "Schwab Fundamental International Large Company Index ETF",
+      "reason": "Fundamentally weighted international equity"
+    },
+    "MAFOX": {
+      "name": "BlackRock Advantage Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Quantitative large-cap growth equity"
+    },
+    "MDLOX": {
+      "name": "BlackRock Advantage Large Cap Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Quantitative large-cap value equity"
+    },
+    "MDLBX": {
+      "name": "BlackRock Mid-Cap Growth Equity Portfolio",
+      "etfAlternative": "IWP",
+      "etfName": "iShares Russell Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "BMCIX": {
+      "name": "BlackRock Mid Cap Value Opportunities Fund",
+      "etfAlternative": "IWS",
+      "etfName": "iShares Russell Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "BMEAX": {
+      "name": "BlackRock Emerging Markets Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity exposure"
+    },
+    "BREAX": {
+      "name": "BlackRock Real Estate Securities Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "BFMCX": {
+      "name": "BlackRock Balanced Capital Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and bond allocation"
+    },
+    "MAHQX": {
+      "name": "BlackRock High Yield Bond Portfolio",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "BSIIX": {
+      "name": "BlackRock Strategic Income Opportunities Fund",
+      "etfAlternative": "BOND",
+      "etfName": "PIMCO Active Bond ETF",
+      "reason": "Multi-sector flexible bond strategy"
+    },
+    "BLADX": {
+      "name": "BlackRock Allocation Target Shares: BATS 30/70",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative 30/70 allocation"
+    },
+    "BMBAX": {
+      "name": "BlackRock Total Return Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Broad investment-grade bond exposure"
+    },
+    "BGPBX": {
+      "name": "BlackRock Global Allocation Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Flexible global multi-asset allocation"
+    },
+    "MKLOX": {
+      "name": "BlackRock Health Sciences Opportunities Portfolio",
+      "etfAlternative": "VHT",
+      "etfName": "Vanguard Health Care ETF",
+      "reason": "Healthcare sector equity"
+    },
+    "BGSAX": {
+      "name": "BlackRock Technology Opportunities Fund",
+      "etfAlternative": "VGT",
+      "etfName": "Vanguard Information Technology ETF",
+      "reason": "Technology sector equity"
+    },
+    "BSTCX": {
+      "name": "BlackRock Sustainable Advantage Large Cap Core Fund",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-integrated large-cap equity"
+    },
+    "BPRIX": {
+      "name": "BlackRock Inflation Protected Bond Portfolio",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "TIPS inflation protection"
+    },
+    "MAHFX": {
+      "name": "BlackRock International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "OIEIX": {
+      "name": "JPMorgan Equity Income Fund",
+      "etfAlternative": "VYM",
+      "etfName": "Vanguard High Dividend Yield ETF",
+      "reason": "Dividend equity income"
+    },
+    "JLGMX": {
+      "name": "JPMorgan Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "HLQAX": {
+      "name": "JPMorgan Hedged Equity Fund",
+      "etfAlternative": "JHQD",
+      "etfName": "John Hancock Hedged Equity & Income ETF",
+      "reason": "Hedged equity with downside protection"
+    },
+    "JSVAX": {
+      "name": "JPMorgan Small Cap Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "JMGAX": {
+      "name": "JPMorgan Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "JMCVX": {
+      "name": "JPMorgan Mid Cap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "JNEUX": {
+      "name": "JPMorgan Emerging Markets Equity Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging market equity exposure"
+    },
+    "JSOAX": {
+      "name": "JPMorgan International Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "JIGAX": {
+      "name": "JPMorgan International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International growth equity"
+    },
+    "OGLAX": {
+      "name": "JPMorgan Core Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "JMSIX": {
+      "name": "JPMorgan Short Duration Bond Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-duration investment-grade bonds"
+    },
+    "OHYFX": {
+      "name": "JPMorgan High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "JTAAX": {
+      "name": "JPMorgan Tax Aware Equity Fund",
+      "etfAlternative": "ITOT",
+      "etfName": "iShares Core S&P Total US Stock Market ETF",
+      "reason": "Tax-efficient broad US equity"
+    },
+    "JGVAX": {
+      "name": "JPMorgan Government Bond Fund",
+      "etfAlternative": "VGIT",
+      "etfName": "Vanguard Intermediate-Term Treasury ETF",
+      "reason": "US government bond exposure"
+    },
+    "JHEAX": {
+      "name": "JPMorgan Healthcare Fund",
+      "etfAlternative": "VHT",
+      "etfName": "Vanguard Health Care ETF",
+      "reason": "Healthcare sector equity"
+    },
+    "JTSAX": {
+      "name": "JPMorgan SmartRetirement 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "JTBAX": {
+      "name": "JPMorgan SmartRetirement 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "JTCAX": {
+      "name": "JPMorgan SmartRetirement 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "JTDAX": {
+      "name": "JPMorgan SmartRetirement 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "JTEAX": {
+      "name": "JPMorgan SmartRetirement 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "JTFAX": {
+      "name": "JPMorgan SmartRetirement 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "JTGAX": {
+      "name": "JPMorgan SmartRetirement 2055 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2055 target-date retirement allocation"
+    },
+    "JTRAX": {
+      "name": "JPMorgan SmartRetirement Income Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative income retirement allocation"
+    },
+    "PTTDX": {
+      "name": "PIMCO Total Return Fund III",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "PFIAX": {
+      "name": "PIMCO Foreign Bond Fund (USD-Hedged)",
+      "etfAlternative": "BNDX",
+      "etfName": "Vanguard Total International Bond ETF",
+      "reason": "Currency-hedged international bonds"
+    },
+    "PFODX": {
+      "name": "PIMCO Foreign Bond Fund (Unhedged)",
+      "etfAlternative": "BWX",
+      "etfName": "SPDR Bloomberg International Treasury Bond ETF",
+      "reason": "Unhedged international government bonds"
+    },
+    "PLDAX": {
+      "name": "Principal LargeCap S&P 500 Index Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "S&P 500 index exposure"
+    },
+    "PEALX": {
+      "name": "PIMCO Real Return Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "Inflation-protected TIPS exposure"
+    },
+    "PRCIX": {
+      "name": "PIMCO Real Return Asset Fund",
+      "etfAlternative": "PDBC",
+      "etfName": "Invesco Optimum Yield Diversified Commodity Strategy ETF",
+      "reason": "Real asset inflation protection"
+    },
+    "PFANX": {
+      "name": "PIMCO GNMA and Government Securities Fund",
+      "etfAlternative": "GNMA",
+      "etfName": "iShares GNMA Bond ETF",
+      "reason": "Government mortgage-backed securities"
+    },
+    "PSHAX": {
+      "name": "PIMCO Short-Term Fund",
+      "etfAlternative": "MINT",
+      "etfName": "PIMCO Enhanced Short Maturity Active ETF",
+      "reason": "Ultra-short-term income"
+    },
+    "PLMAX": {
+      "name": "PIMCO Low Duration Fund",
+      "etfAlternative": "VCSH",
+      "etfName": "Vanguard Short-Term Corporate Bond ETF",
+      "reason": "Low-duration investment-grade bonds"
+    },
+    "PASDX": {
+      "name": "PIMCO Diversified Income Fund",
+      "etfAlternative": "BOND",
+      "etfName": "PIMCO Active Bond ETF",
+      "reason": "Multi-sector income bond strategy"
+    },
+    "PCMAX": {
+      "name": "PIMCO CommodityRealReturn Strategy Fund",
+      "etfAlternative": "PDBC",
+      "etfName": "Invesco Optimum Yield Diversified Commodity Strategy ETF",
+      "reason": "Commodity exposure with inflation protection"
+    },
+    "PMZDX": {
+      "name": "PIMCO Mortgage Opportunities and Bond Fund",
+      "etfAlternative": "MBB",
+      "etfName": "iShares MBS ETF",
+      "reason": "Mortgage and securitized bond exposure"
+    },
+    "PIGAX": {
+      "name": "PIMCO Investment Grade Corporate Bond Fund",
+      "etfAlternative": "LQD",
+      "etfName": "iShares iBoxx Investment Grade Corporate Bond ETF",
+      "reason": "Investment-grade corporate bonds"
+    },
+    "PHIYX": {
+      "name": "PIMCO High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "PDMIX": {
+      "name": "PIMCO Emerging Markets Bond Fund",
+      "etfAlternative": "EMB",
+      "etfName": "iShares JP Morgan USD Emerging Markets Bond ETF",
+      "reason": "Emerging market bond exposure"
+    },
+    "PMHAX": {
+      "name": "PIMCO Municipal Bond Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Investment-grade municipal bond income"
+    },
+    "PSTAX": {
+      "name": "PIMCO StocksPLUS Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "Enhanced S&P 500 index exposure"
+    },
+    "PAUDX": {
+      "name": "PIMCO All Asset Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Multi-asset diversified allocation"
+    },
+    "PAAIX": {
+      "name": "PIMCO All Asset All Authority Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF (multi-asset: real assets, commodities, bonds)",
+      "reason": "Flexible multi-asset fund spanning real assets, commodities, and global bonds"
+    },
+    "PIMOX": {
+      "name": "PIMCO Income Opportunity Fund",
+      "etfAlternative": "BOND",
+      "etfName": "PIMCO Active Bond ETF",
+      "reason": "Flexible multi-sector income bond strategy"
+    },
+    "MFEGX": {
+      "name": "MFS Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "MEIAX": {
+      "name": "MFS International Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "MFDEX": {
+      "name": "MFS Diversified Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Multi-asset income allocation"
+    },
+    "MFCTX": {
+      "name": "MFS Conservative Allocation Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative multi-asset allocation"
+    },
+    "MBALX": {
+      "name": "MFS Moderate Allocation Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Moderate multi-asset allocation"
+    },
+    "MAGAX": {
+      "name": "MFS Aggressive Growth Allocation Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Aggressive multi-asset allocation"
+    },
+    "MFASX": {
+      "name": "MFS Value Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "MFSCX": {
+      "name": "MFS Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "MMCFX": {
+      "name": "MFS Mid Cap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "MSVAX": {
+      "name": "MFS New Discovery Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth discovery equity"
+    },
+    "MSVIX": {
+      "name": "MFS Small Cap Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "MGOAX": {
+      "name": "MFS Global Equity Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global equity exposure"
+    },
+    "MFBFX": {
+      "name": "MFS Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core bond exposure"
+    },
+    "MFHTX": {
+      "name": "MFS High Income Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "MFIOX": {
+      "name": "MFS Inflation-Adjusted Bond Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "Inflation-protected bond exposure"
+    },
+    "MFMCX": {
+      "name": "MFS Municipal Income Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Municipal bond income"
+    },
+    "MTBAX": {
+      "name": "MFS Global Bond Fund",
+      "etfAlternative": "BWX",
+      "etfName": "SPDR Bloomberg International Treasury Bond ETF",
+      "reason": "Global government bond exposure"
+    },
+    "MFXAX": {
+      "name": "MFS Total Return Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced total return allocation"
+    },
+    "MHHAX": {
+      "name": "MFS Technology Fund",
+      "etfAlternative": "VGT",
+      "etfName": "Vanguard Information Technology ETF",
+      "reason": "Technology sector equity"
+    },
+    "MFSVX": {
+      "name": "MFS Emerging Markets Equity Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity"
+    },
+    "MIFAX": {
+      "name": "MFS International Intrinsic Value Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International value equity"
+    },
+    "MFSIX": {
+      "name": "MFS International New Discovery Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "International small-cap growth equity"
+    },
+    "MFNLX": {
+      "name": "MFS Limited Maturity Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-term limited maturity bonds"
+    },
+    "MFGAX": {
+      "name": "MFS Blended Research Core Equity Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "Research-driven core large-cap equity"
+    },
+    "CTNAX": {
+      "name": "Columbia Acorn Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small and mid-cap growth equity"
+    },
+    "LACAX": {
+      "name": "Columbia Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "NLSAX": {
+      "name": "Columbia Dividend Income Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend income equity"
+    },
+    "CMDAX": {
+      "name": "Columbia Mid Cap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "CMGAX": {
+      "name": "Columbia Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "CSMGX": {
+      "name": "Columbia Small Cap Growth Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "CSMAX": {
+      "name": "Columbia Small Cap Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "CBRAX": {
+      "name": "Columbia Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core bond exposure"
+    },
+    "CBSAX": {
+      "name": "Columbia Short Term Bond Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-term bond exposure"
+    },
+    "CHYAX": {
+      "name": "Calvert High Yield Bond Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "ESG-aware high-yield bond income"
+    },
+    "CMUAX": {
+      "name": "Columbia Tax-Exempt Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Investment-grade municipal bond income"
+    },
+    "CGIAX": {
+      "name": "Columbia Global Technology Growth Fund",
+      "etfAlternative": "IXN",
+      "etfName": "iShares Global Tech ETF",
+      "reason": "Global technology equity"
+    },
+    "CEMBX": {
+      "name": "Columbia Emerging Markets Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity"
+    },
+    "CIMAX": {
+      "name": "Columbia International Dividend Income Fund",
+      "etfAlternative": "IDV",
+      "etfName": "iShares International Select Dividend ETF",
+      "reason": "International dividend income equity"
+    },
+    "COIAX": {
+      "name": "Columbia Overseas Value Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International value equity"
+    },
+    "CSRAX": {
+      "name": "Columbia Real Estate Equity Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "CMZAX": {
+      "name": "Columbia Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and bond allocation"
+    },
+    "ACMVX": {
+      "name": "American Century Mid Cap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "ATIAX": {
+      "name": "Invesco International Core Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "GTSAX": {
+      "name": "Invesco EQV European Equity Fund",
+      "etfAlternative": "VGK",
+      "etfName": "Vanguard FTSE Europe ETF",
+      "reason": "European equity exposure"
+    },
+    "IEGAX": {
+      "name": "Invesco Developing Markets Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Developing/emerging market equity"
+    },
+    "ADEGX": {
+      "name": "Invesco Diversified Dividend Fund",
+      "etfAlternative": "SCHD",
+      "etfName": "Schwab U.S. Dividend Equity ETF",
+      "reason": "Diversified dividend equity income"
+    },
+    "VAFAX": {
+      "name": "Invesco Value Opportunities Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Large and mid-cap value equity"
+    },
+    "GIFAX": {
+      "name": "Invesco Growth and Income Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Growth and income blend equity"
+    },
+    "MSRAX": {
+      "name": "Invesco Small Cap Value Fund",
+      "etfAlternative": "IWN",
+      "etfName": "iShares Russell 2000 Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "VSMIX": {
+      "name": "Invesco Small Cap Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "AMCAX": {
+      "name": "Invesco Discovery Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "OIBAX": {
+      "name": "Invesco Corporate Bond Fund",
+      "etfAlternative": "LQD",
+      "etfName": "iShares iBoxx Investment Grade Corporate Bond ETF",
+      "reason": "Investment-grade corporate bond exposure"
+    },
+    "SMBAX": {
+      "name": "Invesco Short Duration High Yield Municipal Fund",
+      "etfAlternative": "HYD",
+      "etfName": "VanEck High-Yield Muni ETF",
+      "reason": "Short-term high-yield municipal bonds"
+    },
+    "IINVX": {
+      "name": "Invesco International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International growth equity"
+    },
+    "GTNDX": {
+      "name": "Invesco Global Real Estate Fund",
+      "etfAlternative": "VNQI",
+      "etfName": "Vanguard Global ex-US Real Estate ETF",
+      "reason": "Global real estate and REIT equity"
+    },
+    "MSDAX": {
+      "name": "Invesco Select Risk: Moderately Conservative Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Moderately conservative multi-asset allocation"
+    },
+    "MSMCX": {
+      "name": "Invesco Select Risk: Moderate Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Moderate multi-asset allocation"
+    },
+    "MSGAX": {
+      "name": "Invesco Select Risk: Growth Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Growth-oriented multi-asset allocation"
+    },
+    "GSSAX": {
+      "name": "Goldman Sachs Small Cap Value Fund",
+      "etfAlternative": "IWN",
+      "etfName": "iShares Russell 2000 Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "GSGAX": {
+      "name": "Goldman Sachs Growth Opportunities Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small and mid-cap growth equity"
+    },
+    "GSBLX": {
+      "name": "Goldman Sachs Balanced Strategy Portfolio",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced multi-asset allocation"
+    },
+    "GIFFX": {
+      "name": "Goldman Sachs Income Builder Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Multi-asset income allocation"
+    },
+    "GIOAX": {
+      "name": "Goldman Sachs International Equity Income Fund",
+      "etfAlternative": "IDV",
+      "etfName": "iShares International Select Dividend ETF",
+      "reason": "International dividend income equity"
+    },
+    "GLMAX": {
+      "name": "Goldman Sachs Large Cap Value Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "GSCTX": {
+      "name": "Goldman Sachs Core Fixed Income Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "GSHIX": {
+      "name": "Goldman Sachs High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "GSBFX": {
+      "name": "Goldman Sachs Bond Fund",
+      "etfAlternative": "BND",
+      "etfName": "Vanguard Total Bond Market ETF",
+      "reason": "Broad bond exposure"
+    },
+    "GSEMX": {
+      "name": "Goldman Sachs Emerging Markets Equity Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity exposure"
+    },
+    "GSGRX": {
+      "name": "Goldman Sachs Rising Dividend Growth Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend growth equity"
+    },
+    "GSTAX": {
+      "name": "Goldman Sachs Strategic Income Fund",
+      "etfAlternative": "BOND",
+      "etfName": "PIMCO Active Bond ETF",
+      "reason": "Multi-sector strategic bond income"
+    },
+    "GSEAX": {
+      "name": "Goldman Sachs ESG Emerging Markets Equity Fund",
+      "etfAlternative": "ESGE",
+      "etfName": "iShares MSCI EM ESG Optimized ETF",
+      "reason": "ESG-screened emerging markets equity"
+    },
+    "GSMAX": {
+      "name": "Goldman Sachs MidCap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "GMCGX": {
+      "name": "Goldman Sachs Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "GSREX": {
+      "name": "Goldman Sachs Real Estate Securities Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "GSIGX": {
+      "name": "Goldman Sachs International Small Cap Insights Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "International small-cap equity"
+    },
+    "GSINX": {
+      "name": "Goldman Sachs International Equity Insights Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "Quantitative international equity"
+    },
+    "GSUAX": {
+      "name": "Goldman Sachs Short Duration Government Fund",
+      "etfAlternative": "VGSH",
+      "etfName": "Vanguard Short-Term Treasury ETF",
+      "reason": "Short-term government bond exposure"
+    },
+    "NBGNX": {
+      "name": "Neuberger Berman Multi-Asset Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Multi-asset income allocation"
+    },
+    "NMANX": {
+      "name": "Neuberger Berman Intrinsic Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Large-cap intrinsic value equity"
+    },
+    "NMFRX": {
+      "name": "Neuberger Berman Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "NBSSX": {
+      "name": "Neuberger Berman Small Cap Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "NBEAX": {
+      "name": "Neuberger Berman Equity Income Fund",
+      "etfAlternative": "VYM",
+      "etfName": "Vanguard High Dividend Yield ETF",
+      "reason": "Dividend equity income"
+    },
+    "NBLAX": {
+      "name": "Neuberger Berman Large Cap Value Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "NBSAX": {
+      "name": "Neuberger Berman Sustainable Equity Fund",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-integrated large-cap equity"
+    },
+    "NBIAX": {
+      "name": "Neuberger Berman International Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "NRGRX": {
+      "name": "Neuberger Berman Real Estate Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "NCRIX": {
+      "name": "Neuberger Berman Core Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "NSHAX": {
+      "name": "Neuberger Berman Short Duration Bond Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-duration bond exposure"
+    },
+    "NHHYX": {
+      "name": "Neuberger Berman High Income Bond Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "NMUAX": {
+      "name": "Nuveen High Yield Municipal Bond Fund",
+      "etfAlternative": "HYD",
+      "etfName": "VanEck High-Yield Muni ETF",
+      "reason": "High-yield municipal bond income"
+    },
+    "PGBAX": {
+      "name": "Principal Blue Chip Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "Large-cap blue chip equity"
+    },
+    "PMCCX": {
+      "name": "Principal MidCap Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Mid-cap equity exposure"
+    },
+    "PSMIX": {
+      "name": "Principal SmallCap Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap equity exposure"
+    },
+    "PIIAX": {
+      "name": "Principal International Equity Index Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International equity index"
+    },
+    "PCBAX": {
+      "name": "Principal Core Plus Bond Fund",
+      "etfAlternative": "FBND",
+      "etfName": "Fidelity Total Bond ETF",
+      "reason": "Core-plus bond strategy"
+    },
+    "PIBAX": {
+      "name": "Principal Bond and Mortgage Securities Fund",
+      "etfAlternative": "MBB",
+      "etfName": "iShares MBS ETF",
+      "reason": "Mortgage and bond exposure"
+    },
+    "PRHYX": {
+      "name": "Principal High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "PRMAX": {
+      "name": "Principal Real Estate Securities Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "PEMAX": {
+      "name": "Principal Emerging Markets Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity exposure"
+    },
+    "PGBFX": {
+      "name": "Principal Global Diversified Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Global multi-asset income"
+    },
+    "PLTAX": {
+      "name": "Principal LifeTime 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "PLTCX": {
+      "name": "Principal LifeTime 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "PLTEK": {
+      "name": "Principal LifeTime 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "PLTEX": {
+      "name": "Principal LifeTime 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "PLTFX": {
+      "name": "Principal LifeTime 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "PLTGX": {
+      "name": "Principal LifeTime 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "PLTHX": {
+      "name": "Principal LifeTime 2055 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2055 target-date retirement allocation"
+    },
+    "PLINX": {
+      "name": "Principal LifeTime 2060 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2060 target-date retirement allocation"
+    },
+    "NRGAX": {
+      "name": "Nuveen Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "NRGVX": {
+      "name": "Nuveen Large Cap Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "NRCAX": {
+      "name": "Nuveen Core Dividend Fund",
+      "etfAlternative": "SCHD",
+      "etfName": "Schwab U.S. Dividend Equity ETF",
+      "reason": "Dividend-focused large-cap equity"
+    },
+    "NSMAX": {
+      "name": "Nuveen Small Cap Select Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap equity"
+    },
+    "NEIAX": {
+      "name": "Nuveen International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "NMBAX": {
+      "name": "Nuveen Municipal Bond Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Investment-grade municipal bond income"
+    },
+    "FLTAX": {
+      "name": "Nuveen Short Term Municipal Bond Fund",
+      "etfAlternative": "SUB",
+      "etfName": "iShares Short-Term National Muni Bond ETF",
+      "reason": "Short-term municipal bond income"
+    },
+    "NIFUX": {
+      "name": "Nuveen Intermediate Duration Bond Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term investment-grade bonds"
+    },
+    "NHMAX": {
+      "name": "Nuveen High Income Bond Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "NREAX": {
+      "name": "Nuveen Real Estate Securities Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "FAMAX": {
+      "name": "Nuveen California Municipal Bond Fund",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "California municipal bond income"
+    },
+    "NYMAX": {
+      "name": "Nuveen New York Municipal Bond Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "New York municipal bond income"
+    },
+    "LALAX": {
+      "name": "Lord Abbett Affiliated Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap dividend value equity"
+    },
+    "LAVLX": {
+      "name": "Lord Abbett Value Opportunities Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Multi-cap value equity"
+    },
+    "LAMAX": {
+      "name": "Lord Abbett National Tax Free Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "National municipal bond income"
+    },
+    "LRSAX": {
+      "name": "Lord Abbett Small Cap Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "LSCAX": {
+      "name": "Lord Abbett Growth Leaders Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "LOBDX": {
+      "name": "Lord Abbett Bond Debenture Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield and convertible bond income"
+    },
+    "LALDX": {
+      "name": "Lord Abbett Total Return Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core bond exposure"
+    },
+    "LSHAX": {
+      "name": "Lord Abbett Short Duration Income Fund",
+      "etfAlternative": "VCSH",
+      "etfName": "Vanguard Short-Term Corporate Bond ETF",
+      "reason": "Short-duration income bonds"
+    },
+    "LAGVX": {
+      "name": "Lord Abbett Government Securities Fund",
+      "etfAlternative": "VGIT",
+      "etfName": "Vanguard Intermediate-Term Treasury ETF",
+      "reason": "Government bond exposure"
+    },
+    "LABFX": {
+      "name": "Lord Abbett Income Fund",
+      "etfAlternative": "FBND",
+      "etfName": "Fidelity Total Bond ETF",
+      "reason": "Multi-sector income bonds"
+    },
+    "LAVAX": {
+      "name": "Lord Abbett California Tax-Free Income Fund",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "California municipal bond income"
+    },
+    "LAHYX": {
+      "name": "Lord Abbett High Yield Municipal Bond Fund",
+      "etfAlternative": "HYD",
+      "etfName": "VanEck High-Yield Muni ETF",
+      "reason": "High-yield municipal bond income"
+    },
+    "LAIDX": {
+      "name": "Lord Abbett Inflation Focused Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "Inflation-protected bond exposure"
+    },
+    "LGEAX": {
+      "name": "Lord Abbett Global Core Equity Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global diversified equity"
+    },
+    "LIEAX": {
+      "name": "Lord Abbett International Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "PEIAX": {
+      "name": "Putnam Equity Income Fund",
+      "etfAlternative": "VYM",
+      "etfName": "Vanguard High Dividend Yield ETF",
+      "reason": "Dividend equity income"
+    },
+    "PVOYX": {
+      "name": "Putnam Voyager Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "PGRWX": {
+      "name": "Putnam Growth Opportunities Fund",
+      "etfAlternative": "VUG",
+      "etfName": "Vanguard Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "PGIAX": {
+      "name": "Putnam Global Income Trust",
+      "etfAlternative": "BWX",
+      "etfName": "SPDR Bloomberg International Treasury Bond ETF",
+      "reason": "Global government bond income"
+    },
+    "PINCX": {
+      "name": "Putnam Income Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond income"
+    },
+    "PMHIX": {
+      "name": "Putnam Tax Exempt Income Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Municipal bond income"
+    },
+    "PHYIX": {
+      "name": "Putnam High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "POEAX": {
+      "name": "Putnam International Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "PEMEX": {
+      "name": "Putnam Emerging Markets Equity Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity"
+    },
+    "PBAAX": {
+      "name": "Putnam Balanced Allocation Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced multi-asset allocation"
+    },
+    "PGVAX": {
+      "name": "Putnam Government Money Market Fund",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Government money market cash alternative"
+    },
+    "PSMAX": {
+      "name": "Putnam Small Cap Value Fund",
+      "etfAlternative": "IWN",
+      "etfName": "iShares Russell 2000 Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "PNVAX": {
+      "name": "Putnam Small Cap Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "PANAX": {
+      "name": "Putnam Multi-Cap Core Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Diversified multi-cap US equity"
+    },
+    "HAIAX": {
+      "name": "Hartford Core Equity Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "Large-cap core equity"
+    },
+    "HTFAX": {
+      "name": "Hartford Total Return Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "HBNAX": {
+      "name": "Hartford Balanced Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced income allocation"
+    },
+    "HBMAX": {
+      "name": "Hartford Mid Cap Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Mid-cap equity exposure"
+    },
+    "HTSAX": {
+      "name": "Hartford Small Company Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "HIAAX": {
+      "name": "Hartford International Opportunities Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "HDVAX": {
+      "name": "Hartford Dividend and Growth Fund",
+      "etfAlternative": "SCHD",
+      "etfName": "Schwab U.S. Dividend Equity ETF",
+      "reason": "Dividend and growth equity"
+    },
+    "HHYAX": {
+      "name": "Hartford High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "HCMAX": {
+      "name": "Hartford Capital Appreciation Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap capital appreciation"
+    },
+    "HGVAX": {
+      "name": "Hartford Global All-Asset Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Flexible global multi-asset allocation"
+    },
+    "HTMAX": {
+      "name": "Hartford MidCap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "HSTAX": {
+      "name": "Hartford Small Cap Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "HIFAX": {
+      "name": "Hartford Inflation Plus Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "Inflation-protected bond exposure"
+    },
+    "HERAX": {
+      "name": "Hartford Emerging Markets Local Debt Fund",
+      "etfAlternative": "EBND",
+      "etfName": "SPDR Bloomberg Emerging Markets Local Bond ETF",
+      "reason": "Emerging market local currency bonds"
+    },
+    "WAAEX": {
+      "name": "Western Asset Core Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "WACSX": {
+      "name": "Western Asset Core Plus Bond Fund",
+      "etfAlternative": "FBND",
+      "etfName": "Fidelity Total Bond ETF",
+      "reason": "Core-plus bond strategy"
+    },
+    "SHIAX": {
+      "name": "Western Asset Short Duration High Income Fund",
+      "etfAlternative": "SJNK",
+      "etfName": "SPDR Bloomberg Short Term High Yield Bond ETF",
+      "reason": "Short-duration high-yield bonds"
+    },
+    "WAHAX": {
+      "name": "Western Asset High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "WAGAX": {
+      "name": "Western Asset Government Bond Fund",
+      "etfAlternative": "VGIT",
+      "etfName": "Vanguard Intermediate-Term Treasury ETF",
+      "reason": "Government bond exposure"
+    },
+    "WAMFX": {
+      "name": "Western Asset Mortgage Total Return Fund",
+      "etfAlternative": "MBB",
+      "etfName": "iShares MBS ETF",
+      "reason": "Mortgage-backed securities exposure"
+    },
+    "WMFAX": {
+      "name": "Western Asset Municipal High Income Fund",
+      "etfAlternative": "HYD",
+      "etfName": "VanEck High-Yield Muni ETF",
+      "reason": "High-yield municipal bond income"
+    },
+    "WAFAX": {
+      "name": "Western Asset Intermediate Bond Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term investment-grade bonds"
+    },
+    "WAGIX": {
+      "name": "Western Asset Global Multi Sector Fund",
+      "etfAlternative": "BWX",
+      "etfName": "SPDR Bloomberg International Treasury Bond ETF",
+      "reason": "Global multi-sector bond exposure"
+    },
+    "WEMIX": {
+      "name": "Western Asset Emerging Markets Debt Fund",
+      "etfAlternative": "EMB",
+      "etfName": "iShares JP Morgan USD Emerging Markets Bond ETF",
+      "reason": "Emerging market bond exposure"
+    },
+    "EVGIX": {
+      "name": "Eaton Vance Large-Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "EIVAX": {
+      "name": "Eaton Vance Large-Cap Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "EIMDX": {
+      "name": "Eaton Vance Mid-Cap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "EISMX": {
+      "name": "Eaton Vance Small-Cap Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "EVIBX": {
+      "name": "Eaton Vance Income Fund of Boston",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "Multi-sector income bonds"
+    },
+    "EVHMX": {
+      "name": "Eaton Vance High Income Municipal Opportunities Fund",
+      "etfAlternative": "HYD",
+      "etfName": "VanEck High-Yield Muni ETF",
+      "reason": "High-yield municipal bond income"
+    },
+    "EVMAX": {
+      "name": "Eaton Vance National Municipal Income Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "National municipal bond income"
+    },
+    "ECAYX": {
+      "name": "Eaton Vance California Municipal Income Fund",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "California municipal bond income"
+    },
+    "EVNYY": {
+      "name": "Eaton Vance New York Municipal Income Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "New York municipal bond income"
+    },
+    "EVBAX": {
+      "name": "Eaton Vance Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and bond allocation"
+    },
+    "ECOAX": {
+      "name": "Eaton Vance Global Macro Absolute Return Fund",
+      "etfAlternative": "BNDX",
+      "etfName": "Vanguard Total International Bond ETF",
+      "reason": "Global macro fixed income strategy"
+    },
+    "ESGEX": {
+      "name": "Eaton Vance Emerging Markets Local Income Fund",
+      "etfAlternative": "EBND",
+      "etfName": "SPDR Bloomberg Emerging Markets Local Bond ETF",
+      "reason": "Emerging market local currency bond income"
+    },
+    "EVSGX": {
+      "name": "Eaton Vance Special Equities Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "EAEMX": {
+      "name": "Eaton Vance Emerging and Frontier Countries Equity Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging and frontier market equity"
+    },
+    "TWCUX": {
+      "name": "American Century Ultra Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Large-cap growth / tech equity"
+    },
+    "TWCGX": {
+      "name": "American Century Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "ACLVX": {
+      "name": "American Century Large Company Value Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "AHTYX": {
+      "name": "American Century Heritage Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Mid and small-cap growth equity"
+    },
+    "TWSMX": {
+      "name": "American Century Small Company Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap equity exposure"
+    },
+    "ACINX": {
+      "name": "Columbia Acorn International Fund",
+      "etfAlternative": "VSS",
+      "etfName": "Vanguard FTSE All-World ex-US Small-Cap ETF",
+      "reason": "International small-cap equity"
+    },
+    "AENVX": {
+      "name": "American Century Emerging Markets Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging market equity"
+    },
+    "ADFIX": {
+      "name": "American Century Diversified Bond Fund",
+      "etfAlternative": "BND",
+      "etfName": "Vanguard Total Bond Market ETF",
+      "reason": "Diversified investment-grade bonds"
+    },
+    "ACBPX": {
+      "name": "American Century Short-Term Government Fund",
+      "etfAlternative": "VGSH",
+      "etfName": "Vanguard Short-Term Treasury ETF",
+      "reason": "Short-term government bond exposure"
+    },
+    "ACLTX": {
+      "name": "American Century California Tax-Free Bond Fund",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "California municipal bond income"
+    },
+    "ACHYX": {
+      "name": "American Century High-Income Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "ACLAX": {
+      "name": "American Century Long-Term Tax-Free Fund",
+      "etfAlternative": "MLN",
+      "etfName": "VanEck Long Muni ETF",
+      "reason": "Long-term municipal bond income"
+    },
+    "ACTIX": {
+      "name": "American Century Ginnie Mae Fund",
+      "etfAlternative": "GNMA",
+      "etfName": "iShares GNMA Bond ETF",
+      "reason": "Government mortgage-backed securities"
+    },
+    "ACGIX": {
+      "name": "American Century Global Gold Fund",
+      "etfAlternative": "GDX",
+      "etfName": "VanEck Gold Miners ETF",
+      "reason": "Gold mining and precious metals equity"
+    },
+    "ATWBX": {
+      "name": "American Century Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and bond allocation"
+    },
+    "ACNPX": {
+      "name": "American Century One Choice 2025 Portfolio",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "ARCIX": {
+      "name": "American Century One Choice 2030 Portfolio",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "ARLIX": {
+      "name": "American Century One Choice 2035 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "ARWIX": {
+      "name": "American Century One Choice 2040 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "ARQIX": {
+      "name": "American Century One Choice 2045 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "ARFIX": {
+      "name": "American Century One Choice 2050 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "ARFVX": {
+      "name": "American Century One Choice 2055 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2055 target-date retirement allocation"
+    },
+    "NVFIX": {
+      "name": "Allspring Core Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "EKHAX": {
+      "name": "Allspring Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "WFVAX": {
+      "name": "Allspring Large Cap Value Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "WFMAX": {
+      "name": "Allspring Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "NVSVX": {
+      "name": "Allspring Small Cap Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "WFSGX": {
+      "name": "Allspring Small Company Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "WFHYX": {
+      "name": "Allspring High Yield Bond Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "WFNAX": {
+      "name": "Allspring Municipal Bond Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Municipal bond income"
+    },
+    "WFPAX": {
+      "name": "Allspring Emerging Markets Equity Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity"
+    },
+    "WFCGX": {
+      "name": "Allspring International Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "WFBAX": {
+      "name": "Allspring Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and bond allocation"
+    },
+    "WFRIX": {
+      "name": "Allspring Real Return Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "Inflation-protected real return"
+    },
+    "NVTRX": {
+      "name": "Allspring Target 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "WFTCX": {
+      "name": "Allspring Target 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "WFTEX": {
+      "name": "Allspring Target 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "WFTFX": {
+      "name": "Allspring Target 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "WFTGX": {
+      "name": "Allspring Target 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "WFTHX": {
+      "name": "Allspring Target 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "FKRCX": {
+      "name": "Federated Hermes Kaufmann Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small and mid-cap growth equity"
+    },
+    "FSTSX": {
+      "name": "Federated Hermes Total Return Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond"
+    },
+    "FGGAX": {
+      "name": "Federated Hermes MDT Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Quantitative large-cap growth equity"
+    },
+    "FMKAX": {
+      "name": "Federated Hermes Muni and Stock Advantage Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced muni bond and equity"
+    },
+    "FHIAX": {
+      "name": "Federated Hermes High Income Bond Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "FMUAX": {
+      "name": "Federated Hermes Municipal Ultrashort Fund",
+      "etfAlternative": "SUB",
+      "etfName": "iShares Short-Term National Muni Bond ETF",
+      "reason": "Ultra-short municipal bond income"
+    },
+    "FGFFX": {
+      "name": "Federated Hermes Government Ultrashort Duration Fund",
+      "etfAlternative": "SGOV",
+      "etfName": "iShares 0-3 Month Treasury Bond ETF",
+      "reason": "Ultra-short government bond income"
+    },
+    "FKIAX": {
+      "name": "Federated Hermes International Leaders Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International large-cap equity"
+    },
+    "FEIAX": {
+      "name": "Federated Hermes Emerging Market Equity Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity"
+    },
+    "FWWAX": {
+      "name": "Federated Hermes Global Allocation Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Global multi-asset allocation"
+    },
+    "DFUSX": {
+      "name": "Dimensional US Core Equity Market Portfolio",
+      "etfAlternative": "DFUS",
+      "etfName": "Dimensional US Equity Market ETF",
+      "reason": "Broad factor-tilted US equity"
+    },
+    "DFUEX": {
+      "name": "Dimensional US Equity Portfolio",
+      "etfAlternative": "DFUS",
+      "etfName": "Dimensional US Equity Market ETF",
+      "reason": "Broad US equity market exposure"
+    },
+    "DFLVX": {
+      "name": "Dimensional US Large Cap Value Portfolio",
+      "etfAlternative": "DFLV",
+      "etfName": "Dimensional US Large Cap Value ETF",
+      "reason": "US large-cap value factor exposure"
+    },
+    "DFSVX": {
+      "name": "Dimensional US Small Cap Value Portfolio",
+      "etfAlternative": "DFSV",
+      "etfName": "Dimensional US Small Cap Value ETF",
+      "reason": "US small-cap value factor exposure"
+    },
+    "DFSTX": {
+      "name": "Dimensional US Small Cap Portfolio",
+      "etfAlternative": "VB",
+      "etfName": "Vanguard Small-Cap ETF",
+      "reason": "US small-cap equity with factor tilt"
+    },
+    "DFUIX": {
+      "name": "Dimensional US Sustainability Core Portfolio",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-integrated US equity"
+    },
+    "DFIVX": {
+      "name": "Dimensional International Value Portfolio",
+      "etfAlternative": "DFIV",
+      "etfName": "Dimensional International Value ETF",
+      "reason": "International value factor exposure"
+    },
+    "DFIEX": {
+      "name": "Dimensional International Core Equity Market Portfolio",
+      "etfAlternative": "DFIC",
+      "etfName": "Dimensional International Core Equity Market ETF",
+      "reason": "Broad international equity with factor tilt"
+    },
+    "DFEVX": {
+      "name": "Dimensional Emerging Markets Value Portfolio",
+      "etfAlternative": "DFEV",
+      "etfName": "Dimensional Emerging Markets Value ETF",
+      "reason": "Emerging market value factor exposure"
+    },
+    "DFEMX": {
+      "name": "Dimensional Emerging Markets Portfolio",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Broad emerging market equity"
+    },
+    "DFGBX": {
+      "name": "Dimensional Global Bond Portfolio",
+      "etfAlternative": "BWX",
+      "etfName": "SPDR Bloomberg International Treasury Bond ETF",
+      "reason": "Global bond exposure"
+    },
+    "DFITX": {
+      "name": "Dimensional Inflation-Protected Securities Portfolio",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "Inflation-protected TIPS exposure"
+    },
+    "DFIHX": {
+      "name": "Dimensional Intermediate-Term Extended Quality Portfolio",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term investment-grade bonds"
+    },
+    "DFSHX": {
+      "name": "Dimensional Short-Term Extended Quality Portfolio",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-term investment-grade bonds"
+    },
+    "DFTEX": {
+      "name": "Dimensional CA Short-Term Municipal Bond Portfolio",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "California short-term municipal bonds"
+    },
+    "DFCEX": {
+      "name": "Dimensional Core Equity Market ETF (mutual fund class)",
+      "etfAlternative": "DFAC",
+      "etfName": "Dimensional Core Equity Market ETF",
+      "reason": "Factor-tilted US equity"
+    },
+    "USAAX": {
+      "name": "USAA Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "USGRX": {
+      "name": "USAA Growth and Tax Strategy Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Tax-advantaged dividend growth equity"
+    },
+    "USIFX": {
+      "name": "USAA International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "USEMX": {
+      "name": "USAA World Growth Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global equity growth"
+    },
+    "USIBX": {
+      "name": "USAA Income Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF (or AGG for pure bond exposure)",
+      "reason": "Conservative income fund approximately 80% fixed income"
+    },
+    "USAIX": {
+      "name": "USAA Income Stock Fund",
+      "etfAlternative": "VYM",
+      "etfName": "Vanguard High Dividend Yield ETF",
+      "reason": "Dividend income equity"
+    },
+    "USSBX": {
+      "name": "USAA Short-Term Bond Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-term bond exposure"
+    },
+    "USICX": {
+      "name": "USAA Intermediate-Term Bond Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term bond exposure"
+    },
+    "USTEX": {
+      "name": "USAA Tax Exempt Intermediate-Term Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Municipal bond income"
+    },
+    "USSTX": {
+      "name": "USAA Tax Exempt Short-Term Fund",
+      "etfAlternative": "SUB",
+      "etfName": "iShares Short-Term National Muni Bond ETF",
+      "reason": "Short-term municipal bond income"
+    },
+    "USSCX": {
+      "name": "USAA Small Company Value Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "USSRX": {
+      "name": "USAA Precious Metals and Minerals Fund",
+      "etfAlternative": "GDX",
+      "etfName": "VanEck Gold Miners ETF",
+      "reason": "Precious metals mining equity"
+    },
+    "CFICX": {
+      "name": "Calvert Equity Fund",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-screened large-cap equity"
+    },
+    "CBDIX": {
+      "name": "Calvert Bond Portfolio",
+      "etfAlternative": "BGRN",
+      "etfName": "iShares USD Green Bond ETF",
+      "reason": "ESG-focused bond exposure"
+    },
+    "CSXAX": {
+      "name": "Calvert Social Index Fund",
+      "etfAlternative": "KLD",
+      "etfName": "iShares MSCI KLD 400 Social ETF",
+      "reason": "Broad social index equity"
+    },
+    "CIVIX": {
+      "name": "Calvert International Equity Fund",
+      "etfAlternative": "ESGD",
+      "etfName": "iShares MSCI EAFE ESG Optimized ETF",
+      "reason": "ESG-focused international equity"
+    },
+    "CEVAX": {
+      "name": "Calvert Emerging Markets Equity Fund",
+      "etfAlternative": "ESGE",
+      "etfName": "iShares MSCI EM ESG Optimized ETF",
+      "reason": "ESG-focused emerging market equity"
+    },
+    "CMIFX": {
+      "name": "Calvert Income Fund",
+      "etfAlternative": "BGRN",
+      "etfName": "iShares USD Green Bond ETF",
+      "reason": "Responsible investment-grade bond income"
+    },
+    "CSIEX": {
+      "name": "Calvert Short Duration Income Fund",
+      "etfAlternative": "VCSH",
+      "etfName": "Vanguard Short-Term Corporate Bond ETF",
+      "reason": "ESG short-duration bond income"
+    },
+    "PARNX": {
+      "name": "Parnassus Core Equity Fund",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-focused large-cap core equity"
+    },
+    "PRBLX": {
+      "name": "Parnassus Core Equity Fund Institutional",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-integrated core large-cap equity"
+    },
+    "PFPWX": {
+      "name": "Parnassus Mid Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "ESG-focused mid-cap growth equity"
+    },
+    "PARMX": {
+      "name": "Parnassus Mid Cap Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "ESG-integrated mid-cap equity"
+    },
+    "PFDIX": {
+      "name": "Parnassus Fixed Income Fund",
+      "etfAlternative": "BGRN",
+      "etfName": "iShares USD Green Bond ETF",
+      "reason": "Socially responsible bond fund"
+    },
+    "ARTGX": {
+      "name": "Artisan Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "ARTMX": {
+      "name": "Artisan Mid Cap Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "ARTVX": {
+      "name": "Artisan Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Multi-cap value equity"
+    },
+    "ARTWX": {
+      "name": "Artisan Global Value Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global value equity"
+    },
+    "ARTIX": {
+      "name": "Artisan International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market growth equity"
+    },
+    "ARTJX": {
+      "name": "Artisan International Value Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market value equity"
+    },
+    "APDMX": {
+      "name": "Artisan Developing World Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Developing/emerging market equity"
+    },
+    "APHGX": {
+      "name": "Artisan High Income Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "APSMX": {
+      "name": "Artisan Small Cap Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "APDSX": {
+      "name": "Artisan Small Cap Value Fund",
+      "etfAlternative": "IWN",
+      "etfName": "iShares Russell 2000 Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "APHNX": {
+      "name": "Artisan Global Opportunities Fund",
+      "etfAlternative": "ACWI",
+      "etfName": "iShares MSCI ACWI ETF",
+      "reason": "Global growth equity opportunities"
+    },
+    "BAGSX": {
+      "name": "Baird Aggregate Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "BCOSX": {
+      "name": "Baird Core Plus Bond Fund",
+      "etfAlternative": "FBND",
+      "etfName": "Fidelity Total Bond ETF",
+      "reason": "Core-plus bond strategy"
+    },
+    "BSHYX": {
+      "name": "Baird Short-Term Bond Fund",
+      "etfAlternative": "BSV",
+      "etfName": "Vanguard Short-Term Bond ETF",
+      "reason": "Short-term investment-grade bonds"
+    },
+    "BMISX": {
+      "name": "Baird Intermediate Bond Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term bond exposure"
+    },
+    "BUBSX": {
+      "name": "Baird Ultra Short Bond Fund",
+      "etfAlternative": "MINT",
+      "etfName": "PIMCO Enhanced Short Maturity Active ETF",
+      "reason": "Ultra-short-term bond income"
+    },
+    "BCHSX": {
+      "name": "Baird Quality Intermediate Municipal Bond Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "Intermediate-term municipal bond income"
+    },
+    "CSSPX": {
+      "name": "Cohen & Steers Real Estate Securities Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "US REIT and real estate equity"
+    },
+    "CSRSX": {
+      "name": "Cohen & Steers Realty Shares",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Actively managed US REIT equity"
+    },
+    "CSIAX": {
+      "name": "Cohen & Steers Global Real Estate Fund",
+      "etfAlternative": "VNQI",
+      "etfName": "Vanguard Global ex-US Real Estate ETF",
+      "reason": "Global real estate and REIT equity"
+    },
+    "CSODX": {
+      "name": "Cohen & Steers Preferred Securities and Income Fund",
+      "etfAlternative": "PFF",
+      "etfName": "iShares Preferred and Income Securities ETF",
+      "reason": "Preferred securities income"
+    },
+    "CSWAX": {
+      "name": "Cohen & Steers Infrastructure Fund",
+      "etfAlternative": "IGF",
+      "etfName": "iShares Global Infrastructure ETF",
+      "reason": "Global infrastructure equity income"
+    },
+    "CSUAX": {
+      "name": "Cohen & Steers MLP and Energy Opportunity Fund",
+      "etfAlternative": "MLPA",
+      "etfName": "Global X MLP ETF",
+      "reason": "MLP and energy infrastructure income"
+    },
+    "SGENX": {
+      "name": "First Eagle Global Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Flexible global value equity"
+    },
+    "FEAFX": {
+      "name": "First Eagle Overseas Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International value equity"
+    },
+    "FESGX": {
+      "name": "First Eagle US Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "US value equity"
+    },
+    "FEGOX": {
+      "name": "First Eagle Gold Fund",
+      "etfAlternative": "GDX",
+      "etfName": "VanEck Gold Miners ETF",
+      "reason": "Gold and precious metals equity"
+    },
+    "FEURX": {
+      "name": "First Eagle Rising Dividend Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend growth equity"
+    },
+    "FEAOX": {
+      "name": "First Eagle Alternative Capital Bond Fund",
+      "etfAlternative": "BKLN",
+      "etfName": "Invesco Senior Loan ETF",
+      "reason": "Alternative credit and senior loan income"
+    },
+    "PIODX": {
+      "name": "Amundi Pioneer Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap dividend value equity"
+    },
+    "PIOAX": {
+      "name": "Amundi Pioneer Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond exposure"
+    },
+    "PIOBX": {
+      "name": "Amundi Pioneer Strategic Income Fund",
+      "etfAlternative": "BOND",
+      "etfName": "PIMCO Active Bond ETF",
+      "reason": "Multi-sector strategic bond income"
+    },
+    "PIOHX": {
+      "name": "Amundi Pioneer High Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "PIOMX": {
+      "name": "Amundi Pioneer Multi-Asset Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Multi-asset income allocation"
+    },
+    "WBGSX": {
+      "name": "William Blair Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "WBIGX": {
+      "name": "William Blair International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International growth equity"
+    },
+    "WBLEX": {
+      "name": "William Blair International Leaders Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International large-cap equity"
+    },
+    "WBEMX": {
+      "name": "William Blair Emerging Markets Growth Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Emerging market growth equity"
+    },
+    "WBSMX": {
+      "name": "William Blair Small Cap Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "WBFIX": {
+      "name": "William Blair Income Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Investment-grade bond income"
+    },
+    "HACAX": {
+      "name": "Harbor Capital Appreciation Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Large-cap growth equity (Jennison sub-advisor)"
+    },
+    "HARBX": {
+      "name": "Harbor Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core bond exposure (PIMCO sub-advisor)"
+    },
+    "HIAFX": {
+      "name": "Harbor International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International equity (Marathon sub-advisor)"
+    },
+    "HISGX": {
+      "name": "Harbor Small Cap Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "HRMCX": {
+      "name": "Harbor Mid Cap Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Mid-cap equity"
+    },
+    "HAINX": {
+      "name": "Harbor High-Yield Bond Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "GABAX": {
+      "name": "Gabelli Asset Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Value-oriented equity (Mario Gabelli)"
+    },
+    "GABVX": {
+      "name": "Gabelli Value Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Private market value equity"
+    },
+    "GABEX": {
+      "name": "Gabelli Equity Income Fund",
+      "etfAlternative": "VYM",
+      "etfName": "Vanguard High Dividend Yield ETF",
+      "reason": "Dividend equity income"
+    },
+    "GGGAX": {
+      "name": "Gabelli Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "GABSX": {
+      "name": "Gabelli Small Cap Growth Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "GAMCX": {
+      "name": "Gabelli Global Content & Connectivity Fund",
+      "etfAlternative": "IXN",
+      "etfName": "iShares Global Tech ETF",
+      "reason": "Media and communications global equity"
+    },
+    "MERDX": {
+      "name": "Meridian Growth Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small and mid-cap growth equity"
+    },
+    "MERFX": {
+      "name": "Meridian Contrarian Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Contrarian value equity"
+    },
+    "MERSX": {
+      "name": "Meridian Small Cap Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap equity"
+    },
+    "CAGAX": {
+      "name": "Calamos Growth Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Aggressive large-cap growth equity"
+    },
+    "CVGRX": {
+      "name": "Calamos Growth and Income Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced growth and income"
+    },
+    "CIHEX": {
+      "name": "Calamos High Income Opportunities Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-income bond opportunity"
+    },
+    "CPIEX": {
+      "name": "Calamos International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International growth equity"
+    },
+    "CVSIX": {
+      "name": "Calamos Convertible Fund",
+      "etfAlternative": "CWB",
+      "etfName": "SPDR Bloomberg Convertible Securities ETF",
+      "reason": "Convertible securities exposure"
+    },
+    "EXDAX": {
+      "name": "Manning & Napier Pro-Blend Conservative Term Series",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative multi-asset allocation"
+    },
+    "EXDCX": {
+      "name": "Manning & Napier Pro-Blend Moderate Term Series",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Moderate multi-asset allocation"
+    },
+    "RYTRX": {
+      "name": "Royce Total Return Fund",
+      "etfAlternative": "VBR",
+      "etfName": "Vanguard Small-Cap Value ETF",
+      "reason": "Small-cap value dividend equity"
+    },
+    "RYVFX": {
+      "name": "Royce Small-Cap Value Fund",
+      "etfAlternative": "IWN",
+      "etfName": "iShares Russell 2000 Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "RYPRX": {
+      "name": "Royce Premier Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap quality growth equity"
+    },
+    "RYGFX": {
+      "name": "Royce Smaller-Companies Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "AMANX": {
+      "name": "Amana Income Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Halal-screened dividend income equity"
+    },
+    "AMAGX": {
+      "name": "Amana Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Halal-screened growth equity"
+    },
+    "AMIDX": {
+      "name": "Amana Developing World Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Halal-screened emerging market equity"
+    },
+    "AMINX": {
+      "name": "Amana Participation Fund",
+      "etfAlternative": "SPSK",
+      "etfName": "SP Funds Dow Jones Global Sukuk ETF",
+      "reason": "Shariah-compliant fixed income (sukuk bonds)"
+    },
+    "LGMAX": {
+      "name": "Loomis Sayles Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "LSIGX": {
+      "name": "Loomis Sayles Investment Grade Bond Fund",
+      "etfAlternative": "LQD",
+      "etfName": "iShares iBoxx Investment Grade Corporate Bond ETF",
+      "reason": "Investment-grade bond exposure"
+    },
+    "NECOX": {
+      "name": "Natixis US Equity Opportunities Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Multi-manager US equity opportunities"
+    },
+    "NGPAX": {
+      "name": "Natixis Oakmark International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International value equity"
+    },
+    "MIOPX": {
+      "name": "Mirova Global Sustainable Equity Fund",
+      "etfAlternative": "ACWI",
+      "etfName": "iShares MSCI ACWI ETF",
+      "reason": "Global sustainable equity"
+    },
+    "HSCAX": {
+      "name": "Harris Associates Global Equity Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global value equity (Oakmark approach)"
+    },
+    "TFIIX": {
+      "name": "TIAA-CREF Lifecycle 2025 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 index-based target-date allocation"
+    },
+    "TFFFX": {
+      "name": "TIAA-CREF Lifecycle 2030 Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 index-based target-date allocation"
+    },
+    "TFFKX": {
+      "name": "TIAA-CREF Lifecycle 2035 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 index-based target-date allocation"
+    },
+    "TFILX": {
+      "name": "TIAA-CREF Lifecycle 2040 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 index-based target-date allocation"
+    },
+    "TFFNX": {
+      "name": "TIAA-CREF Lifecycle 2045 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 index-based target-date allocation"
+    },
+    "TLFRX": {
+      "name": "TIAA-CREF Lifecycle 2050 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 index-based target-date allocation"
+    },
+    "TFFOX": {
+      "name": "TIAA-CREF Lifecycle 2055 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2055 index-based target-date allocation"
+    },
+    "TLIFX": {
+      "name": "TIAA-CREF Lifecycle 2060 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2060 index-based target-date allocation"
+    },
+    "TLIRX": {
+      "name": "TIAA-CREF Lifecycle Retirement Income Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative income retirement allocation"
+    },
+    "TCEIX": {
+      "name": "TIAA-CREF Equity Index Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "S&P 500 index exposure"
+    },
+    "TCUIX": {
+      "name": "TIAA-CREF Large-Cap Growth Index Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth index exposure"
+    },
+    "TCIEX": {
+      "name": "TIAA-CREF International Equity Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "TCIIX": {
+      "name": "TIAA-CREF International Equity Index Fund",
+      "etfAlternative": "VXUS",
+      "etfName": "Vanguard Total International Stock ETF",
+      "reason": "Broad international index"
+    },
+    "TCEMX": {
+      "name": "TIAA-CREF Emerging Markets Equity Fund",
+      "etfAlternative": "EEM",
+      "etfName": "iShares MSCI Emerging Markets ETF",
+      "reason": "Emerging market equity"
+    },
+    "TCSEX": {
+      "name": "TIAA-CREF Small-Cap Equity Fund",
+      "etfAlternative": "VB",
+      "etfName": "Vanguard Small-Cap ETF",
+      "reason": "Small-cap equity exposure"
+    },
+    "TCSIX": {
+      "name": "TIAA-CREF Small-Cap Index Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap index exposure"
+    },
+    "TCBDX": {
+      "name": "TIAA-CREF Bond Index Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core bond index exposure"
+    },
+    "TCBIX": {
+      "name": "TIAA-CREF Intermediate Bond Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term bond exposure"
+    },
+    "TCIOX": {
+      "name": "TIAA-CREF Inflation-Linked Bond Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "Inflation-protected bond exposure"
+    },
+    "TCHMX": {
+      "name": "TIAA-CREF High-Yield Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "TCREX": {
+      "name": "TIAA-CREF Real Estate Securities Fund",
+      "etfAlternative": "VNQ",
+      "etfName": "Vanguard Real Estate ETF",
+      "reason": "Real estate and REIT equity"
+    },
+    "TCGRX": {
+      "name": "TIAA-CREF Growth & Income Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend growth equity"
+    },
+    "TICRX": {
+      "name": "TIAA-CREF Social Choice Equity Fund",
+      "etfAlternative": "KLD",
+      "etfName": "iShares MSCI KLD 400 Social ETF",
+      "reason": "ESG/social choice US equity"
+    },
+    "ILMAX": {
+      "name": "Voya Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "IILAX": {
+      "name": "Voya Intermediate Bond Fund",
+      "etfAlternative": "BIV",
+      "etfName": "Vanguard Intermediate-Term Bond ETF",
+      "reason": "Intermediate-term bond exposure"
+    },
+    "IHIZX": {
+      "name": "Voya High Yield Bond Fund",
+      "etfAlternative": "HYG",
+      "etfName": "iShares iBoxx High Yield Corporate Bond ETF",
+      "reason": "High-yield bond income"
+    },
+    "IIMAX": {
+      "name": "Voya International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "ISMAX": {
+      "name": "Voya Small Company Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap equity"
+    },
+    "INGVX": {
+      "name": "Voya U.S. Stock Index Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "S&P 500 index exposure"
+    },
+    "VSRMX": {
+      "name": "Voya Solution 2025 Portfolio",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2025 target-date retirement allocation"
+    },
+    "VSRNX": {
+      "name": "Voya Solution 2030 Portfolio",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "2030 target-date retirement allocation"
+    },
+    "VSROX": {
+      "name": "Voya Solution 2035 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2035 target-date retirement allocation"
+    },
+    "VSRPX": {
+      "name": "Voya Solution 2040 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2040 target-date retirement allocation"
+    },
+    "VSRQX": {
+      "name": "Voya Solution 2045 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2045 target-date retirement allocation"
+    },
+    "VSRRX": {
+      "name": "Voya Solution 2050 Portfolio",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "2050 target-date retirement allocation"
+    },
+    "INGIX": {
+      "name": "Voya Solution Income Portfolio",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative income retirement allocation"
+    },
+    "MXVIX": {
+      "name": "Empower Large Cap Value Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "MXGIX": {
+      "name": "Empower Large Cap Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "MXCIX": {
+      "name": "Empower Core Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core investment-grade bond"
+    },
+    "MXFIX": {
+      "name": "Empower International Fund",
+      "etfAlternative": "EFA",
+      "etfName": "iShares MSCI EAFE ETF",
+      "reason": "International developed market equity"
+    },
+    "SNIGX": {
+      "name": "Sit Rising Dividend Growth Fund",
+      "etfAlternative": "VIG",
+      "etfName": "Vanguard Dividend Appreciation ETF",
+      "reason": "Dividend growth equity"
+    },
+    "SINVX": {
+      "name": "Sit International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International growth equity"
+    },
+    "SIBFX": {
+      "name": "Sit Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and bond allocation"
+    },
+    "ACRNX": {
+      "name": "Columbia Acorn USA Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "US small-cap growth equity"
+    },
+    "BAFWX": {
+      "name": "Brown Advisory Flexible Equity Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Flexible large-cap equity"
+    },
+    "BIAFX": {
+      "name": "Brown Advisory International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International growth equity"
+    },
+    "BAFBX": {
+      "name": "Brown Advisory Sustainable Bond Fund",
+      "etfAlternative": "BGRN",
+      "etfName": "iShares USD Green Bond ETF",
+      "reason": "ESG-focused investment-grade bonds"
+    },
+    "BIIGX": {
+      "name": "Brown Advisory Mid-Cap Growth Fund",
+      "etfAlternative": "VOT",
+      "etfName": "Vanguard Mid-Cap Growth ETF",
+      "reason": "Mid-cap growth equity"
+    },
+    "BAUSX": {
+      "name": "Brown Advisory US Sustainable Growth Fund",
+      "etfAlternative": "ESGU",
+      "etfName": "iShares MSCI USA ESG Optimized ETF",
+      "reason": "ESG-focused US growth equity"
+    },
+    "TDVAX": {
+      "name": "Touchstone Mid Cap Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Mid-cap equity exposure"
+    },
+    "TSGAX": {
+      "name": "Touchstone Small Cap Fund",
+      "etfAlternative": "IWM",
+      "etfName": "iShares Russell 2000 ETF",
+      "reason": "Small-cap equity"
+    },
+    "TGIFX": {
+      "name": "Touchstone Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "TCORX": {
+      "name": "Touchstone Core Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Core bond exposure"
+    },
+    "TSHBX": {
+      "name": "Touchstone Ultra Short Duration Fixed Income Fund",
+      "etfAlternative": "MINT",
+      "etfName": "PIMCO Enhanced Short Maturity Active ETF",
+      "reason": "Ultra-short fixed income"
+    },
+    "NICSX": {
+      "name": "Nicholas Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large and mid-cap growth equity"
+    },
+    "KNPAX": {
+      "name": "Kinetics Paradigm Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Concentrated value-oriented equity"
+    },
+    "KNINX": {
+      "name": "Kinetics Internet Fund",
+      "etfAlternative": "FDN",
+      "etfName": "First Trust Dow Jones Internet Index ETF",
+      "reason": "Internet and technology equity"
+    },
+    "MFOCX": {
+      "name": "Marsico Focus Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Concentrated large-cap growth equity"
+    },
+    "MARNX": {
+      "name": "Marsico 21st Century Fund",
+      "etfAlternative": "VUG",
+      "etfName": "Vanguard Growth ETF",
+      "reason": "Large-cap growth with secular themes"
+    },
+    "MGLIX": {
+      "name": "Marsico Global Fund",
+      "etfAlternative": "ACWI",
+      "etfName": "iShares MSCI ACWI ETF",
+      "reason": "Global growth equity"
+    },
+    "MFITX": {
+      "name": "Marsico Flexible Capital Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Flexible multi-asset growth allocation"
+    },
+    "RSGIX": {
+      "name": "Victory RS Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "RSVIX": {
+      "name": "Victory RS Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Large-cap value equity"
+    },
+    "RSSMX": {
+      "name": "Victory RS Small Cap Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "VCVAX": {
+      "name": "Victory Sycamore Mid-Cap Value Fund",
+      "etfAlternative": "VOE",
+      "etfName": "Vanguard Mid-Cap Value ETF",
+      "reason": "Mid-cap value equity"
+    },
+    "VCSAX": {
+      "name": "Victory Sycamore Small Company Opportunity Fund",
+      "etfAlternative": "IWN",
+      "etfName": "iShares Russell 2000 Value ETF",
+      "reason": "Small-cap value equity"
+    },
+    "SBGEX": {
+      "name": "Nationwide Geneva Small Cap Growth Fund",
+      "etfAlternative": "VBK",
+      "etfName": "Vanguard Small-Cap Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "NWHJX": {
+      "name": "Nationwide Investor Destinations Aggressive Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Aggressive multi-asset allocation"
+    },
+    "NWHDX": {
+      "name": "Nationwide Investor Destinations Moderate Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Moderate multi-asset allocation"
+    },
+    "NWHCX": {
+      "name": "Nationwide Investor Destinations Conservative Fund",
+      "etfAlternative": "AOK",
+      "etfName": "iShares Core Conservative Allocation ETF",
+      "reason": "Conservative multi-asset allocation"
+    },
+    "RYSYX": {
+      "name": "Rydex S&P 500 Fund",
+      "etfAlternative": "IVV",
+      "etfName": "iShares Core S&P 500 ETF",
+      "reason": "S&P 500 index exposure"
+    },
+    "RYSBX": {
+      "name": "Rydex Dow Jones Industrial Average Fund",
+      "etfAlternative": "DIA",
+      "etfName": "SPDR Dow Jones Industrial Average ETF Trust",
+      "reason": "Dow Jones index exposure"
+    },
+    "RYOCX": {
+      "name": "Rydex OTC Fund",
+      "etfAlternative": "QQQ",
+      "etfName": "Invesco QQQ Trust",
+      "reason": "Nasdaq/OTC growth equity"
+    },
+    "LMVTX": {
+      "name": "Franklin Mutual Shares Fund",
+      "etfAlternative": "VTV",
+      "etfName": "Vanguard Value ETF",
+      "reason": "Global value-oriented equity"
+    },
+    "TEVIX": {
+      "name": "Franklin Templeton Global Investment Series",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Global equity growth and income"
+    },
+    "FGRAX": {
+      "name": "Franklin Growth Fund",
+      "etfAlternative": "IWF",
+      "etfName": "iShares Russell 1000 Growth ETF",
+      "reason": "Large-cap growth equity"
+    },
+    "FCTAX": {
+      "name": "Franklin Convertible Securities Fund",
+      "etfAlternative": "CWB",
+      "etfName": "SPDR Bloomberg Convertible Securities ETF",
+      "reason": "Convertible securities exposure"
+    },
+    "FRBFX": {
+      "name": "Franklin Balanced Fund",
+      "etfAlternative": "AOM",
+      "etfName": "iShares Core Moderate Allocation ETF",
+      "reason": "Balanced equity and bond allocation"
+    },
+    "FRSMX": {
+      "name": "Franklin Small Cap Growth Fund",
+      "etfAlternative": "IWO",
+      "etfName": "iShares Russell 2000 Growth ETF",
+      "reason": "Small-cap growth equity"
+    },
+    "FKGRX": {
+      "name": "Franklin International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International growth equity"
+    },
+    "FCBFX": {
+      "name": "Franklin California Tax-Free Income Fund",
+      "etfAlternative": "CMF",
+      "etfName": "iShares California Muni Bond ETF",
+      "reason": "California municipal bond income"
+    },
+    "FTNYX": {
+      "name": "Franklin New York Tax-Free Income Fund",
+      "etfAlternative": "MUB",
+      "etfName": "iShares National Muni Bond ETF",
+      "reason": "New York municipal bond income"
+    },
+    "FHTQX": {
+      "name": "Franklin High Quality Bond Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "High-quality bond exposure"
+    },
+    "FUSFX": {
+      "name": "Franklin US Government Fund",
+      "etfAlternative": "VGIT",
+      "etfName": "Vanguard Intermediate-Term Treasury ETF",
+      "reason": "US government bond exposure"
+    },
+    "FTHSX": {
+      "name": "Franklin Total Return Fund",
+      "etfAlternative": "AGG",
+      "etfName": "iShares Core U.S. Aggregate Bond ETF",
+      "reason": "Total return bond strategy"
+    },
+    "TGFIX": {
+      "name": "Templeton Global Bond Fund",
+      "etfAlternative": "BWX",
+      "etfName": "SPDR Bloomberg International Treasury Bond ETF",
+      "reason": "Global government bond exposure"
+    },
+    "TEGBX": {
+      "name": "Templeton International Bond Fund",
+      "etfAlternative": "BNDX",
+      "etfName": "Vanguard Total International Bond ETF",
+      "reason": "International bond exposure"
+    },
+    "TGVAX": {
+      "name": "Templeton Developing Markets Fund",
+      "etfAlternative": "VWO",
+      "etfName": "Vanguard FTSE Emerging Markets ETF",
+      "reason": "Developing/emerging market equity"
+    },
+    "TVAFX": {
+      "name": "Templeton World Fund",
+      "etfAlternative": "VT",
+      "etfName": "Vanguard Total World Stock ETF",
+      "reason": "Diversified global equity value"
+    },
+    "LMAAX": {
+      "name": "Lord Abbett Mid Cap Stock Fund",
+      "etfAlternative": "VO",
+      "etfName": "Vanguard Mid-Cap ETF",
+      "reason": "Mid-cap equity exposure"
+    },
+    "MNDFX": {
+      "name": "Meridian Disciplined Value Fund",
+      "etfAlternative": "IWD",
+      "etfName": "iShares Russell 1000 Value ETF",
+      "reason": "Disciplined large-cap value equity"
+    },
+    "MNBRX": {
+      "name": "Manning & Napier Pro-Blend Extended Term Series",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Extended-term aggressive growth multi-asset allocation"
+    },
+    "FDIFX": {
+      "name": "Fidelity Freedom Index 2055 Fund",
+      "etfAlternative": "AOA",
+      "etfName": "iShares Core Aggressive Allocation ETF",
+      "reason": "Index-based 2055 target-date allocation"
+    },
+    "TWIEX": {
+      "name": "American Century International Growth Fund",
+      "etfAlternative": "EFG",
+      "etfName": "iShares MSCI EAFE Growth ETF",
+      "reason": "International developed market growth equity"
+    },
+    "ACITX": {
+      "name": "American Century Inflation-Adjusted Bond Fund",
+      "etfAlternative": "SCHP",
+      "etfName": "Schwab U.S. TIPS ETF",
+      "reason": "TIPS inflation-protected bond exposure"
+    },
+    "PLDDX": {
+      "name": "PIMCO Long Duration Total Return Fund",
+      "etfAlternative": "BLV",
+      "etfName": "Vanguard Long-Term Bond ETF",
+      "reason": "Long-duration investment-grade bond exposure"
+    },
+    "CHTRX": {
+      "name": "Invesco Charter Fund",
+      "etfAlternative": "VTI",
+      "etfName": "Vanguard Total Stock Market ETF",
+      "reason": "Broadly diversified US equity"
+    }
+  },
+  "crypto": {
+    "BTC": {
+      "name": "Bitcoin",
+      "etfAlternative": "IBIT",
+      "etfName": "iShares Bitcoin Trust (or FBTC/GBTC)",
+      "reason": "Direct Bitcoin exposure via regulated ETF"
+    },
+    "ETH": {
+      "name": "Ethereum",
+      "etfAlternative": "ETHA",
+      "etfName": "iShares Ethereum Trust (or FETH/ETHE)",
+      "reason": "Direct Ethereum exposure via regulated ETF"
+    },
+    "USDT": {
+      "name": "Tether",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Stable, cash-like investment"
+    },
+    "USDC": {
+      "name": "USD Coin",
+      "etfAlternative": "BIL",
+      "etfName": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "reason": "Stable, cash-like investment"
+    },
+    "SOL": {
+      "name": "Solana",
+      "etfAlternative": "BITQ",
+      "etfName": "Bitwise Crypto Industry Innovators ETF (or BITO for broad crypto exposure)",
+      "reason": "No direct Solana ETF; diversified crypto industry exposure is the closest alternative"
+    },
+    "ADA": {
+      "name": "Cardano",
+      "etfAlternative": "BITQ",
+      "etfName": "Bitwise Crypto Industry Innovators ETF",
+      "reason": "Diversified crypto industry exposure"
+    },
+    "XRP": {
+      "name": "Ripple",
+      "etfAlternative": "BITQ",
+      "etfName": "Bitwise Crypto Industry Innovators ETF",
+      "reason": "Diversified crypto industry exposure"
+    },
+    "DOGE": {
+      "name": "Dogecoin",
+      "etfAlternative": "BITQ",
+      "etfName": "Bitwise Crypto Industry Innovators ETF",
+      "reason": "No direct ETF; consider diversified crypto exposure"
+    },
+    "DOT": {
+      "name": "Polkadot",
+      "etfAlternative": "BITQ",
+      "etfName": "Bitwise Crypto Industry Innovators ETF",
+      "reason": "Diversified crypto industry exposure"
+    },
+    "MATIC": {
+      "name": "Polygon",
+      "etfAlternative": "BITQ",
+      "etfName": "Bitwise Crypto Industry Innovators ETF",
+      "reason": "Diversified crypto industry exposure"
+    },
+    "LTC": {
+      "name": "Litecoin",
+      "etfAlternative": "BITQ",
+      "etfName": "Bitwise Crypto Industry Innovators ETF",
+      "reason": "Diversified crypto industry exposure"
+    }
+  }
+}
