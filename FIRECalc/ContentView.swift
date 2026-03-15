@@ -15,6 +15,10 @@ struct ContentView: View {
     @State private var selectedTab: Int = 0
     @Environment(\.scenePhase) private var scenePhase
     
+    // First-launch disclaimer
+    @AppStorage("hasAcknowledgedDisclaimer") private var hasAcknowledged = false
+    @State private var showingDisclaimer = false
+    
     var body: some View {
         TabView(selection: $selectedTab) {
             // Dashboard Tab
@@ -72,6 +76,19 @@ struct ContentView: View {
                 // MEMORY: Handle memory warning by clearing simulation data
                 print("⚠️ Memory warning - clearing current simulation data")
                 simulationVM.clearCurrentResultData()
+            }
+        }
+        .sheet(isPresented: $showingDisclaimer) {
+            WelcomeDisclaimerView(isPresented: $showingDisclaimer)
+                .interactiveDismissDisabled() // Prevents dismissing without acknowledging
+        }
+        .onAppear {
+            // Show disclaimer on first launch
+            if !hasAcknowledged {
+                // Small delay so UI loads smoothly before presenting
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showingDisclaimer = true
+                }
             }
         }
     }

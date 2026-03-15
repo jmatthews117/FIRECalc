@@ -15,6 +15,15 @@ enum AppConstants {
     static let appVersion = "1.0"
     static let buildNumber = "1"
     
+    // MARK: - Legal URLs
+    enum Legal {
+        // TODO: Replace these URLs with your actual hosted policy URLs
+        // See HOSTING_LEGAL_DOCS_GUIDE.md for instructions on hosting
+        static let privacyPolicyURL = "https://yourwebsite.com/privacy"
+        static let termsOfServiceURL = "https://yourwebsite.com/terms"
+        static let supportEmail = "support@yourapp.com"
+    }
+    
     // MARK: - Simulation Defaults
     enum Simulation {
         static let defaultRuns = 10000

@@ -52,6 +52,8 @@
 		9CF4B4CD2F63C7E900C5BA6D /* BUTTON_TAP_BLOCKING_FIX.md in Resources */ = {isa = PBXBuildFile; fileRef = 9CF4B4CC2F63C7E900C5BA6D /* BUTTON_TAP_BLOCKING_FIX.md */; };
 		9CF4B4D12F64424B00C5BA6D /* DUPLICATE_ASSET_VALIDATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9CF4B4D02F64424B00C5BA6D /* DUPLICATE_ASSET_VALIDATION.md */; };
 		9CF4B4D32F6454FB00C5BA6D /* DUPLICATE_ASSET_VALIDATION_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 9CF4B4D22F6454FB00C5BA6D /* DUPLICATE_ASSET_VALIDATION_COMPLETE.md */; };
+		9CF4B4D52F6718B600C5BA6D /* WelcomeDisclaimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF4B4D42F6718B600C5BA6D /* WelcomeDisclaimerView.swift */; };
+		9CF4B4D72F67191C00C5BA6D /* WELCOME_DISCLAIMER_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 9CF4B4D62F67191C00C5BA6D /* WELCOME_DISCLAIMER_IMPLEMENTATION.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -120,6 +122,8 @@
 		9CF4B4CC2F63C7E900C5BA6D /* BUTTON_TAP_BLOCKING_FIX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = BUTTON_TAP_BLOCKING_FIX.md; sourceTree = "<group>"; };
 		9CF4B4D02F64424B00C5BA6D /* DUPLICATE_ASSET_VALIDATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DUPLICATE_ASSET_VALIDATION.md; sourceTree = "<group>"; };
 		9CF4B4D22F6454FB00C5BA6D /* DUPLICATE_ASSET_VALIDATION_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DUPLICATE_ASSET_VALIDATION_COMPLETE.md; sourceTree = "<group>"; };
+		9CF4B4D42F6718B600C5BA6D /* WelcomeDisclaimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeDisclaimerView.swift; sourceTree = "<group>"; };
+		9CF4B4D62F67191C00C5BA6D /* WELCOME_DISCLAIMER_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = WELCOME_DISCLAIMER_IMPLEMENTATION.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -230,6 +234,8 @@
 				9CF4B4CC2F63C7E900C5BA6D /* BUTTON_TAP_BLOCKING_FIX.md */,
 				9CF4B4D02F64424B00C5BA6D /* DUPLICATE_ASSET_VALIDATION.md */,
 				9CF4B4D22F6454FB00C5BA6D /* DUPLICATE_ASSET_VALIDATION_COMPLETE.md */,
+				9CF4B4D42F6718B600C5BA6D /* WelcomeDisclaimerView.swift */,
+				9CF4B4D62F67191C00C5BA6D /* WELCOME_DISCLAIMER_IMPLEMENTATION.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -370,6 +376,7 @@
 				9C4AE14F2F5BE47C00562FA2 /* DEBUG_LOGGING_DEVELOPER_GUIDE.md in Resources */,
 				9C4AE1412F5BE21D00562FA2 /* REFRESH_LIMIT_FIX.md in Resources */,
 				9C4AE1552F5BE73C00562FA2 /* BUILD_VERIFICATION.md in Resources */,
+				9CF4B4D72F67191C00C5BA6D /* WELCOME_DISCLAIMER_IMPLEMENTATION.md in Resources */,
 				9CF4B4CB2F63C6D000C5BA6D /* TICKER_MAPPING_BUTTON_DEBUG.md in Resources */,
 				9CF4B4C92F63C5B300C5BA6D /* TICKER_MAPPING_VALIDATION_FIX.md in Resources */,
 				9CF4B4BD2F6264B100C5BA6D /* DAILY_CHANGE_UPDATE_GUIDE.md in Resources */,
@@ -432,6 +439,7 @@
 				9C027ED22F5B108F00E0D831 /* SubscriptionPaywallView.swift in Sources */,
 				9C027ED02F5B106F00E0D831 /* SubscriptionManager.swift in Sources */,
 				9C4AE1452F5BE30900562FA2 /* DebugSettingsView.swift in Sources */,
+				9CF4B4D52F6718B600C5BA6D /* WelcomeDisclaimerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

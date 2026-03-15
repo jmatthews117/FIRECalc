@@ -487,7 +487,7 @@ struct SettingsView: View {
                 
                 // Legal Section
                 Section {
-                    if let privacyURL = URL(string: "https://yourwebsite.com/privacy") {
+                    if let privacyURL = URL(string: AppConstants.Legal.privacyPolicyURL) {
                         Link(destination: privacyURL) {
                             HStack {
                                 Label("Privacy Policy", systemImage: "hand.raised.fill")
@@ -499,7 +499,7 @@ struct SettingsView: View {
                         }
                     }
                     
-                    if let termsURL = URL(string: "https://yourwebsite.com/terms") {
+                    if let termsURL = URL(string: AppConstants.Legal.termsOfServiceURL) {
                         Link(destination: termsURL) {
                             HStack {
                                 Label("Terms of Service", systemImage: "doc.text.fill")
@@ -517,7 +517,7 @@ struct SettingsView: View {
                         Label("Legal Disclaimer", systemImage: "exclamationmark.shield")
                     }
                     
-                    if let supportURL = URL(string: "mailto:support@yourapp.com?subject=FICalc%20Support") {
+                    if let supportURL = URL(string: "mailto:\(AppConstants.Legal.supportEmail)?subject=FICalc%20Support") {
                         Link(destination: supportURL) {
                             HStack {
                                 Label("Contact Support", systemImage: "envelope.fill")
