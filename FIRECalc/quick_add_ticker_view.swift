@@ -184,6 +184,12 @@ struct QuickAddTickerView: View {
         currentPrice = nil
         errorMessage = nil
         
+        // Check for duplicate name before loading price
+        if portfolioVM.assetExists(withName: asset.name) {
+            errorMessage = "An asset named '\(asset.name)' already exists. Please edit the existing asset or use a different name."
+            return
+        }
+        
         print("🎯 Selected asset: \(asset.name) (\(asset.ticker))")
         
         Task {
@@ -223,6 +229,12 @@ struct QuickAddTickerView: View {
     private func addAsset() {
         guard let asset = commonAssets.first(where: { $0.ticker == selectedTicker }),
               let price = currentPrice else {
+            return
+        }
+        
+        // Check for duplicate name before adding
+        if portfolioVM.assetExists(withName: asset.name) {
+            errorMessage = "An asset named '\(asset.name)' already exists. Please edit the existing asset or use a different name."
             return
         }
         

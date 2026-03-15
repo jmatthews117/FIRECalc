@@ -32,7 +32,8 @@ struct BulkAssetUploadView: View {
                                 },
                                 onLoadPrice: {
                                     loadPrice(for: asset)
-                                }
+                                },
+                                portfolioVM: portfolioVM
                             )
                         }
                     }
@@ -131,6 +132,14 @@ struct BulkAssetUploadView: View {
     private func loadPrice(for asset: DraftAsset) {
         guard !asset.ticker.isEmpty else { return }
         
+        // Check for duplicate name before loading price
+        let assetNameToCheck = asset.name.isEmpty ? asset.ticker : asset.name
+        if portfolioVM.assetExists(withName: assetNameToCheck) {
+            errorMessage = "An asset named '\(assetNameToCheck)' already exists. Please edit the existing asset or use a different name."
+            showingError = true
+            return
+        }
+        
         Task {
             do {
                 let tempAsset = Asset(
@@ -170,6 +179,44 @@ struct BulkAssetUploadView: View {
             return
         }
         
+        // Check for duplicate names before adding any assets
+        var duplicates: [String] = []
+        for draft in validAssets {
+            if portfolioVM.assetExists(withName: draft.name) {
+                duplicates.append(draft.name)
+            }
+        }
+        
+        // If any duplicates found, show error and don't add anything
+        if !duplicates.isEmpty {
+            if duplicates.count == 1 {
+                errorMessage = "An asset named '\(duplicates[0])' already exists. Please edit the existing asset or use a different name."
+            } else {
+                errorMessage = "The following assets already exist: \(duplicates.joined(separator: ", ")). Please edit the existing assets or use different names."
+            }
+            showingError = true
+            return
+        }
+        
+        // Also check for duplicate names within the batch being added
+        var seenNames = Set<String>()
+        var internalDuplicates: [String] = []
+        for draft in validAssets {
+            let lowercasedName = draft.name.lowercased()
+            if seenNames.contains(lowercasedName) {
+                internalDuplicates.append(draft.name)
+            } else {
+                seenNames.insert(lowercasedName)
+            }
+        }
+        
+        if !internalDuplicates.isEmpty {
+            errorMessage = "You have duplicate names in your batch: \(internalDuplicates.joined(separator: ", ")). Each asset must have a unique name."
+            showingError = true
+            return
+        }
+        
+        // All validations passed - add the assets
         for draft in validAssets {
             let asset = Asset(
                 name: draft.name,
@@ -212,8 +259,16 @@ struct AssetEntryCard: View {
     let onLoadPrice: () -> Void
     @FocusState private var focusedField: Field?
     
+    // Add portfolioVM to check for duplicates
+    var portfolioVM: PortfolioViewModel?
+    
     enum Field {
         case name, ticker, quantity, price
+    }
+    
+    private var hasDuplicateName: Bool {
+        guard let vm = portfolioVM, !asset.name.isEmpty else { return false }
+        return vm.assetExists(withName: asset.name)
     }
     
     var body: some View {
@@ -246,6 +301,17 @@ struct AssetEntryCard: View {
                 TextField("e.g., Apple Stock", text: $asset.name)
                     .textFieldStyle(.roundedBorder)
                     .focused($focusedField, equals: .name)
+                
+                // Show warning if duplicate name detected
+                if hasDuplicateName {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text("An asset with this name already exists")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
             }
             
             // Asset Type

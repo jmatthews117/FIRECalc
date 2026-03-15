@@ -36,6 +36,17 @@ struct AddAssetView: View {
         case ticker, quantity, unitValue, bondYield
     }
     
+    // Computed property to check for duplicate names
+    private var hasDuplicateName: Bool {
+        let nameToCheck = !assetName.isEmpty ? assetName : (!ticker.isEmpty ? ticker.uppercased() : "")
+        return !nameToCheck.isEmpty && portfolioVM.assetExists(withName: nameToCheck)
+    }
+    
+    private var duplicateWarningMessage: String {
+        let nameToCheck = !assetName.isEmpty ? assetName : (!ticker.isEmpty ? ticker.uppercased() : "")
+        return "An asset named '\(nameToCheck)' already exists"
+    }
+    
     var body: some View {
         NavigationView {
             Form {
@@ -219,6 +230,17 @@ struct AddAssetView: View {
                                     }
                                 }
                                 
+                                // Show duplicate warning
+                                if hasDuplicateName {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.orange)
+                                        Text(duplicateWarningMessage)
+                                            .font(.caption)
+                                            .foregroundColor(.orange)
+                                    }
+                                }
+                                
                                 Text(tickerSuggestion)
                                     .font(.caption)
                                     .foregroundColor(.blue)
@@ -276,6 +298,17 @@ struct AddAssetView: View {
                             
                             if !selectedAssetClass.supportsTicker && assetName.isEmpty {
                                 TextField("Asset Name (optional)", text: $assetName)
+                            }
+                            
+                            // Show duplicate warning for manual entry
+                            if !assetName.isEmpty && portfolioVM.assetExists(withName: assetName) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.orange)
+                                    Text("An asset named '\(assetName)' already exists")
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                }
                             }
                             
                             if let value = Double(unitValue) {
@@ -398,6 +431,12 @@ struct AddAssetView: View {
     }
     
     private var isValid: Bool {
+        // Check for duplicate name first
+        if hasDuplicateName {
+            return false
+        }
+        
+        // Check for valid value
         if let total = totalValue, total > 0 {
             return true
         }
@@ -453,6 +492,13 @@ struct AddAssetView: View {
         
         let cleanTicker = ticker.uppercased().trimmingCharacters(in: .whitespaces)
         guard cleanTicker != lastLoadedTicker else { return }
+        
+        // Check for duplicate asset name before making API call
+        let nameToCheck = !assetName.isEmpty ? assetName : cleanTicker
+        if portfolioVM.assetExists(withName: nameToCheck) {
+            priceError = "An asset named '\(nameToCheck)' already exists. Please edit the existing asset or use a different name."
+            return
+        }
         
         lastLoadedTicker = cleanTicker
         isLoadingPrice = true
@@ -545,6 +591,12 @@ struct AddAssetView: View {
         focusedField = nil
         
         let finalName = !assetName.isEmpty ? assetName : (!ticker.isEmpty ? ticker.uppercased() : displayName)
+        
+        // Check for duplicate name before adding
+        if portfolioVM.assetExists(withName: finalName) {
+            priceError = "An asset named '\(finalName)' already exists. Please edit the existing asset or use a different name."
+            return
+        }
         
         let finalTicker = ticker.isEmpty ? nil : ticker.uppercased()
         

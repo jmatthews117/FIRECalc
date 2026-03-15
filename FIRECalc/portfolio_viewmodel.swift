@@ -111,6 +111,16 @@ class PortfolioViewModel: ObservableObject {
     
     // MARK: - Asset Management
     
+    /// Check if an asset with the given name already exists (case-insensitive)
+    func assetExists(withName name: String) -> Bool {
+        portfolio.assets.contains { $0.name.lowercased() == name.lowercased() }
+    }
+    
+    /// Find an existing asset by name (case-insensitive)
+    func existingAsset(withName name: String) -> Asset? {
+        portfolio.assets.first { $0.name.lowercased() == name.lowercased() }
+    }
+    
     func addAsset(_ asset: Asset) {
         portfolio.addAsset(asset)
         invalidateCache()
